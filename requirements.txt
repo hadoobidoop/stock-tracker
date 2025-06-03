@@ -1,0 +1,9 @@
+pandas~=2.2.3
+numpy
+pandas_ta
+requests~=2.32.3
+APScheduler~=3.11.0
+yfinance~=0.2.61
+pytest~=8.3.5
+pytz~=2025.2
+pytest
