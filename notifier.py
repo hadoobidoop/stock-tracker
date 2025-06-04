@@ -20,8 +20,6 @@ def send_telegram_message(message: str):
     """
     텔레그램 봇을 통해 메시지를 전송합니다.
     """
-    logger.info(f"[절대매수해] {message}")
-
     # 텔레그램 봇 토큰이나 채팅 ID가 설정되지 않았다면 메시지 전송을 시도하지 않습니다.
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         logger.error("Telegram bot token or chat ID is not set in config.py. Cannot send message.")
@@ -49,7 +47,8 @@ def format_signal_message(
         signal_score: int, # signal_detector에서 계산된 최종 점수
         signal_details_list: list, # signal_detector에서 온 상세 조건 목록
         current_data: pd.Series, # 현재 데이터 (마지막 봉)
-        prev_data: pd.Series # 이전 데이터 (바로 이전 봉)
+        prev_data: pd.Series, # 이전 데이터 (바로 이전 봉)
+        stop_loss_price: float = None # ATR 기반 손절매 가격 추가
 ) -> str:
     """
     실시간 매수/매도 신호 알림 메시지를 포맷합니다.
@@ -62,6 +61,7 @@ def format_signal_message(
     action_text = "매수" if signal_type == "BUY" else "매도"
 
     # 켈트너 채널 중간선 (KCMe_20_2)이 없을 경우 BBM_20_2.0 (볼린저 밴드 중간선) 사용
+    # indicator_calculator에서 KCMe_20_2가 생성되지 않으므로 BBM_20_2.0을 기본값으로 사용
     keltner_middle = current_data.get('KCMe_20_2', current_data.get('BBM_20_2.0', 0.0))
 
     message = (
@@ -78,7 +78,7 @@ def format_signal_message(
         f"💪 ADX (14): {current_data['ADX_14']:.2f} (+DI:{current_data['DMP_14']:.2f}, -DI:{current_data['DMN_14']:.2f})\n" # ADX는 DMP, DMN도 함께 표시하여 방향성 확인
         f"📈 거래량: {current_data['Volume']:,} (20일 평균: {current_data['Volume_SMA_20']:.0f})\n" # 현재 거래량과 평균 거래량 함께 표시
         f"📈 볼린저 밴드 (상/중/하): {current_data['BBU_20_2.0']:.2f} / {current_data['BBM_20_2.0']:.2f} / {current_data['BBL_20_2.0']:.2f}\n"
-        f"📈 켈트너 채널 (상/중/하): {current_data['KCUe_20_2']:.2f} / {keltner_middle:.2f} / {current_data['KCLe_20_2']:.2f}\n" # KCLe, KCMe, KCUe로 변경
+        f"📈 켈트너 채널 (상/중/하): {current_data.get('KCUe_20_2', 0.0):.2f} / {keltner_middle:.2f} / {current_data.get('KCLe_20_2', 0.0):.2f}\n" # KCLe, KCUe도 get()으로 안전하게 접근
         f"\n"
     )
 
@@ -89,6 +89,11 @@ def format_signal_message(
             message += f"- ✅ {detail}\n"
     else:
         message += "- 특정 조건 없음 (점수만으로 발생)\n" # 모든 조건이 명시되지 않았거나 점수만으로 임계값 초과 시
+
+    # --- 손절매 가격 정보 추가 ---
+    if stop_loss_price is not None:
+        message += f"\n⚠️ *예상 손절매 가격: ${stop_loss_price:.2f}*\n"
+    # --- 손절매 가격 정보 추가 끝 ---
 
     message += f"\n💡 기술적 분석에 기반한 신호이며, 신중한 판단이 필요합니다."
 

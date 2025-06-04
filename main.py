@@ -1,6 +1,8 @@
 # main.py
 
 import logging
+
+import pandas as pd
 import pytz # 시간대 처리를 위해 필요
 from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -9,7 +11,7 @@ from apscheduler.triggers.cron import CronTrigger
 from config import (
     STOCK_SYMBOLS, COLLECTION_INTERVAL_MINUTES, SIGNAL_THRESHOLD, SIGNAL_WEIGHTS,
     DAILY_PREDICTION_HOUR_ET, DAILY_PREDICTION_MINUTE_ET,
-    INTRADAY_INTERVAL, LOOKBACK_PERIOD_DAYS_FOR_DAILY,
+    INTRADAY_INTERVAL, LOOKBACK_PERIOD_DAYS_FOR_DAILY, FIB_LOOKBACK_DAYS, # FIB_LOOKBACK_DAYS 추가
     TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, LOG_FILE
 )
 from data_collector import get_ohlcv_data
@@ -79,7 +81,8 @@ def run_daily_buy_price_prediction_job():
             interval='1d' # 일봉 데이터
         )
 
-        if df_daily.empty or len(df_daily) < 1:
+        # get_ohlcv_data가 단일 DataFrame을 반환하는 경우에 대한 처리
+        if not isinstance(df_daily, pd.DataFrame) or df_daily.empty or len(df_daily) < 1:
             logger.warning(f"Skipping daily prediction for {symbol}: No daily data available or insufficient length.")
             continue
 
@@ -112,48 +115,107 @@ def run_realtime_signal_detection_job():
 
     logger.info("Starting real-time signal detection job...")
 
-    # 모든 종목의 1분봉 데이터를 한 번에 가져오기 (yfinance는 7일 이내의 1분봉만 지원)
-    period_str = '7d' # 최대 7일로 설정
+    # --- 시장 추세 판단 로직 ---
+    market_index_symbol = '^GSPC' # S&P 500 지수
+    market_trend = "NEUTRAL" # 기본값
 
-    # 모든 종목의 데이터를 한 번에 요청 (get_ohlcv_data 함수가 여러 심볼을 받도록 수정됨)
-    all_intraday_data = get_ohlcv_data(
-        symbols=STOCK_SYMBOLS, # STOCK_SYMBOLS 리스트 전체를 전달
+    df_market_daily = get_ohlcv_data(
+        symbols=market_index_symbol,
+        period="200d", # 200일 SMA 계산을 위해 최소 200일 데이터 필요
+        interval='1d'
+    )
+
+    if not isinstance(df_market_daily, pd.DataFrame) or df_market_daily.empty:
+        logger.warning(f"Could not fetch market index data for {market_index_symbol}. Market trend set to NEUTRAL.")
+    else:
+        df_market_daily['SMA_200'] = df_market_daily['Close'].rolling(window=200).mean()
+
+        if len(df_market_daily) >= 200 and not pd.isna(df_market_daily.iloc[-1]['SMA_200']):
+            latest_market_close = df_market_daily.iloc[-1]['Close']
+            latest_market_sma_200 = df_market_daily.iloc[-1]['SMA_200']
+
+            if latest_market_close > latest_market_sma_200:
+                market_trend = "BULLISH" # 강세장
+            elif latest_market_close < latest_market_sma_200:
+                market_trend = "BEARISH" # 약세장
+            else:
+                market_trend = "NEUTRAL" # 200일선에 걸쳐있을 경우 (드물지만)
+        else:
+            logger.warning(f"Not enough data for 200-day SMA calculation for {market_index_symbol}. Market trend set to NEUTRAL.")
+
+    logger.info(f"Current Market Trend ({market_index_symbol}): {market_trend}")
+    # --- 시장 추세 판단 로직 끝 ---
+
+
+    # --- 실시간 신호 감지를 위한 데이터 수집 ---
+    period_str = '7d' # yfinance 1분봉 최대 기간
+
+    # 모든 종목의 1분봉 데이터를 한 번에 요청
+    all_intraday_data_dict = get_ohlcv_data(
+        symbols=STOCK_SYMBOLS,
         period=period_str,
         interval=INTRADAY_INTERVAL
     )
 
-    # 데이터가 딕셔너리 형태로 반환되었는지 확인
-    if not isinstance(all_intraday_data, dict) or not all_intraday_data:
-        logger.error(f"Failed to fetch any intraday data for all symbols. Expected dictionary, got {type(all_intraday_data)}.")
-        return # 데이터 가져오기 실패 시 함수 종료
+    if not isinstance(all_intraday_data_dict, dict) or not all_intraday_data_dict:
+        logger.error(f"Failed to fetch any intraday data for all symbols. Expected dictionary, got {type(all_intraday_data_dict)}.")
+        return
+
+    # --- 각 종목별 일봉 지표 (피봇/피보나치) 사전 계산 및 저장 ---
+    # real-time signal detection에서 지지/저항 수준을 활용하기 위함
+    all_daily_extra_indicators = {}
+    for symbol in STOCK_SYMBOLS:
+        df_daily_for_extras = get_ohlcv_data(
+            symbols=symbol,
+            period=f"{FIB_LOOKBACK_DAYS}d", # 피보나치 룩백 기간만큼의 일봉 데이터
+            interval='1d'
+        )
+        if not isinstance(df_daily_for_extras, pd.DataFrame) or df_daily_for_extras.empty:
+            logger.warning(f"Could not fetch daily data for {symbol} to calculate pivot/fib levels. Skipping for this symbol.")
+            all_daily_extra_indicators[symbol] = {} # 빈 딕셔너리로 설정
+            continue
+
+        # calculate_daily_indicators는 (df, extra_indicators) 튜플을 반환
+        _, extras = calculate_daily_indicators(df_daily_for_extras, FIB_LOOKBACK_DAYS)
+        all_daily_extra_indicators[symbol] = extras
+    logger.info("Daily pivot/fib levels calculated for all symbols.")
+    # --- 각 종목별 일봉 지표 사전 계산 끝 ---
+
 
     # 가져온 각 종목의 데이터를 순회하며 처리
-    # 이제 for 루프는 yfinance 호출 부분이 아니라, 가져온 데이터 딕셔너리를 순회합니다.
-    for symbol, df_intraday in all_intraday_data.items():
-        if df_intraday.empty or len(df_intraday) < max(20, 60): # 최소 20봉 이상 (BB, KC 기본 20)
+    for symbol, df_intraday in all_intraday_data_dict.items():
+        # 해당 종목의 일봉 지표 가져오기
+        daily_extras_for_symbol = all_daily_extra_indicators.get(symbol, {})
+        if not daily_extras_for_symbol:
+            logger.warning(f"Skipping signal detection for {symbol}: Daily pivot/fib data not available.")
+            continue
+
+
+        if df_intraday.empty or len(df_intraday) < max(20, 60):
             logger.warning(f"Skipping real-time signal detection for {symbol}: Not enough intraday data available ({len(df_intraday)} rows). Need at least 60 rows for indicators.")
             continue
 
-        # 1분봉 데이터 기반 지표 계산
         df_with_intraday_indicators = calculate_intraday_indicators(df_intraday)
 
         if df_with_intraday_indicators.empty:
             logger.warning(f"Skipping real-time signal detection for {symbol}: Indicators could not be calculated (DataFrame became empty after dropna).")
             continue
 
-        # 신호 감지를 위한 충분한 데이터가 있는지 다시 확인 (dropna 이후 길이가 줄어들 수 있음)
-        if len(df_with_intraday_indicators) < 2: # 최소 2봉 (현재 봉, 이전 봉)
+        if len(df_with_intraday_indicators) < 2:
             logger.warning(f"Skipping real-time signal detection for {symbol}: Insufficient intraday data after indicator calculation ({len(df_with_intraday_indicators)} rows).")
             continue
 
         # 가중치 기반 신호 감지
+        # --- market_trend 및 daily_extras_for_symbol 인자 전달 ---
         signal_result = detect_weighted_signals(
             df_with_intraday_indicators,
-            symbol # ticker
+            symbol,
+            market_trend=market_trend, # 시장 추세 전달
+            daily_extra_indicators=daily_extras_for_symbol # 일봉 지표 전달
         )
+        # --- 인자 전달 끝 ---
 
         if signal_result:
-            # notifier에 필요한 current_data와 prev_data 주입 (detect_weighted_signals에서 반환받아 사용)
             latest_data = df_with_intraday_indicators.iloc[-1]
             prev_data = df_with_intraday_indicators.iloc[-2]
 
@@ -163,13 +225,11 @@ def run_realtime_signal_detection_job():
                 signal_score=signal_result['score'],
                 signal_details_list=signal_result['details'],
                 current_data=latest_data,
-                prev_data=prev_data # 이전 데이터도 메시지에 필요할 경우 대비
+                prev_data=prev_data
             )
             send_telegram_message(message)
         else:
-            # logger.debug(f"No strong real-time signal for {symbol} at {current_et.strftime('%H:%M ET')}.")
-            pass # 신호 없으면 메시지 전송 안함
-
+            pass # No strong signal, no message sent
     logger.info("Real-time signal detection job completed.")
 
 
