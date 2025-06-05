@@ -16,7 +16,7 @@ REQUIRED_INTRADAY_INDICATOR_PREFIXES = [
     'BBL_', 'BBM_', 'BBU_', # 볼린저 밴드
     'KCLe_', 'KCBe_', 'KCUe_', # 켈트너 채널 (KCMe_20_2.0 도 포함하도록 추가)
     'Volume_SMA_', # 거래량 SMA
-    'ATR_' # ATR 컬럼 추가 (calculate_intraday_indicators에서 생성될 것으로 가정)
+    'ATR' # ATR 컬럼 추가 (calculate_intraday_indicators에서 생성될 것으로 가정)
 ]
 
 def detect_weighted_signals(df_intraday: pd.DataFrame, ticker: str, market_trend: str = "NEUTRAL", daily_extra_indicators: dict = None) -> dict:
@@ -59,7 +59,7 @@ def detect_weighted_signals(df_intraday: pd.DataFrame, ticker: str, market_trend
     sell_details = []
 
     # ATR 값 가져오기 (1분봉 데이터에서 계산된 ATR 사용)
-    atr_col_name = [col for col in df_intraday.columns if col.startswith('ATR_')]
+    atr_col_name = [col for col in df_intraday.columns if col.startswith('')]
     current_atr = latest_data.get(atr_col_name[0]) if atr_col_name else 0.0
     if pd.isna(current_atr):
         current_atr = 0.0 # NaN일 경우 0으로 처리
@@ -173,7 +173,7 @@ def detect_weighted_signals(df_intraday: pd.DataFrame, ticker: str, market_trend
         # indicator_calculator에서 ATR_14가 생성되므로, 여기서도 ATR 값을 가져와 활용
         # 1분봉 데이터의 ATR을 사용해야 함. daily_extra_indicators에 ATR이 포함되지 않으므로,
         # df_intraday에서 ATR 값을 가져와야 합니다.
-        atr_col_name_intraday = [col for col in df_intraday.columns if col.startswith('ATR_')]
+        atr_col_name_intraday = [col for col in df_intraday.columns if col.startswith('ATR')]
         current_atr_intraday = latest_data.get(atr_col_name_intraday[0]) if atr_col_name_intraday else 0.0
         if pd.isna(current_atr_intraday): current_atr_intraday = 0.0
 
@@ -290,7 +290,7 @@ def detect_weighted_signals(df_intraday: pd.DataFrame, ticker: str, market_trend
         pivot_points = daily_extra_indicators.get('pivot_points', {})
         fib_retracement_levels = daily_extra_indicators.get('fib_retracement', {})
 
-        atr_col_name_intraday = [col for col in df_intraday.columns if col.startswith('ATR_')]
+        atr_col_name_intraday = [col for col in df_intraday.columns if col.startswith('ATR')]
         current_atr_intraday = latest_data.get(atr_col_name_intraday[0]) if atr_col_name_intraday else 0.0
         if pd.isna(current_atr_intraday): current_atr_intraday = 0.0
 
