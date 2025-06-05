@@ -59,6 +59,35 @@ SIGNAL_WEIGHTS = {
 # 실시간 신호 발생을 위한 최소 총점
 SIGNAL_THRESHOLD = 12
 
+# 시장 추세에 따른 신호 가중치 조정 계수 (새로 추가)
+SIGNAL_ADJUSTMENT_FACTORS_BY_TREND = {
+    "BULLISH": {
+        "trend_follow_buy_adj": 1.0,
+        "trend_follow_sell_adj": 0.3,
+        "momentum_reversal_adj": 0.8,
+        "volume_adj": 1.0, # 불리시장에서 거래량은 긍정적
+        "bb_kc_adj": 1.0, # 불리시장에서 확장도 긍정적
+        "pivot_fib_adj": 1.2
+    },
+    "BEARISH": {
+        "trend_follow_buy_adj": 0.3,
+        "trend_follow_sell_adj": 1.0,
+        "momentum_reversal_adj": 0.8,
+        "volume_adj": 1.0, # 베어리시장에서 거래량은 하락 확인
+        "bb_kc_adj": 1.0, # 베어리시장에서 확장도 하락 확인
+        "pivot_fib_adj": 0.7
+    },
+    "NEUTRAL": {
+        "trend_follow_buy_adj": 0.1,
+        "trend_follow_sell_adj": 0.1,
+        "momentum_reversal_adj": 1.2, # 중립장에서 반전 신호 가중치 높임
+        "volume_adj": 0.8, # 중립장에서 거래량 급증은 신뢰도 약간 낮음
+        "bb_kc_adj": 1.2, # 중립장에서 변동성 확장은 중요
+        "pivot_fib_adj": 1.5 # 중립장에서 지지/저항 신호 중요도 높임
+    }
+}
+
+
 # ====================
 # --- 다음 날 매수 가격 예측 설정 (일일 작업) ---
 # ====================

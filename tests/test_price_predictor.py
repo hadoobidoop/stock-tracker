@@ -49,7 +49,7 @@ def mock_intraday_data_base():
         'BBU_20_2.0': [100.5 for _ in range(periods)],
         # Neutral Keltner Channels (tight, close to price, no squeeze/expansion)
         'KCLe_20_2': [99.6 for _ in range(periods)],
-        'KCMe_20_2': [100.0 for _ in range(periods)],
+        'KCBe_20_2': [100.0 for _ in range(periods)],
         'KCUe_20_2': [100.4 for _ in range(periods)],
         # Neutral Volume SMA (current volume not surging)
         'Volume_SMA_20': [1000.0 for _ in range(periods)]

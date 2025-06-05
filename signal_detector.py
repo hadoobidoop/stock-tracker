@@ -3,7 +3,7 @@
 import pandas as pd
 import logging
 # config에서 PREDICTION_ATR_MULTIPLIER_FOR_RANGE를 임포트
-from config import SIGNAL_WEIGHTS, SIGNAL_THRESHOLD, VOLUME_SURGE_FACTOR, PREDICTION_ATR_MULTIPLIER_FOR_RANGE
+from config import SIGNAL_WEIGHTS, SIGNAL_THRESHOLD, VOLUME_SURGE_FACTOR, PREDICTION_ATR_MULTIPLIER_FOR_RANGE, SIGNAL_ADJUSTMENT_FACTORS_BY_TREND # SIGNAL_ADJUSTMENT_FACTORS_BY_TREND 추가
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ REQUIRED_INTRADAY_INDICATOR_PREFIXES = [
     'Open', 'High', 'Low', 'Close', 'Volume', # OHLCV
     'SMA_', 'RSI_', 'MACD', 'STOCH', 'ADX_',  # 지표 (접두사로 확인)
     'BBL_', 'BBM_', 'BBU_', # 볼린저 밴드
-    'KCLe_', 'KCUe_', # 켈트너 채널 (KCMe_는 생성되지 않으므로 제거)
+    'KCLe_', 'KCBe_', 'KCUe_', # 켈트너 채널 (KCMe_20_2.0 도 포함하도록 추가)
     'Volume_SMA_', # 거래량 SMA
     'ATR_' # ATR 컬럼 추가 (calculate_intraday_indicators에서 생성될 것으로 가정)
 ]
@@ -74,28 +74,14 @@ def detect_weighted_signals(df_intraday: pd.DataFrame, ticker: str, market_trend
         logger.debug(f"Adjusting BUY signal threshold for {ticker} in BULLISH market to {adjusted_signal_threshold:.2f}.")
 
     # --- 개별 지표 점수 조정 계수 (시장 추세에 따라) ---
-    trend_follow_buy_adj = 1.0
-    trend_follow_sell_adj = 1.0
-    momentum_reversal_adj = 1.0
-    volume_adj = 1.0
-    bb_kc_adj = 1.0
-    pivot_fib_adj = 1.0
-
-    if market_trend == "BEARISH":
-        trend_follow_buy_adj = 0.3
-        momentum_reversal_adj = 0.8
-        pivot_fib_adj = 0.7
-    elif market_trend == "BULLISH":
-        trend_follow_sell_adj = 0.3
-        momentum_reversal_adj = 0.8
-        pivot_fib_adj = 1.2
-    elif market_trend == "NEUTRAL":
-        trend_follow_buy_adj = 0.1
-        trend_follow_sell_adj = 0.1
-        momentum_reversal_adj = 1.2
-        bb_kc_adj = 1.2
-        volume_adj = 0.8
-        pivot_fib_adj = 1.5
+    # config.py에서 가져오도록 변경
+    adjustment_factors = SIGNAL_ADJUSTMENT_FACTORS_BY_TREND.get(market_trend, {})
+    trend_follow_buy_adj = adjustment_factors.get("trend_follow_buy_adj", 1.0)
+    trend_follow_sell_adj = adjustment_factors.get("trend_follow_sell_adj", 1.0)
+    momentum_reversal_adj = adjustment_factors.get("momentum_reversal_adj", 1.0)
+    volume_adj = adjustment_factors.get("volume_adj", 1.0)
+    bb_kc_adj = adjustment_factors.get("bb_kc_adj", 1.0)
+    pivot_fib_adj = adjustment_factors.get("pivot_fib_adj", 1.0)
 
     logger.debug(f"Market trend '{market_trend}' applying adjustments: TF_Buy={trend_follow_buy_adj}, TF_Sell={trend_follow_sell_adj}, Mom_Rev={momentum_reversal_adj}, Vol={volume_adj}, BB_KC={bb_kc_adj}, Pivot_Fib={pivot_fib_adj}")
 
@@ -170,8 +156,9 @@ def detect_weighted_signals(df_intraday: pd.DataFrame, ticker: str, market_trend
         buy_details.append(f"거래량 급증 (현재:{latest_data['Volume']} > 평균:{latest_data['Volume_SMA_20']:.0f} * {VOLUME_SURGE_FACTOR})")
 
     # 7. 볼린저 밴드/켈트너 채널 스퀴즈 후 확장 (변동성 확장)
-    is_bb_squeezed = (latest_data['BBU_20_2.0'] < latest_data['KCUe_20_2'] and
-                      latest_data['BBL_20_2.0'] > latest_data['KCLe_20_2'])
+    # Keltner Channels 컬럼명 변경 적용
+    is_bb_squeezed = (latest_data['BBU_20_2.0'] < latest_data.get('KCUe_20_2.0', 0.0) and
+                      latest_data['BBL_20_2.0'] > latest_data.get('KCLe_20_2.0', 0.0))
 
     if not is_bb_squeezed and latest_data['Close'] > latest_data['BBU_20_2.0'] and prev_data['Close'] < prev_data['BBU_20_2.0']:
         buy_score += SIGNAL_WEIGHTS["bb_squeeze_expansion"] * bb_kc_adj
@@ -290,8 +277,9 @@ def detect_weighted_signals(df_intraday: pd.DataFrame, ticker: str, market_trend
         sell_details.append(f"하락 시 거래량 급증 (현재:{latest_data['Volume']} > 평균:{latest_data['Volume_SMA_20']:.0f} * {VOLUME_SURGE_FACTOR})")
 
     # 7. 볼린저 밴드/켈트너 채널 스퀴즈 후 확장 (변동성 확장)
-    is_bb_squeezed = (latest_data['BBU_20_2.0'] < latest_data['KCUe_20_2'] and
-                      latest_data['BBL_20_2.0'] > latest_data['KCLe_20_2'])
+    # Keltner Channels 컬럼명 변경 적용
+    is_bb_squeezed = (latest_data['BBU_20_2.0'] < latest_data.get('KCUe_20_2.0', 0.0) and
+                      latest_data['BBL_20_2.0'] > latest_data.get('KCLe_20_2.0', 0.0))
 
     if not is_bb_squeezed and latest_data['Close'] < latest_data['BBL_20_2.0'] and prev_data['Close'] > prev_data['BBL_20_2.0']:
         sell_score += SIGNAL_WEIGHTS["bb_squeeze_expansion"] * bb_kc_adj

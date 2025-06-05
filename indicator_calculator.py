@@ -111,6 +111,10 @@ def calculate_intraday_indicators(df_intraday: pd.DataFrame) -> pd.DataFrame:
     # 8. 거래량 이동평균 (거래량 필터링을 위함)
     df_intraday['Volume_SMA_20'] = df_intraday['Volume'].rolling(window=20).mean()
 
+    # 9. ATR (Average True Range) -- 새로 추가된 부분
+    df_intraday.ta.atr(length=14, append=True) # 1분봉 데이터에도 ATR 계산
+
+
     # 지표 계산 후 NaN 값 제거 (초반 계산 기간에 NaN이 발생)
     # 주의: 너무 많은 NaN을 제거하면 데이터가 부족해질 수 있으니, 최소한의 데이터는 남도록 확인
     df_intraday.dropna(inplace=True)
@@ -118,6 +122,6 @@ def calculate_intraday_indicators(df_intraday: pd.DataFrame) -> pd.DataFrame:
     # --- 추가할 진단 코드 ---
     logger.info(f"DEBUG: Columns after indicator calculation: {df_intraday.columns.tolist()}")
     logger.info(f"DEBUG: Keltner Channels columns: {[col for col in df_intraday.columns if 'KC' in col]}")
-# --- 진단 코드 끝 ---
+    # --- 진단 코드 끝 ---
 
     return df_intraday

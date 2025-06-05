@@ -61,8 +61,8 @@ def format_signal_message(
     action_text = "매수" if signal_type == "BUY" else "매도"
 
     # 켈트너 채널 중간선 (KCMe_20_2)이 없을 경우 BBM_20_2.0 (볼린저 밴드 중간선) 사용
-    # indicator_calculator에서 KCMe_20_2가 생성되지 않으므로 BBM_20_2.0을 기본값으로 사용
-    keltner_middle = current_data.get('KCMe_20_2', current_data.get('BBM_20_2.0', 0.0))
+    # indicator_calculator에서 KCMe_20_2.0가 생성될 것으로 예상
+    keltner_middle = current_data.get('KCMe_20_2.0', current_data.get('BBM_20_2.0', 0.0)) # 컬럼명 변경
 
     message = (
         f"{emoji} *[{ticker}] {action_text} 신호 발생!* {emoji}\n"
@@ -78,7 +78,7 @@ def format_signal_message(
         f"💪 ADX (14): {current_data['ADX_14']:.2f} (+DI:{current_data['DMP_14']:.2f}, -DI:{current_data['DMN_14']:.2f})\n" # ADX는 DMP, DMN도 함께 표시하여 방향성 확인
         f"📈 거래량: {current_data['Volume']:,} (20일 평균: {current_data['Volume_SMA_20']:.0f})\n" # 현재 거래량과 평균 거래량 함께 표시
         f"📈 볼린저 밴드 (상/중/하): {current_data['BBU_20_2.0']:.2f} / {current_data['BBM_20_2.0']:.2f} / {current_data['BBL_20_2.0']:.2f}\n"
-        f"📈 켈트너 채널 (상/중/하): {current_data.get('KCUe_20_2', 0.0):.2f} / {keltner_middle:.2f} / {current_data.get('KCLe_20_2', 0.0):.2f}\n" # KCLe, KCUe도 get()으로 안전하게 접근
+        f"📈 켈트너 채널 (상/중/하): {current_data.get('KCUe_20_2.0', 0.0):.2f} /  {current_data.get('KCBe_20_2.0', 0.0):.2f} / {current_data.get('KCLe_20_2.0', 0.0):.2f}\n" # KCLe, KCUe도 get()으로 안전하게 접근 (컬럼명 변경)
         f"\n"
     )
 

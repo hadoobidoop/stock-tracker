@@ -1,3 +1,5 @@
+# tests/test_main.py
+
 import pytest
 from unittest.mock import patch, MagicMock
 import pandas as pd
@@ -63,10 +65,11 @@ def mock_data_for_realtime():
         'BBL_20_2.0': [98 + i * 0.1 for i in range(periods)],
         'BBM_20_2.0': [100 + i * 0.1 for i in range(periods)],
         'BBU_20_2.0': [102 + i * 0.1 for i in range(periods)],
-        'KCL_20_2': [98.5 + i * 0.1 for i in range(periods)],
-        'KCM_20_2': [100.5 + i * 0.1 for i in range(periods)],
-        'KCU_20_2': [102.5 + i * 0.1 for i in range(periods)],
-        'Volume_SMA_20': [900 + i * 5 for i in range(periods)]
+        'KCLe_20_2.0': [98.5 + i * 0.1 for i in range(periods)], # 컬럼명 변경
+        'KCMe_20_2.0': [100.5 + i * 0.1 for i in range(periods)], # 컬럼명 변경
+        'KCUe_20_2.0': [102.5 + i * 0.1 for i in range(periods)], # 컬럼명 변경
+        'Volume_SMA_20': [900 + i * 5 for i in range(periods)],
+        'ATR_14': [1.0 + i * 0.01 for i in range(periods)] # ATR 컬럼 추가된 점 고려
     }
     df = pd.DataFrame(data, index=index)
     # 마지막 데이터에 골든 크로스 신호 포함
@@ -185,7 +188,7 @@ def test_run_realtime_signal_detection_job_success(
 
     # 각 함수들이 올바르게 호출되었는지 확인
     assert mock_is_market_open.called
-    assert mock_get_ohlcv_data.call_count == len(STOCK_SYMBOLS)
+    assert mock_get_ohlcv_data.call_count == len(STOCK_SYMBOLS) * 2 # 시장 지수 + 각 종목
     assert mock_calculate_intraday_indicators.call_count == len(STOCK_SYMBOLS)
     assert mock_detect_weighted_signals.call_count == len(STOCK_SYMBOLS)
     assert mock_format_signal_message.call_count == len(STOCK_SYMBOLS)

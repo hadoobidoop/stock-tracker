@@ -1,3 +1,5 @@
+# tests/test_signal_detector.py
+
 import pytest
 import pandas as pd
 from datetime import datetime, timedelta
@@ -48,11 +50,12 @@ def mock_intraday_data_base():
         'BBM_20_2.0': [100.0 + i * 0.01 for i in range(periods)],
         'BBU_20_2.0': [101.0 + i * 0.01 for i in range(periods)],
         # Neutral Keltner Channels (close to price, no squeeze/expansion)
-        'KCLe_20_2': [99.2 + i * 0.01 for i in range(periods)],
-        'KCMe_20_2': [100.2 + i * 0.01 for i in range(periods)],
-        'KCUe_20_2': [101.2 + i * 0.01 for i in range(periods)],
+        'KCLe_20_2.0': [99.2 + i * 0.01 for i in range(periods)], # 컬럼명 변경
+        'KCMe_20_2.0': [100.2 + i * 0.01 for i in range(periods)], # 컬럼명 변경
+        'KCUe_20_2.0': [101.2 + i * 0.01 for i in range(periods)], # 컬럼명 변경
         # Neutral Volume SMA (current volume not surging)
-        'Volume_SMA_20': [1000.0 for _ in range(periods)]
+        'Volume_SMA_20': [1000.0 for _ in range(periods)],
+        'ATR_14': [1.0 + i * 0.01 for i in range(periods)] # ATR 컬럼 추가된 점 고려
     }
     df = pd.DataFrame(data, index=index)
     yield df
