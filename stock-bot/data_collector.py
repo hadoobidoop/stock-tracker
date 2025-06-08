@@ -3,7 +3,6 @@
 import yfinance as yf
 import logging
 import pandas as pd
-from datetime import datetime, timedelta
 import ast # ast 모듈 임포트
 from typing import Union, List, Dict # 타입 힌트를 위해 Union, List, Dict 임포트
 
