@@ -7,3 +7,5 @@ yfinance~=0.2.61
 pytest~=8.3.5
 pytz~=2025.2
 pytest
+mysql-connector-python
+sqlalchemy

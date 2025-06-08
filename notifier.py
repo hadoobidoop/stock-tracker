@@ -9,9 +9,8 @@ from datetime import datetime
 # `config`의 값들을 매개변수로 전달해야 합니다.
 # 여기서는 `config.py`의 값을 직접 임포트하여 사용하도록 변경합니다.
 from config import (
-    TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
     SIGNAL_THRESHOLD, PREDICTION_THRESHOLD,
-    VOLUME_SURGE_FACTOR
+    VOLUME_SURGE_FACTOR, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 )
 
 logger = logging.getLogger(__name__)
