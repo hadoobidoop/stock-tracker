@@ -18,6 +18,7 @@ from utils import get_current_et_time, is_market_open
 
 logger = logging.getLogger(__name__)
 
+
 def get_long_term_trend(df_hourly: pd.DataFrame) -> tuple[TrendType, dict]:
     """[수정됨] 1시간봉 데이터로 장기 추세를 판단하고, TrendType Enum으로 반환합니다."""
     if df_hourly.empty or len(df_hourly) < 50:
@@ -37,6 +38,7 @@ def get_long_term_trend(df_hourly: pd.DataFrame) -> tuple[TrendType, dict]:
         return TrendType.BEARISH, trend_values
     else:
         return TrendType.NEUTRAL, trend_values
+
 
 def run_daily_buy_price_prediction_job():
     """[최종 수정본] 매일 장 마감 후 실행되는 다음 날 예상 매수 가격 예측 작업 (청킹 적용)"""
@@ -93,7 +95,6 @@ def run_daily_buy_price_prediction_job():
     logger.info("JOB END: Daily buy price prediction job completed.")
 
 
-
 def run_realtime_signal_detection_job():
     """[최종 수정본] 실시간 신호 감지 작업 (3단계 탑다운 필터링 적용)"""
 
@@ -119,15 +120,17 @@ def run_realtime_signal_detection_job():
         latest_market_close = df_market_daily.iloc[-1]['Close']
         latest_market_sma_200 = df_market_daily.iloc[-1]['SMA_200']
         if not pd.isna(latest_market_sma_200):
-            if latest_market_close > latest_market_sma_200: market_trend = TrendType.BULLISH
-            elif latest_market_close < latest_market_sma_200: market_trend = TrendType.BEARISH
+            if latest_market_close > latest_market_sma_200:
+                market_trend = TrendType.BULLISH
+            elif latest_market_close < latest_market_sma_200:
+                market_trend = TrendType.BEARISH
         logger.info(f"Filter 1 (Market Trend): {market_trend.value}")
 
     # --- 2단계 필터: 사단장의 전술적 판단 (Long-term Trend of Stock) ---
     logger.info("Filter 2: Pre-calculating daily indicators and long-term trends...")
     all_daily_extra_indicators = {}
     all_long_term_trends = {}
-    all_long_term_trend_values = {} # [신규] 추세 판단 기준값을 저장할 딕셔너리
+    all_long_term_trend_values = {}  # [신규] 추세 판단 기준값을 저장할 딕셔너리
 
     for symbol in stocks_to_analyze:
         df_daily = get_ohlcv_data(symbol, f"{FIB_LOOKBACK_DAYS}d", '1d')
@@ -141,7 +144,7 @@ def run_realtime_signal_detection_job():
         df_hourly = get_ohlcv_data(symbol, period="1mo", interval="60m")
         long_term_trend, trend_values = get_long_term_trend(df_hourly)
         all_long_term_trends[symbol] = long_term_trend
-        all_long_term_trend_values[symbol] = trend_values # 기준값 저장
+        all_long_term_trend_values[symbol] = trend_values  # 기준값 저장
 
     # --- 5분봉 데이터 수집 (청킹) ---
     chunk_size = 20
@@ -152,7 +155,8 @@ def run_realtime_signal_detection_job():
             chunk_data = get_ohlcv_data(chunk, '7d', INTRADAY_INTERVAL)
             if chunk_data: all_intraday_data_dict.update(chunk_data)
             sleep(1)
-        except Exception as e: logger.error(f"Failed to fetch intraday data for chunk {i+1}: {e}")
+        except Exception as e:
+            logger.error(f"Failed to fetch intraday data for chunk {i + 1}: {e}")
 
     if not all_intraday_data_dict:
         logger.error("Failed to fetch any intraday data. Aborting job.")
@@ -170,13 +174,13 @@ def run_realtime_signal_detection_job():
 
             # 신호 감지 시, 모든 상위 필터 정보 전달
             daily_extras = all_daily_extra_indicators.get(symbol, {})
-            long_term_trend = all_long_term_trends.get(symbol,  TrendType.NEUTRAL)
+            long_term_trend = all_long_term_trends.get(symbol, TrendType.NEUTRAL)
 
             signal_result = detect_weighted_signals(
                 df_with_indicators,
                 symbol,
-                market_trend,    # 1단계 필터 결과
-                long_term_trend, # 2단계 필터 결과
+                market_trend,  # 1단계 필터 결과
+                long_term_trend,  # 2단계 필터 결과
                 daily_extras
             )
 
@@ -184,8 +188,8 @@ def run_realtime_signal_detection_job():
                 trend_values = all_long_term_trend_values.get(symbol, {})
                 save_trading_signal({
                     'ticker': symbol,
-                    'market_trend': market_trend, # TrendType Enum 전달
-                    'long_term_trend': long_term_trend, # TrendType Enum 전달
+                    'market_trend': market_trend,  # TrendType Enum 전달
+                    'long_term_trend': long_term_trend,  # TrendType Enum 전달
                     'trend_ref_close': trend_values.get('close'),
                     'trend_ref_value': trend_values.get('sma'),
                     **signal_result
@@ -194,6 +198,7 @@ def run_realtime_signal_detection_job():
             logger.error(f"An error occurred during analysis for {symbol}: {e}")
 
     logger.info("JOB END: Real-time signal detection job completed.")
+
 
 def update_stock_metadata_from_yfinance():
     """[최종 수정본] yfinance를 사용하여 주식 메타데이터를 가져와 DB를 업데이트합니다. (청킹 적용)"""

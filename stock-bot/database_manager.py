@@ -1,4 +1,3 @@
-
 import uuid
 import pandas as pd
 from sqlalchemy.orm import Session
@@ -8,6 +7,7 @@ import json
 
 logger = logging.getLogger(__name__)
 
+
 def get_db():
     db = SessionLocal()
     try:
@@ -15,12 +15,14 @@ def get_db():
     finally:
         db.close()
 
+
 def get_stocks_to_analyze() -> list[str]:
     """[신규] 분석이 필요한(need_analysis=True) 주식 티커 목록을 DB에서 가져옵니다."""
     db: Session = next(get_db())
     try:
         # StockMetadata 테이블에서 need_analysis가 True인 티커만 조회
-        stocks = db.query(StockMetadata.ticker).filter(StockMetadata.need_analysis == True, StockMetadata.is_active == True).all()
+        stocks = db.query(StockMetadata.ticker).filter(StockMetadata.need_analysis == True,
+                                                       StockMetadata.is_active == True).all()
         # 결과는 [(ticker1,), (ticker2,)] 형태이므로, 각 튜플의 첫 번째 요소를 추출하여 리스트로 변환
         return [stock[0] for stock in stocks]
     except Exception as e:
@@ -28,6 +30,7 @@ def get_stocks_to_analyze() -> list[str]:
         return []
     finally:
         db.close()
+
 
 def save_technical_indicators(df: pd.DataFrame, ticker: str, interval: str):
     db: Session = next(get_db())
@@ -56,6 +59,7 @@ def save_technical_indicators(df: pd.DataFrame, ticker: str, interval: str):
     finally:
         db.close()
 
+
 def save_trading_signal(signal_data: dict):
     db: Session = next(get_db())
     new_signal = TradingSignal(
@@ -70,7 +74,8 @@ def save_trading_signal(signal_data: dict):
         trend_ref_close=signal_data.get('trend_ref_close'),
         trend_ref_value=signal_data.get('trend_ref_value'),
 
-        details=json.dumps(signal_data.get('details', [])) if isinstance(signal_data.get('details'), list) else signal_data.get('details'),
+        details=json.dumps(signal_data.get('details', [])) if isinstance(signal_data.get('details'),
+                                                                         list) else signal_data.get('details'),
         price_at_signal=signal_data.get('current_price'),
         stop_loss_price=signal_data.get('stop_loss_price')
     )
@@ -85,6 +90,7 @@ def save_trading_signal(signal_data: dict):
     finally:
         db.close()
 
+
 def save_daily_prediction(prediction_data: dict):
     db: Session = next(get_db())
     new_prediction = DailyPrediction(
@@ -98,7 +104,8 @@ def save_daily_prediction(prediction_data: dict):
         predicted_range_high=prediction_data.get('range_high'),
         reason=prediction_data.get('reason'),
         prediction_score=prediction_data.get('score'),
-        details=json.dumps(prediction_data.get('details', [])) if isinstance(prediction_data.get('details'), list) else prediction_data.get('details'),
+        details=json.dumps(prediction_data.get('details', [])) if isinstance(prediction_data.get('details'),
+                                                                             list) else prediction_data.get('details'),
         prev_day_close=prediction_data.get('prev_day_close')
     )
     try:
@@ -111,6 +118,7 @@ def save_daily_prediction(prediction_data: dict):
         db.rollback()
     finally:
         db.close()
+
 
 def update_stock_metadata(metadata_list: list[dict]):
     """

@@ -2,9 +2,10 @@
 
 import pandas as pd
 import logging
-import pandas_ta # pandas_ta를 pandas DataFrame에 등록하기 위해 추가
+import pandas_ta  # pandas_ta를 pandas DataFrame에 등록하기 위해 추가
 
 logger = logging.getLogger(__name__)
+
 
 # --- 일봉 데이터용 지표 계산 함수 ---
 def calculate_daily_indicators(df_daily: pd.DataFrame, fib_lookback_days: int) -> tuple[pd.DataFrame, dict]:
@@ -39,7 +40,6 @@ def calculate_daily_indicators(df_daily: pd.DataFrame, fib_lookback_days: int) -
     s2 = pivot_point - (prev_high - prev_low)
     r2 = pivot_point + (prev_high - prev_low)
 
-
     logger.debug(f"Calculated Pivot Points: P={pivot_point:.2f}, S1={s1:.2f}, R1={r1:.2f}, S2={s2:.2f}, R2={r2:.2f}")
 
     # 3. Fibonacci Retracement (피보나치 되돌림)
@@ -47,7 +47,7 @@ def calculate_daily_indicators(df_daily: pd.DataFrame, fib_lookback_days: int) -
     fib_data = df_daily.tail(fib_lookback_days)
     if fib_data.empty or len(fib_data) < 2:
         logger.warning(f"Not enough data for Fibonacci retracement (lookback {fib_lookback_days} days).")
-        fib_levels = {} # 데이터 부족 시 빈 딕셔너리
+        fib_levels = {}  # 데이터 부족 시 빈 딕셔너리
     else:
         recent_high = fib_data['High'].max()
         recent_low = fib_data['Low'].min()
@@ -60,7 +60,8 @@ def calculate_daily_indicators(df_daily: pd.DataFrame, fib_lookback_days: int) -
             '61.8%': recent_high - (price_range * 0.618),
             '78.6%': recent_high - (price_range * 0.786),
         }
-        logger.debug(f"Calculated Fibonacci Retracement Levels (from {recent_low:.2f} to {recent_high:.2f}): {fib_levels}")
+        logger.debug(
+            f"Calculated Fibonacci Retracement Levels (from {recent_low:.2f} to {recent_high:.2f}): {fib_levels}")
 
     # ATR 컬럼은 DataFrame에 추가되므로 반환 시 포함됩니다.
     # 피봇 포인트와 피보나치 레벨은 DataFrame에 추가하기보다는 개별 값으로 반환하여 예측 모듈에서 사용
@@ -97,11 +98,11 @@ def calculate_intraday_indicators(df_intraday: pd.DataFrame) -> pd.DataFrame:
 
     # 5. ADX (Average Directional Index)
     # 기본 설정: length=14
-    df_intraday.ta.adx(append=True) # ADX_14, DMN_14, DMP_14 컬럼 생성
+    df_intraday.ta.adx(append=True)  # ADX_14, DMN_14, DMP_14 컬럼 생성
 
     # 6. 볼린저 밴드 (Bollinger Bands)
     # 기본 설정: length=20, std=2.0
-    df_intraday.ta.bbands(length=20, append=True) # length 명시적으로 20으로 설정
+    df_intraday.ta.bbands(length=20, append=True)  # length 명시적으로 20으로 설정
 
     # 7. 켈트너 채널 (Keltner Channels)
     # 기본 설정: length=20, scalar=2 (pandas_ta는 kc_length, kc_scalar 사용)
@@ -112,8 +113,7 @@ def calculate_intraday_indicators(df_intraday: pd.DataFrame) -> pd.DataFrame:
     df_intraday['Volume_SMA_20'] = df_intraday['Volume'].rolling(window=20).mean()
 
     # 9. ATR (Average True Range) -- 새로 추가된 부분
-    df_intraday.ta.atr(length=14, append=True) # 1분봉 데이터에도 ATR 계산
-
+    df_intraday.ta.atr(length=14, append=True)  # 1분봉 데이터에도 ATR 계산
 
     # 지표 계산 후 NaN 값 제거 (초반 계산 기간에 NaN이 발생)
     # 주의: 너무 많은 NaN을 제거하면 데이터가 부족해질 수 있으니, 최소한의 데이터는 남도록 확인

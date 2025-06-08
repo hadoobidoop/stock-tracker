@@ -1,5 +1,5 @@
 pandas~=2.2.3
-numpy
+numpy<2.0
 pandas_ta
 requests~=2.32.3
 APScheduler~=3.11.0
@@ -10,3 +10,4 @@ pytest
 mysql-connector-python
 sqlalchemy
 python-dotenv
+pytz

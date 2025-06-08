@@ -15,6 +15,7 @@ from config import (
 
 logger = logging.getLogger(__name__)
 
+
 def send_telegram_message(message: str):
     """
     텔레그램 봇을 통해 메시지를 전송합니다.
@@ -28,11 +29,11 @@ def send_telegram_message(message: str):
     payload = {
         "chat_id": TELEGRAM_CHAT_ID,
         "text": message,
-        "parse_mode": "Markdown" # 메시지 서식 지정을 위해 Markdown 사용
+        "parse_mode": "Markdown"  # 메시지 서식 지정을 위해 Markdown 사용
     }
     try:
         response = requests.post(url, json=payload)
-        response.raise_for_status() # HTTP 오류(4xx, 5xx) 발생 시 예외 발생
+        response.raise_for_status()  # HTTP 오류(4xx, 5xx) 발생 시 예외 발생
         logger.info(f"Telegram message sent successfully to chat ID: {TELEGRAM_CHAT_ID}")
     except requests.exceptions.RequestException as e:
         logger.error(f"Error sending Telegram message: {e}")
@@ -43,11 +44,11 @@ def send_telegram_message(message: str):
 def format_signal_message(
         ticker: str,
         signal_type: str,
-        signal_score: int, # signal_detector에서 계산된 최종 점수
-        signal_details_list: list, # signal_detector에서 온 상세 조건 목록
-        current_data: pd.Series, # 현재 데이터 (마지막 봉)
-        prev_data: pd.Series, # 이전 데이터 (바로 이전 봉)
-        stop_loss_price: float = None # ATR 기반 손절매 가격 추가
+        signal_score: int,  # signal_detector에서 계산된 최종 점수
+        signal_details_list: list,  # signal_detector에서 온 상세 조건 목록
+        current_data: pd.Series,  # 현재 데이터 (마지막 봉)
+        prev_data: pd.Series,  # 이전 데이터 (바로 이전 봉)
+        stop_loss_price: float = None  # ATR 기반 손절매 가격 추가
 ) -> str:
     """
     실시간 매수/매도 신호 알림 메시지를 포맷합니다.
@@ -61,7 +62,7 @@ def format_signal_message(
 
     # 켈트너 채널 중간선 (KCMe_20_2)이 없을 경우 BBM_20_2.0 (볼린저 밴드 중간선) 사용
     # indicator_calculator에서 KCMe_20_2.0가 생성될 것으로 예상
-    keltner_middle = current_data.get('KCMe_20_2.0', current_data.get('BBM_20_2.0', 0.0)) # 컬럼명 변경
+    keltner_middle = current_data.get('KCMe_20_2.0', current_data.get('BBM_20_2.0', 0.0))  # 컬럼명 변경
 
     message = (
         f"{emoji} *[{ticker}] {action_text} 신호 발생!* {emoji}\n"
@@ -74,10 +75,10 @@ def format_signal_message(
         f"📈 RSI (14): {current_data['RSI_14']:.2f}\n"
         f"📉 MACD / Signal: {current_data['MACD_12_26_9']:.2f} / {current_data['MACDs_12_26_9']:.2f}\n"
         f"📊 STOCH (%K/%D): {current_data['STOCHk_14_3_3']:.2f} / {current_data['STOCHd_14_3_3']:.2f}\n"
-        f"💪 ADX (14): {current_data['ADX_14']:.2f} (+DI:{current_data['DMP_14']:.2f}, -DI:{current_data['DMN_14']:.2f})\n" # ADX는 DMP, DMN도 함께 표시하여 방향성 확인
-        f"📈 거래량: {current_data['Volume']:,} (20일 평균: {current_data['Volume_SMA_20']:.0f})\n" # 현재 거래량과 평균 거래량 함께 표시
+        f"💪 ADX (14): {current_data['ADX_14']:.2f} (+DI:{current_data['DMP_14']:.2f}, -DI:{current_data['DMN_14']:.2f})\n"  # ADX는 DMP, DMN도 함께 표시하여 방향성 확인
+        f"📈 거래량: {current_data['Volume']:,} (20일 평균: {current_data['Volume_SMA_20']:.0f})\n"  # 현재 거래량과 평균 거래량 함께 표시
         f"📈 볼린저 밴드 (상/중/하): {current_data['BBU_20_2.0']:.2f} / {current_data['BBM_20_2.0']:.2f} / {current_data['BBL_20_2.0']:.2f}\n"
-        f"📈 켈트너 채널 (상/중/하): {current_data.get('KCUe_20_2', 0.0):.2f} /  {current_data.get('KCBe_20_2', 0.0):.2f} / {current_data.get('KCLe_20_2', 0.0):.2f}\n" # KCLe, KCUe도 get()으로 안전하게 접근 (컬럼명 변경)
+        f"📈 켈트너 채널 (상/중/하): {current_data.get('KCUe_20_2', 0.0):.2f} /  {current_data.get('KCBe_20_2', 0.0):.2f} / {current_data.get('KCLe_20_2', 0.0):.2f}\n"  # KCLe, KCUe도 get()으로 안전하게 접근 (컬럼명 변경)
         f"\n"
     )
 
@@ -87,7 +88,7 @@ def format_signal_message(
         for detail in signal_details_list:
             message += f"- ✅ {detail}\n"
     else:
-        message += "- 특정 조건 없음 (점수만으로 발생)\n" # 모든 조건이 명시되지 않았거나 점수만으로 임계값 초과 시
+        message += "- 특정 조건 없음 (점수만으로 발생)\n"  # 모든 조건이 명시되지 않았거나 점수만으로 임계값 초과 시
 
     # --- 손절매 가격 정보 추가 ---
     if stop_loss_price is not None:
@@ -97,6 +98,7 @@ def format_signal_message(
     message += f"\n💡 기술적 분석에 기반한 신호이며, 신중한 판단이 필요합니다."
 
     return message
+
 
 def format_prediction_message(prediction_data: dict) -> str:
     """
@@ -112,12 +114,11 @@ def format_prediction_message(prediction_data: dict) -> str:
     range_high = prediction_data.get('range_high', 0.0)
     reason = prediction_data.get('reason', '지정된 예측 기준 충족')
     score = prediction_data.get('score', 0)
-    details_list = prediction_data.get('details', []) # price_predictor에서 전달받은 조건 설명 리스트
+    details_list = prediction_data.get('details', [])  # price_predictor에서 전달받은 조건 설명 리스트
 
     # main.py에서 주입된 정보 (전일 종가 및 예측 실행 시점)
     prev_day_close = prediction_data.get('prev_day_close', 0.0)
     prediction_timestamp = prediction_data.get('prediction_timestamp', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-
 
     message = (
         f"🔮 *[{ticker}] 다음 날 매수 기회 예측!* 🔮\n"
@@ -135,7 +136,7 @@ def format_prediction_message(prediction_data: dict) -> str:
         for detail in details_list:
             message += f"- ✅ {detail}\n"
     else:
-        message += "- 특정 조건 없음 (점수만으로 발생)\n" # 모든 조건이 명시되지 않았거나 점수만으로 임계값 초과 시
+        message += "- 특정 조건 없음 (점수만으로 발생)\n"  # 모든 조건이 명시되지 않았거나 점수만으로 임계값 초과 시
 
     message += f"\n📊 이 정보는 예측이며, 투자 결정은 신중하게 하세요!"
 

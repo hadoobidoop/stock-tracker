@@ -7,9 +7,11 @@ from apscheduler.triggers.cron import CronTrigger
 
 # 설정과 작업 함수들 import
 from config import DAILY_PREDICTION_HOUR_ET, DAILY_PREDICTION_MINUTE_ET, COLLECTION_INTERVAL_MINUTES
-from jobs import update_stock_metadata_from_yfinance, run_daily_buy_price_prediction_job, run_realtime_signal_detection_job
+from jobs import update_stock_metadata_from_yfinance, run_daily_buy_price_prediction_job, \
+    run_realtime_signal_detection_job
 
 logger = logging.getLogger(__name__)
+
 
 def setup_scheduler():
     """스케줄러를 초기화하고 모든 작업을 등록합니다."""
@@ -43,6 +45,7 @@ def setup_scheduler():
 
     return scheduler
 
+
 def print_scheduled_jobs(scheduler):
     """예약된 모든 작업의 목록과 다음 실행 시간을 출력합니다."""
     logger.info("--- Scheduled Jobs Summary ---")
@@ -50,6 +53,7 @@ def print_scheduled_jobs(scheduler):
         next_run = job.next_run_time.strftime('%Y-%m-%d %H:%M:%S %Z') if job.next_run_time else 'N/A'
         logger.info(f"-> Job: '{job.name}' | Trigger: {str(job.trigger)} | Next Run: {next_run}")
     logger.info("----------------------------")
+
 
 def start_scheduler(scheduler):
     """스케줄러를 시작하고 상태를 출력합니다."""
