@@ -1,5 +1,5 @@
 import logging
-from asyncio import sleep
+from time import sleep
 from datetime import timedelta, datetime
 
 import pandas as pd

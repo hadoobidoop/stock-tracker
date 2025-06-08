@@ -122,28 +122,39 @@ def save_daily_prediction(prediction_data: dict):
 
 def update_stock_metadata(metadata_list: list[dict]):
     """
-    [수정됨] 주식 메타데이터를 업데이트합니다.
-    새로 추가되는 종목에만 need_analysis=True를 설정하고, 기존 종목의 플래그는 건드리지 않습니다.
+    [최종 수정본] 주식 메타데이터를 안정적으로 업데이트하거나 삽입합니다 (Upsert).
+    Duplicate entry 오류를 근본적으로 해결합니다.
     """
-
     db: Session = next(get_db())
     try:
+        # 처리할 티커 목록을 먼저 추출합니다.
+        tickers_in_batch = {meta.get('ticker') for meta in metadata_list if meta.get('ticker')}
+
+        # 1. DB에 해당 티커들이 이미 있는지 한 번의 쿼리로 효율적으로 확인합니다.
+        existing_stocks = db.query(StockMetadata).filter(StockMetadata.ticker.in_(tickers_in_batch)).all()
+        existing_tickers_map = {stock.ticker: stock for stock in existing_stocks}
+
         for meta in metadata_list:
             ticker = meta.get('ticker')
             if not ticker:
                 continue
 
-            # DB에 해당 티커가 이미 있는지 확인
-            existing_stock = db.query(StockMetadata).filter(StockMetadata.ticker == ticker).first()
-
-            # 없는 경우에만, need_analysis를 True로 설정
-            if not existing_stock:
+            # 2. 메모리에 있는 딕셔너리를 기반으로 업데이트 또는 삽입을 결정합니다.
+            if ticker in existing_tickers_map:
+                # --- 데이터가 이미 있으면 (UPDATE) ---
+                # 받아온 새로운 정보로 기존 객체의 필드를 업데이트합니다.
+                existing_stock = existing_tickers_map[ticker]
+                for key, value in meta.items():
+                    setattr(existing_stock, key, value)
+            else:
+                # --- 데이터가 없으면 (INSERT) ---
+                # 새로운 객체를 만들고, need_analysis 플래그를 True로 설정합니다.
                 meta['need_analysis'] = True
+                db.add(StockMetadata(**meta))
 
-            # merge를 사용하여 데이터가 있으면 업데이트, 없으면 삽입
-            db.merge(StockMetadata(**meta))
+        # 모든 변경사항을 한번에 커밋합니다.
         db.commit()
-        logger.info(f"Successfully updated {len(metadata_list)} metadata records.")
+        logger.info(f"Successfully updated/inserted {len(metadata_list)} metadata records.")
     except Exception as e:
         logger.error(f"Error updating stock metadata: {e}")
         db.rollback()
