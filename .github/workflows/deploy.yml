@@ -53,12 +53,24 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }} # EC2 사용자 이름 (예: ec2-user)
           key: ${{ secrets.EC2_PRIVATE_KEY }}   # EC2 접속용 프라이빗 키
           script: |
-            # --- 아래 스크립트는 매 배포 시 EC2 서버에서 실행됩니다 ---
-            
-            # 1. 프로젝트 최상위 디렉토리로 이동
-            cd /home/ubuntu/stock-analysis-system
+            # 1. nvm(Node Version Manager) 환경을 현재 셸 세션으로 로드합니다.
+            # 이 코드가 pm2: command not found 오류를 해결합니다.
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-            # 2. GitHub에서 최신 코드를 받아옴
+            # 2. 프로젝트 디렉토리 변수 설정
+            PROJECT_PATH="/home/${{ secrets.EC2_USERNAME }}/stock-analysis-system"
+
+            # 3. 프로젝트 디렉토리가 존재하는지 확인하고, 없으면 git clone 실행 (최초 배포)
+            if [ ! -d "$PROJECT_PATH" ]; then
+              echo "Project directory does not exist. Cloning repository..."
+              git clone https://github.com/${{ github.repository }}.git "$PROJECT_PATH"
+            fi
+            
+            # 4. 프로젝트 디렉토리로 이동
+            cd $PROJECT_PATH
+            
+            # 5. 최신 코드로 업데이트 (이후 배포)
             git pull origin main
             
             # 3. 파이썬 워커 프로젝트 디렉토리로 이동
