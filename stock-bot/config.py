@@ -1,6 +1,9 @@
 # config.py
 
 import os
+
+from dotenv import load_dotenv
+
 # 텔레그램 봇 토큰은 @BotFather를 통해 새 봇을 생성하여 얻을 수 있습니다.
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "YOUR_TELEGRAM_BOT_TOKEN")
 # 텔레그램 채팅 ID는 봇에게 메시지를 보낸 후
@@ -13,11 +16,13 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "YOUR_TELEGRAM_CHAT_ID")
 # ====================
 # 환경 변수에서 AWS RDS 접속 정보를 가져옵니다.
 # 미리 서버 환경에 아래 변수들을 설정해두어야 합니다.
-DB_USER = os.getenv("DB_USER", "")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "")
-DB_HOST = os.getenv("DB_HOST", "")
-DB_PORT = os.getenv("DB_PORT", "")
-DB_NAME = os.getenv("DB_NAME", "")
+load_dotenv()
+
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT")
+DB_NAME = os.getenv("DB_NAME")
 
 # SQLAlchemy MySQL 연결 문자열 형식 (mysql+mysqlconnector://<user>:<password>@<host>[:<port>]/<dbname>)
 # charset=utf8mb4 : 다양한 언어와 이모지를 지원하기 위한 필수 설정입니다.

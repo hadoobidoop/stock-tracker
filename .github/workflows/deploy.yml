@@ -1,0 +1,128 @@
+# .github/workflows/deploy.yml
+
+name: Deploy Python-Worker and Spring-API to EC2
+
+# 1. 워크플로우 실행 조건: main 브랜치에 코드가 푸시될 때
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  # ==========================================================
+  # Job 0: 어떤 파일이 변경되었는지 확인하는 사전 작업
+  # ==========================================================
+  check-changes:
+    runs-on: ubuntu-latest
+    # 이 Job의 결과를 다른 Job에서 사용할 수 있도록 outputs 설정
+    outputs:
+      run_python_job: ${{ steps.filter.outputs.python }}
+      run_spring_job: ${{ steps.filter.outputs.spring }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # dorny/paths-filter 액션을 사용하여 변경된 파일 경로 필터링
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            python:
+              - 'stock-bot/**'
+            spring:
+              - 'stock-api/**'
+
+  # ==========================================================
+  # Job 1: 파이썬 워커 배포
+  # ==========================================================
+  deploy-python-worker:
+    needs: check-changes # 'check-changes' Job이 끝난 후에 실행
+    # 'stock-bot' 디렉토리에 변경이 있을 때만 이 Job을 실행
+    if: needs.check-changes.outputs.run_python_job == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy Python Worker to EC2
+        # appleboy/ssh-action 액션을 사용하여 EC2에 원격으로 접속하고 스크립트 실행
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}         # GitHub Secrets에 저장된 EC2 호스트 주소
+          username: ${{ secrets.EC2_USERNAME }} # EC2 사용자 이름 (예: ec2-user)
+          key: ${{ secrets.EC2_PRIVATE_KEY }}   # EC2 접속용 프라이빗 키
+          script: |
+            # --- 아래 스크립트는 매 배포 시 EC2 서버에서 실행됩니다 ---
+            
+            # 1. 프로젝트 최상위 디렉토리로 이동
+            cd /home/ubuntu/stock-analysis-system
+
+            # 2. GitHub에서 최신 코드를 받아옴
+            git pull origin main
+            
+            # 3. 파이썬 워커 프로젝트 디렉토리로 이동
+            cd stock-bot
+            
+            # 4. 가상환경 생성 또는 재구성
+            # 'venv' 폴더가 없으면 새로 만들고, 있어도 내용을 덮어씁니다.
+            python3 -m venv venv
+            
+            # 5. 가상환경 활성화 (현재 셸 세션에 적용)
+            source venv/bin/activate
+            
+            # 6. 최신 requirements.txt 기준으로 패키지 설치/업그레이드
+            # 가상환경이 활성화된 상태이므로, 'venv' 안에 패키지가 설치됩니다.
+            pip install -r requirements.txt
+            
+            # 7. pm2로 프로세스 재시작
+            # pm2는 ecosystem.config.js에 지정된 'interpreter' 경로를 보고
+            # 방금 패키지를 설치한 가상환경의 파이썬으로 앱을 실행합니다.
+            pm2 reload stock-bot-worker --update-env
+
+  # ==========================================================
+  # Job 2: 스프링 API 서버 배포
+  # ==========================================================
+#  deploy-spring-api:
+#    needs: check-changes
+#    # 'stock-api' 디렉토리에 변경이 있을 때만 이 Job을 실행
+#    if: needs.check-changes.outputs.run_spring_job == 'true'
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v4
+#
+#      - name: Set up JDK 17
+#        uses: actions/setup-java@v4
+#        with:
+#          java-version: '17'
+#          distribution: 'corretto'
+#
+#      - name: Grant execute permission for gradlew
+#        run: chmod +x ./stock-api/gradlew
+#
+#      - name: Build Spring Boot with Gradle
+#        # GitHub Actions Runner 환경에서 스프링 프로젝트를 빌드하여 JAR 파일 생성
+#        run: ./stock-api/gradlew -p ./stock-api/ build
+#
+#      - name: Copy JAR to EC2
+#        # appleboy/scp-action 액션을 사용하여 빌드된 JAR 파일을 EC2 서버로 복사
+#        uses: appleboy/scp-action@v0.1.4
+#        with:
+#          host: ${{ secrets.EC2_HOST }}
+#          username: ${{ secrets.EC2_USERNAME }}
+#          key: ${{ secrets.EC2_PRIVATE_KEY }}
+#          source: "./stock-api/build/libs/*.jar" # 빌드된 JAR 파일
+#          target: "/home/ec2-user/stock-analysis-system/stock-api/build/libs/" # EC2의 대상 경로
+#
+#      - name: Restart Spring API Server on EC2
+#        # EC2에 접속하여 스프링 서버 재시작
+#        uses: appleboy/ssh-action@v1.0.0
+#        with:
+#          host: ${{ secrets.EC2_HOST }}
+#          username: ${{ secrets.EC2_USERNAME }}
+#          key: ${{ secrets.EC2_PRIVATE_KEY }}
+#          script: |
+#            # pm2로 스프링 API 서버 프로세스 재시작
+#            pm2 reload stock-api-server

@@ -1,0 +1,26 @@
+# .gitignore (최상위 디렉토리에 위치)
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.env
+db.sqlite3
+
+# Java / Gradle
+.gradle
+build/
+out/
+*.jar
+*.war
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+
+# OS
+.DS_Store
+Thumbs.db
