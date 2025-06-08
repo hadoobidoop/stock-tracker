@@ -36,105 +36,68 @@ jobs:
   # Job 1: 파이썬 워커 배포
   # ==========================================================
   deploy-python-worker:
-    needs: check-changes # 'check-changes' Job이 끝난 후에 실행
-    # 'stock-bot' 디렉토리에 변경이 있을 때만 이 Job을 실행
+    needs: check-changes
     if: needs.check-changes.outputs.run_python_job == 'true'
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Deploy Python Worker to EC2
-        # appleboy/ssh-action 액션을 사용하여 EC2에 원격으로 접속하고 스크립트 실행
+      # 1. Docker Hub 로그인 (또는 AWS ECR)
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # 2. Docker 이미지 빌드 및 푸시
+      - name: Build and push Python worker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./stock-bot
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/stock-bot:latest
+
+      # 3. EC2에 접속하여 서비스 업데이트 명령
+      - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.EC2_HOST }}         # GitHub Secrets에 저장된 EC2 호스트 주소
-          username: ${{ secrets.EC2_USERNAME }} # EC2 사용자 이름 (예: ec2-user)
-          key: ${{ secrets.EC2_PRIVATE_KEY }}   # EC2 접속용 프라이빗 키
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
-            # 1. nvm(Node Version Manager) 환경을 현재 셸 세션으로 로드합니다.
-            # 이 코드가 pm2: command not found 오류를 해결합니다.
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
-            # 2. 프로젝트 디렉토리 변수 설정
-            PROJECT_PATH="/home/${{ secrets.EC2_USERNAME }}/stock-analysis-system"
-
-            # 3. 프로젝트 디렉토리가 존재하는지 확인하고, 없으면 git clone 실행 (최초 배포)
-            if [ ! -d "$PROJECT_PATH" ]; then
-              echo "Project directory does not exist. Cloning repository..."
-              git clone https://github.com/${{ github.repository }}.git "$PROJECT_PATH"
-            fi
-            
-            # 4. 프로젝트 디렉토리로 이동
-            cd $PROJECT_PATH
-            
-            # 5. 최신 코드로 업데이트 (이후 배포)
-            git pull origin main
-            
-            # 3. 파이썬 워커 프로젝트 디렉토리로 이동
-            cd stock-bot
-            
-            # 4. 가상환경 생성 또는 재구성
-            # 'venv' 폴더가 없으면 새로 만들고, 있어도 내용을 덮어씁니다.
-            python3 -m venv venv
-            
-            # 5. 가상환경 활성화 (현재 셸 세션에 적용)
-            source venv/bin/activate
-            
-            # 6. 최신 requirements.txt 기준으로 패키지 설치/업그레이드
-            # 가상환경이 활성화된 상태이므로, 'venv' 안에 패키지가 설치됩니다.
-            pip install -r requirements.txt
-            
-            # 7. pm2로 프로세스 재시작
-            # pm2는 ecosystem.config.js에 지정된 'interpreter' 경로를 보고
-            # 방금 패키지를 설치한 가상환경의 파이썬으로 앱을 실행합니다.
-            pm2 reload stock-bot-worker --update-env
+            cd /home/ubuntu/stock-analysis-system
+            # Docker Hub에서 최신 이미지를 받아옴
+            docker pull ${{ secrets.DOCKER_USERNAME }}/stock-bot:latest
+            # docker-compose로 해당 서비스만 재시작
+            docker-compose up -d --no-deps stock-bot
 
   # ==========================================================
   # Job 2: 스프링 API 서버 배포
   # ==========================================================
-#  deploy-spring-api:
-#    needs: check-changes
-#    # 'stock-api' 디렉토리에 변경이 있을 때만 이 Job을 실행
-#    if: needs.check-changes.outputs.run_spring_job == 'true'
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#
-#      - name: Set up JDK 17
-#        uses: actions/setup-java@v4
-#        with:
-#          java-version: '17'
-#          distribution: 'corretto'
-#
-#      - name: Grant execute permission for gradlew
-#        run: chmod +x ./stock-api/gradlew
-#
-#      - name: Build Spring Boot with Gradle
-#        # GitHub Actions Runner 환경에서 스프링 프로젝트를 빌드하여 JAR 파일 생성
-#        run: ./stock-api/gradlew -p ./stock-api/ build
-#
-#      - name: Copy JAR to EC2
-#        # appleboy/scp-action 액션을 사용하여 빌드된 JAR 파일을 EC2 서버로 복사
-#        uses: appleboy/scp-action@v0.1.4
-#        with:
-#          host: ${{ secrets.EC2_HOST }}
-#          username: ${{ secrets.EC2_USERNAME }}
-#          key: ${{ secrets.EC2_PRIVATE_KEY }}
-#          source: "./stock-api/build/libs/*.jar" # 빌드된 JAR 파일
-#          target: "/home/ec2-user/stock-analysis-system/stock-api/build/libs/" # EC2의 대상 경로
-#
-#      - name: Restart Spring API Server on EC2
-#        # EC2에 접속하여 스프링 서버 재시작
-#        uses: appleboy/ssh-action@v1.0.0
-#        with:
-#          host: ${{ secrets.EC2_HOST }}
-#          username: ${{ secrets.EC2_USERNAME }}
-#          key: ${{ secrets.EC2_PRIVATE_KEY }}
-#          script: |
-#            # pm2로 스프링 API 서버 프로세스 재시작
-#            pm2 reload stock-api-server
+  #  deploy-spring-api:
+  #    needs: check-changes
+  #    if: needs.check-changes.outputs.run_spring_job == 'true'
+  #    runs-on: ubuntu-latest
+  #    steps:
+  #      - uses: actions/checkout@v4
+  #      - name: Log in to Docker Hub
+  #        uses: docker/login-action@v3
+  #        with:
+  #          username: ${{ secrets.DOCKER_USERNAME }}
+  #          password: ${{ secrets.DOCKER_PASSWORD }}
+  #      - name: Build and push Spring API image
+  #        uses: docker/build-push-action@v5
+  #        with:
+  #          context: ./stock-api
+  #          push: true
+  #          tags: ${{ secrets.DOCKER_USERNAME }}/stock-api:latest
+  #      - name: Deploy to EC2
+  #        uses: appleboy/ssh-action@v1.0.0
+  #        with:
+  #          host: ${{ secrets.EC2_HOST }}
+  #          username: ${{ secrets.EC2_USERNAME }}
+  #          key: ${{ secrets.EC2_PRIVATE_KEY }}
+  #          script: |
+  #            cd /home/ubuntu/stock-analysis-system
+  #            docker pull ${{ secrets.DOCKER_USERNAME }}/stock-api:latest
+  #            docker-compose up -d --no-deps stock-api

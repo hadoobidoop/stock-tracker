@@ -1,0 +1,33 @@
+# docker-compose.yml (신규 생성)
+
+version: '3.8' # Docker Compose 파일 버전
+
+services:
+  # 1. 파이썬 분석 워커 서비스 정의
+  stock-bot:
+    container_name: stock-bot-worker
+    build:
+      context: ./stock-bot # 이 디렉토리의 Dockerfile을 사용하여 이미지를 빌드
+    restart: always # 컨테이너가 예기치 않게 종료되면 항상 재시작
+    env_file:
+      - ./stock-bot/.env # 이 경로의 .env 파일을 읽어 환경변수로 주입
+    networks:
+      - stock-network # 아래에 정의된 네트워크에 연결
+
+  # 2. 스프링 부트 API 서버 서비스 정의
+#  stock-api:
+#    container_name: stock-api-server
+#    build:
+#      context: ./stock-api # 이 디렉토리의 Dockerfile을 사용하여 이미지를 빌드
+#    restart: always
+#    ports:
+#      - "8080:8080" # 호스트(EC2)의 8080 포트를 컨테이너의 8080 포트와 연결
+#    env_file:
+#      - ./stock-api/.env # 이 경로의 .env 파일을 읽어 환경변수로 주입
+#    networks:
+#      - stock-network
+
+# 3. 컨테이너들이 서로 통신할 수 있는 가상 네트워크 정의
+networks:
+  stock-network:
+    driver: bridge
