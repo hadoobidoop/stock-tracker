@@ -67,24 +67,38 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
-            PROJECT_PATH="/home/ubuntu/stock-analysis-system"
+            # --- [최종 수정] EC2에서는 이제 git을 사용하지 않습니다 ---
             
-            # --- [수정됨] ---
-            # 1. git clone/pull을 통해 docker-compose.yml과 디렉토리 구조 확보
-            if [ ! -d "$PROJECT_PATH" ]; then
-              git clone https://github.com/${{ github.repository }}.git "$PROJECT_PATH"
-            else
-              cd $PROJECT_PATH && git pull origin main
-            fi
-
-            # 2. GitHub Secret의 내용으로 .env 파일 동적 생성 (덮어쓰기)
+            # 1. 프로젝트 경로 변수 설정 및 디렉토리 생성
+            PROJECT_PATH="/home/${{ secrets.EC2_USERNAME }}/stock-analysis-system"
+            mkdir -p $PROJECT_PATH/stock-bot # .env 파일을 저장할 디렉토리 생성
+            
+            # 2. GitHub Secret의 내용으로 .env 파일 동적 생성
             echo "${{ secrets.ENV_STOCK_BOT }}" > $PROJECT_PATH/stock-bot/.env
             
-            # 3. 최신 이미지 pull 및 서비스 재시작
-            cd $PROJECT_PATH
+            # 3. Docker Hub에서 최신 이미지 pull
             docker pull ${{ secrets.DOCKER_USERNAME }}/stock-bot:latest
+            
+            # 4. docker-compose.yml 파일이 있는 위치로 이동하여 서비스 재시작
+            cd $PROJECT_PATH
             docker compose up -d --no-deps stock-bot
             
+  deploy-compose-file:
+    # 이 Job은 python이나 spring 코드가 변경될 때 항상 실행되어
+    # compose 파일의 변경사항도 함께 반영되도록 합니다.
+    needs: check-changes
+    if: needs.check-changes.outputs.run_python_job == 'true' || needs.check-changes.outputs.run_spring_job == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy docker-compose.yml to EC2
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          source: "docker-compose.yml" # 리포지토리 루트의 파일을
+          target: "/home/${{ secrets.EC2_USERNAME }}/stock-analysis-system/" # EC2의 대상 경로로 복사
 
   # ==========================================================
   # Job 2: 스프링 API 서버 빌드 및 배포
@@ -122,17 +136,12 @@ jobs:
 #          username: ${{ secrets.EC2_USERNAME }}
 #          key: ${{ secrets.EC2_PRIVATE_KEY }}
 #          script: |
-#                    PROJECT_PATH="/home/ubuntu/stock-analysis-system"
+#             PROJECT_PATH="/home/${{ secrets.EC2_USERNAME }}/stock-analysis-system"
+#            mkdir -p $PROJECT_PATH/stock-api
 #
-#            # --- [수정됨] ---
-#                    if [ ! -d "$PROJECT_PATH" ]; then
-#                    git clone https://github.com/${{ github.repository }}.git "$PROJECT_PATH"
-#                    else
-#                    cd $PROJECT_PATH && git pull origin main
-#                    fi
+#            echo "${{ secrets.ENV_STOCK_API }}" > $PROJECT_PATH/stock-api/.env
 #
-#                    echo "${{ secrets.ENV_STOCK_API }}" > $PROJECT_PATH/stock-api/.env
+#            docker pull ${{ secrets.DOCKER_USERNAME }}/stock-api:latest
 #
-#                    cd $PROJECT_PATH
-#                    docker pull ${{ secrets.DOCKER_USERNAME }}/stock-api:latest
-#                    docker compose up -d --no-deps stock-api
+#            cd $PROJECT_PATH
+#            docker compose up -d --no-deps stock-api
