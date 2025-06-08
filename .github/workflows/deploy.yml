@@ -69,7 +69,7 @@ jobs:
             # Docker Hub에서 최신 이미지를 받아옴
             docker pull ${{ secrets.DOCKER_USERNAME }}/stock-bot:latest
             # docker-compose로 해당 서비스만 재시작
-            docker-compose up -d --no-deps stock-bot
+            docker compose up -d --no-deps stock-bot
 
   # ==========================================================
   # Job 2: 스프링 API 서버 배포
