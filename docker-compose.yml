@@ -6,8 +6,7 @@ services:
   # 1. 파이썬 분석 워커 서비스 정의
   stock-bot:
     container_name: stock-bot-worker
-    build:
-      context: ./stock-bot # 이 디렉토리의 Dockerfile을 사용하여 이미지를 빌드
+    image: hadoobidoop/stock-bot:latest
     restart: always # 컨테이너가 예기치 않게 종료되면 항상 재시작
     env_file:
       - ./stock-bot/.env # 이 경로의 .env 파일을 읽어 환경변수로 주입
@@ -17,8 +16,7 @@ services:
   # 2. 스프링 부트 API 서버 서비스 정의
 #  stock-api:
 #    container_name: stock-api-server
-#    build:
-#      context: ./stock-api # 이 디렉토리의 Dockerfile을 사용하여 이미지를 빌드
+#    image: hadoobidoop/stock-api:latest
 #    restart: always
 #    ports:
 #      - "8080:8080" # 호스트(EC2)의 8080 포트를 컨테이너의 8080 포트와 연결

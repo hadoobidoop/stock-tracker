@@ -290,8 +290,8 @@ def detect_weighted_signals(df_intraday: pd.DataFrame,
 
     # --- 혼합 지표 패턴: RSI + 스토캐스틱 매도 신호 ---
     if (prev_data['RSI_14'] >= 70 > latest_data['RSI_14']) and \
-            (prev_data['STOCHk_14_3_3'] > prev_data['STOCHd_14_3_3'] and latest_data['STOCHk_14_3_3'] < latest_data[
-                'STOCHd_14_3_3'] and latest_data['STOCHk_14_3_3'] > 20):
+            (prev_data['STOCHk_14_3_3'] > prev_data['STOCHd_14_3_3'] and latest_data[
+                'STOCHd_14_3_3'] > latest_data['STOCHk_14_3_3'] > 20):
         sell_score += SIGNAL_WEIGHTS["rsi_stoch_confirm"] * momentum_reversal_adj
         sell_details.append(
             f"RSI/Stoch 동시 매도 신호 (RSI:{latest_data['RSI_14']:.2f}, Stoch %K:{latest_data['STOCHk_14_3_3']:.2f})")

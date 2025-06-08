@@ -7,7 +7,8 @@ on:
   push:
     branches:
       - main
-    workflow_dispatch:
+  workflow_dispatch:
+    
 jobs:
   # ==========================================================
   # Job 0: 어떤 파일이 변경되었는지 확인하는 사전 작업
@@ -58,6 +59,7 @@ jobs:
           tags: ${{ secrets.DOCKER_USERNAME }}/stock-bot:latest
 
       # 3. EC2에 접속하여 서비스 업데이트 명령
+            # [수정됨] EC2 배포 스크립트
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -65,39 +67,52 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
+            # [수정됨] EC2에서는 이제 git pull이 아닌, docker 관련 명령어만 실행
             cd /home/ubuntu/stock-analysis-system
-            # Docker Hub에서 최신 이미지를 받아옴
+            
+            # 1. Docker Hub에서 최신 이미지 버전 정보를 받아옴
             docker pull ${{ secrets.DOCKER_USERNAME }}/stock-bot:latest
-            # docker-compose로 해당 서비스만 재시작
+            
+            # 2. docker-compose.yml을 사용하여 새로운 이미지로 서비스 재시작
+            # docker-compose가 알아서 기존 컨테이너를 내리고 새 컨테이너를 올림
             docker compose up -d --no-deps stock-bot
 
   # ==========================================================
-  # Job 2: 스프링 API 서버 배포
+  # Job 2: 스프링 API 서버 빌드 및 배포
   # ==========================================================
-  #  deploy-spring-api:
-  #    needs: check-changes
-  #    if: needs.check-changes.outputs.run_spring_job == 'true'
-  #    runs-on: ubuntu-latest
-  #    steps:
-  #      - uses: actions/checkout@v4
-  #      - name: Log in to Docker Hub
-  #        uses: docker/login-action@v3
-  #        with:
-  #          username: ${{ secrets.DOCKER_USERNAME }}
-  #          password: ${{ secrets.DOCKER_PASSWORD }}
-  #      - name: Build and push Spring API image
-  #        uses: docker/build-push-action@v5
-  #        with:
-  #          context: ./stock-api
-  #          push: true
-  #          tags: ${{ secrets.DOCKER_USERNAME }}/stock-api:latest
-  #      - name: Deploy to EC2
-  #        uses: appleboy/ssh-action@v1.0.0
-  #        with:
-  #          host: ${{ secrets.EC2_HOST }}
-  #          username: ${{ secrets.EC2_USERNAME }}
-  #          key: ${{ secrets.EC2_PRIVATE_KEY }}
-  #          script: |
-  #            cd /home/ubuntu/stock-analysis-system
-  #            docker pull ${{ secrets.DOCKER_USERNAME }}/stock-api:latest
-  #            docker-compose up -d --no-deps stock-api
+#  deploy-spring-api:
+#    needs: check-changes
+#    if: needs.check-changes.outputs.run_spring_job == 'true'
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v4
+#      - name: Set up JDK 17
+#        uses: actions/setup-java@v4
+#        with:
+#          java-version: '17'
+#          distribution: 'corretto'
+#      - name: Grant execute permission for gradlew
+#        run: chmod +x ./stock-api/gradlew
+#      - name: Build Spring Boot with Gradle
+#        run: ./stock-api/gradlew -p ./stock-api/ build
+#      - name: Log in to Docker Hub
+#        uses: docker/login-action@v3
+#        with:
+#          username: ${{ secrets.DOCKER_USERNAME }}
+#          password: ${{ secrets.DOCKER_PASSWORD }}
+#      - name: Build and push Spring API image to Docker Hub
+#        uses: docker/build-push-action@v5
+#        with:
+#          context: ./stock-api # ./stock-api 디렉토리의 Dockerfile 사용
+#          push: true
+#          tags: ${{ secrets.DOCKER_USERNAME }}/stock-api:latest
+#      - name: Deploy to EC2
+#        uses: appleboy/ssh-action@v1.0.0
+#        with:
+#          host: ${{ secrets.EC2_HOST }}
+#          username: ${{ secrets.EC2_USERNAME }}
+#          key: ${{ secrets.EC2_PRIVATE_KEY }}
+#          script: |
+#            cd /home/ubuntu/stock-analysis-system
+#            docker pull ${{ secrets.DOCKER_USERNAME }}/stock-api:latest
+#            docker compose up -d --no-deps stock-api
