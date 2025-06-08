@@ -67,15 +67,24 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
-            # [수정됨] EC2에서는 이제 git pull이 아닌, docker 관련 명령어만 실행
-            cd /home/ubuntu/stock-analysis-system
+            PROJECT_PATH="/home/ubuntu/stock-analysis-system"
             
-            # 1. Docker Hub에서 최신 이미지 버전 정보를 받아옴
+            # --- [수정됨] ---
+            # 1. git clone/pull을 통해 docker-compose.yml과 디렉토리 구조 확보
+            if [ ! -d "$PROJECT_PATH" ]; then
+              git clone https://github.com/${{ github.repository }}.git "$PROJECT_PATH"
+            else
+              cd $PROJECT_PATH && git pull origin main
+            fi
+
+            # 2. GitHub Secret의 내용으로 .env 파일 동적 생성 (덮어쓰기)
+            echo "${{ secrets.ENV_STOCK_BOT }}" > $PROJECT_PATH/stock-bot/.env
+            
+            # 3. 최신 이미지 pull 및 서비스 재시작
+            cd $PROJECT_PATH
             docker pull ${{ secrets.DOCKER_USERNAME }}/stock-bot:latest
-            
-            # 2. docker-compose.yml을 사용하여 새로운 이미지로 서비스 재시작
-            # docker-compose가 알아서 기존 컨테이너를 내리고 새 컨테이너를 올림
             docker compose up -d --no-deps stock-bot
+            
 
   # ==========================================================
   # Job 2: 스프링 API 서버 빌드 및 배포
@@ -113,6 +122,17 @@ jobs:
 #          username: ${{ secrets.EC2_USERNAME }}
 #          key: ${{ secrets.EC2_PRIVATE_KEY }}
 #          script: |
-#            cd /home/ubuntu/stock-analysis-system
-#            docker pull ${{ secrets.DOCKER_USERNAME }}/stock-api:latest
-#            docker compose up -d --no-deps stock-api
+#                    PROJECT_PATH="/home/ubuntu/stock-analysis-system"
+#
+#            # --- [수정됨] ---
+#                    if [ ! -d "$PROJECT_PATH" ]; then
+#                    git clone https://github.com/${{ github.repository }}.git "$PROJECT_PATH"
+#                    else
+#                    cd $PROJECT_PATH && git pull origin main
+#                    fi
+#
+#                    echo "${{ secrets.ENV_STOCK_API }}" > $PROJECT_PATH/stock-api/.env
+#
+#                    cd $PROJECT_PATH
+#                    docker pull ${{ secrets.DOCKER_USERNAME }}/stock-api:latest
+#                    docker compose up -d --no-deps stock-api
