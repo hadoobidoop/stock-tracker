@@ -1,12 +1,160 @@
 import uuid
+from datetime import datetime, timedelta, timezone
+from sqlalchemy.dialects.mysql import insert as mysql_insert
 import pandas as pd
 from sqlalchemy.orm import Session
-from database_setup import SessionLocal, TechnicalIndicator, TradingSignal, DailyPrediction, StockMetadata
+from database_setup import SessionLocal, TechnicalIndicator, TradingSignal, DailyPrediction, StockMetadata, \
+    IntradayOhlcv
 import logging
 import json
 
 logger = logging.getLogger(__name__)
 
+
+def save_intraday_ohlcv(df_ohlcv: pd.DataFrame, ticker: str):
+    """(최종 오류 수정) NaN 데이터를 완벽하게 정제한 후, 안정적으로 DB에 저장합니다."""
+    if df_ohlcv.empty:
+        return
+
+    db: Session = next(get_db())
+    try:
+        df_to_save = df_ohlcv.copy()
+
+        # --- [수정된 부분 시작] ---
+        # 1. 가격 정보(OHLC)가 하나라도 없는 행(row)은 분석 가치가 없으므로 먼저 삭제합니다.
+        #    이것이 'Unknown column 'nan'' 오류의 근본적인 해결책입니다.
+        df_to_save.dropna(subset=['Open', 'High', 'Low', 'Close'], inplace=True)
+
+        # 만약 모든 행이 유효하지 않아 삭제되었다면, 더 이상 진행하지 않습니다.
+        if df_to_save.empty:
+            logger.warning(f"No valid OHLC data rows found for {ticker} after cleaning. Skipping save.")
+            return
+
+        # 2. 벡터화(Vectorization)를 사용하여 안정적이고 빠르게 데이터를 준비합니다.
+        if not isinstance(df_to_save.index, pd.DatetimeIndex):
+            logger.error(f"DataFrame for {ticker} does not have a DatetimeIndex. Skipping save.")
+            return
+        df_to_save['timestamp_utc'] =  pd.to_datetime(df_to_save.index).to_pydatetime()
+        df_to_save['ticker'] = ticker
+
+        df_to_save = df_to_save[['timestamp_utc', 'ticker', 'Open', 'High', 'Low', 'Close', 'Volume']]
+        df_to_save.columns = ['timestamp_utc', 'ticker', 'open', 'high', 'low', 'close', 'volume']
+
+        # 3. Volume 컬럼에 남아있을 수 있는 NaN 값을 0으로 채우고 정수형으로 변환합니다.
+        df_to_save['volume'] = df_to_save['volume'].fillna(0).astype('int64')
+        # --- [수정된 부분 끝] ---
+
+        records_to_upsert = df_to_save.to_dict(orient='records')
+
+        if not records_to_upsert: return
+
+        stmt = mysql_insert(IntradayOhlcv).values(records_to_upsert)
+        on_duplicate_key_stmt = stmt.on_duplicate_key_update(
+            open=stmt.inserted.open, high=stmt.inserted.high,
+            low=stmt.inserted.low, close=stmt.inserted.close,
+            volume=stmt.inserted.volume,
+        )
+
+        db.execute(on_duplicate_key_stmt)
+        db.commit()
+        logger.debug(f"Successfully upserted {len(records_to_upsert)} OHLCV records for {ticker}.")
+
+    except Exception as e:
+        logger.error(f"Error upserting OHLCV data for {ticker}: {e}", exc_info=True)
+        db.rollback()
+    finally:
+        db.close()
+
+def get_intraday_ohlcv_for_analysis(ticker: str, lookback_days: int) -> pd.DataFrame:
+    """분석에 필요한 기간만큼의 1분봉 OHLCV 데이터를 내부 DB에서 조회합니다."""
+    db: Session = next(get_db())
+    try:
+        start_date = datetime.now(timezone.utc) - timedelta(days=lookback_days)
+        query = db.query(IntradayOhlcv).filter(
+            IntradayOhlcv.ticker == ticker, IntradayOhlcv.timestamp_utc >= start_date
+        ).order_by(IntradayOhlcv.timestamp_utc)
+        df = pd.read_sql(query.statement, db.bind)
+        if df.empty: return pd.DataFrame()
+        df.set_index(pd.to_datetime(df['timestamp_utc']), inplace=True)
+        df.drop(columns=['timestamp_utc'], inplace=True)
+        # 컬럼명을 yfinance와 동일한 형식(첫글자 대문자)으로 변경하여 후속 계산에 사용
+        df.columns = [col.capitalize() for col in df.columns]
+        return df
+    except Exception as e:
+        logger.error(f"Error fetching OHLCV from DB for {ticker}: {e}")
+        return pd.DataFrame()
+    finally:
+        db.close()
+
+
+def get_bulk_resampled_ohlcv_from_db(tickers: list[str], start_date: datetime, end_date: datetime, freq: str) -> dict[str, pd.DataFrame]:
+    """
+    (타입 힌트 오류 수정) DB에 저장된 1분봉 데이터를 기반으로, 지정된 주기의 OHLCV 데이터를 생성(리샘플링)합니다.
+    모든 코드 경로에서 항상 dict를 반환하도록 수정되었습니다.
+    """
+    db: Session = next(get_db())
+    results_dict = {}
+    try:
+        logger.info(f"Bulk resampling data for {len(tickers)} tickers with frequency '{freq}'...")
+        query = db.query(IntradayOhlcv).filter(
+            IntradayOhlcv.ticker.in_(tickers), IntradayOhlcv.timestamp_utc.between(start_date, end_date)
+        )
+        df_all = pd.read_sql(query.statement, db.bind)
+        if df_all.empty:
+            logger.warning("No data found in DB for bulk resampling.")
+            return {}
+
+        df_all['timestamp_utc'] = pd.to_datetime(df_all['timestamp_utc'])
+        df_all.set_index('timestamp_utc', inplace=True)
+        resampling_rules = {'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last', 'volume': 'sum'}
+        df_resampled_all = df_all.groupby('ticker').resample(freq).apply(resampling_rules)
+        df_resampled_all.dropna(inplace=True)
+
+        for ticker in tickers:
+            if ticker in df_resampled_all.index.get_level_values('ticker'):
+                df_ticker = df_resampled_all.loc[ticker].copy()
+                df_ticker.columns = [col.capitalize() for col in df_ticker.columns]
+                results_dict[ticker] = df_ticker
+
+        logger.info(f"Successfully resampled data for {len(results_dict)} tickers.")
+        return results_dict
+
+    except Exception as e:
+        logger.error(f"Error during bulk resampling: {e}", exc_info=True)
+        return {}
+    finally:
+        db.close()
+
+def save_technical_indicators(df_indicators: pd.DataFrame, ticker: str, interval: str):
+    """(최종 검증) 벡터화를 사용하여 계산된 기술적 지표를 안정적이고 빠르게 저장합니다."""
+    if df_indicators.empty: return
+    db: Session = next(get_db())
+    try:
+        df_to_save = df_indicators.copy()
+        if not isinstance(df_to_save.index, pd.DatetimeIndex):
+            logger.error(f"Indicator DataFrame for {ticker} does not have a DatetimeIndex. Skipping save.")
+            return
+        df_to_save['timestamp_utc'] = pd.to_datetime(df_to_save.index).to_pydatetime()
+        df_to_save['ticker'] = ticker
+        df_to_save['data_interval'] = interval
+        df_to_save.columns = df_to_save.columns.str.lower()
+        df_to_save.columns = [col.replace('.', '_') for col in df_to_save.columns]
+        model_columns = set(TechnicalIndicator.__table__.columns.keys())
+        cols_to_keep = [col for col in df_to_save.columns if col in model_columns]
+        df_to_save = df_to_save[cols_to_keep]
+        records_to_upsert = df_to_save.to_dict(orient='records')
+        if not records_to_upsert: return
+        stmt = mysql_insert(TechnicalIndicator).values(records_to_upsert)
+        update_dict = { col.name: col for col in stmt.inserted if not col.primary_key }
+        on_duplicate_key_stmt = stmt.on_duplicate_key_update(**update_dict)
+        db.execute(on_duplicate_key_stmt)
+        db.commit()
+        logger.debug(f"Successfully upserted {len(records_to_upsert)} technical indicator records for {ticker}.")
+    except Exception as e:
+        logger.error(f"Error upserting technical indicators for {ticker}: {e}", exc_info=True)
+        db.rollback()
+    finally:
+        db.close()
 
 def get_db():
     db = SessionLocal()
@@ -28,34 +176,6 @@ def get_stocks_to_analyze() -> list[str]:
     except Exception as e:
         logger.error(f"Error fetching stocks to analyze: {e}")
         return []
-    finally:
-        db.close()
-
-
-def save_technical_indicators(df: pd.DataFrame, ticker: str, interval: str):
-    db: Session = next(get_db())
-    df.columns = [col.replace('.', '_') for col in df.columns]
-    model_columns = set(TechnicalIndicator.__table__.columns.keys())
-    records_to_save = []
-    for timestamp, row in df.iterrows():
-        record_data = row.to_dict()
-        filtered_data = {key: record_data.get(key) for key in model_columns if key in record_data}
-        if isinstance(timestamp, pd.Timestamp):
-            record = TechnicalIndicator(
-                timestamp_utc=timestamp.to_pydatetime(),
-                ticker=ticker,
-                data_interval=interval,
-                **filtered_data
-            )
-            records_to_save.append(record)
-    try:
-        if records_to_save:
-            db.bulk_save_objects(records_to_save)
-            db.commit()
-            logger.info(f"Successfully saved {len(records_to_save)} indicator records for {ticker}.")
-    except Exception as e:
-        logger.error(f"Error bulk saving technical indicators for {ticker}: {e}")
-        db.rollback()
     finally:
         db.close()
 

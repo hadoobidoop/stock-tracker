@@ -8,7 +8,7 @@ from apscheduler.triggers.cron import CronTrigger
 # 설정과 작업 함수들 import
 from config import DAILY_PREDICTION_HOUR_ET, DAILY_PREDICTION_MINUTE_ET, COLLECTION_INTERVAL_MINUTES
 from jobs import update_stock_metadata_from_yfinance, run_daily_buy_price_prediction_job, \
-    run_realtime_signal_detection_job
+    run_realtime_signal_detection_job, run_database_housekeeping_job
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +42,16 @@ def setup_scheduler():
         id='realtime_signal_job',
         name='Real-time Signal Detection'
     )
+
+    # --- [5단계 수정] 신규 작업 추가: 데이터베이스 유지보수 ---
+    # 매주 일요일 새벽 4시 5분 (미국 동부시간 기준)에 실행
+    scheduler.add_job(
+        run_database_housekeeping_job,
+        trigger=CronTrigger(day_of_week='sun', hour=4, minute=5),
+        id='database_housekeeping_job',
+        name='Database Housekeeping (Delete old data)'
+    )
+    # --- [수정된 부분 끝] ---
 
     return scheduler
 

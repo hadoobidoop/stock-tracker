@@ -1,6 +1,6 @@
 import enum
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Date, Boolean, Enum, BigInteger, JSON, \
-    Text
+    Text, PrimaryKeyConstraint
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.sql import func
 # config 파일에서 수정된 DATABASE_URL을 가져옵니다.
@@ -13,7 +13,79 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-# --- 테이블 모델 정의 (변경 없음) ---
+# --- [4단계 수정] 새로운 테이블 모델 정의: IntradayOhlcv ---
+class IntradayOhlcv(Base):
+    """
+    순수한 1분봉 원시 데이터(OHLCV)를 저장하는 테이블.
+    데이터의 '단일 진실 공급원(Single Source of Truth)' 역할을 합니다.
+    """
+    __tablename__ = 'intraday_ohlcv'
+
+    # 복합 기본 키 (Composite Primary Key) 설정
+    # 특정 종목의 특정 시간에는 단 하나의 데이터만 존재해야 함을 보장합니다.
+    timestamp_utc = Column(DateTime, primary_key=True)
+    ticker = Column(String(10), primary_key=True)
+
+    # OHLCV 데이터
+    open = Column(Float)
+    high = Column(Float)
+    low = Column(Float)
+    close = Column(Float)
+    volume = Column(BigInteger)
+
+    # SQLAlchemy를 위한 명시적 제약 조건 정의
+    __table_args__ = (
+        PrimaryKeyConstraint('timestamp_utc', 'ticker'),
+        {},
+    )
+
+class TechnicalIndicator(Base):
+    """
+    (수정) 계산된 기술적 지표 값만 저장하는 테이블.
+    OHLCV 원본 데이터 컬럼은 IntradayOhlcv 테이블로 분리되어 제거되었습니다.
+    """
+    __tablename__ = 'technical_indicators'
+
+    # 복합 기본 키 설정
+    timestamp_utc = Column(DateTime, primary_key=True, index=True)
+    ticker = Column(String(10), primary_key=True, index=True)
+
+    # data_interval 컬럼은 어떤 시간 간격의 지표인지 명시 (예: '1m', '5m')
+    data_interval = Column(String(5))
+
+    # --- OHLCV 컬럼 제거됨 ---
+    # open = Column(Float)
+    # high = Column(Float)
+    # low = Column(Float)
+    # close = Column(Float)
+    # volume = Column(BigInteger)
+
+    # --- 기술적 지표 컬럼들 ---
+    sma_5 = Column(Float, nullable=True)
+    sma_20 = Column(Float, nullable=True)
+    sma_60 = Column(Float, nullable=True)
+    rsi_14 = Column(Float, nullable=True)
+    macd_12_26_9 = Column(Float, nullable=True)
+    macds_12_26_9 = Column(Float, nullable=True)
+    macdh_12_26_9 = Column(Float, nullable=True)
+    stochk_14_3_3 = Column(Float, nullable=True)
+    stochd_14_3_3 = Column(Float, nullable=True)
+    adx_14 = Column(Float, nullable=True)
+    dmp_14 = Column(Float, nullable=True)
+    dmn_14 = Column(Float, nullable=True)
+    bbl_20_2_0 = Column(Float, nullable=True)
+    bbm_20_2_0 = Column(Float, nullable=True)
+    bbu_20_2_0 = Column(Float, nullable=True)
+    kcle_20_2_0 = Column(Float, nullable=True)
+    kcbe_20_2_0 = Column(Float, nullable=True)
+    kcue_20_2_0 = Column(Float, nullable=True)
+    atr_14 = Column(Float, nullable=True)
+    volume_sma_20 = Column(Float, nullable=True)
+
+    __table_args__ = (
+        PrimaryKeyConstraint('timestamp_utc', 'ticker'),
+        {},
+    )
 
 class StockMetadata(Base):
     __tablename__ = 'stock_metadata'
@@ -38,37 +110,6 @@ class StockMetadata(Base):
     need_analysis = Column(Boolean, default=True, nullable=False)
 
 
-class TechnicalIndicator(Base):
-    __tablename__ = 'technical_indicators'
-    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
-    timestamp_utc = Column(DateTime, index=True)
-    ticker = Column(String(10), index=True)
-    data_interval = Column(String(5))
-    open = Column(Float)
-    high = Column(Float)
-    low = Column(Float)
-    close = Column(Float)
-    volume = Column(BigInteger)
-    sma_5 = Column(Float, nullable=True)
-    sma_20 = Column(Float, nullable=True)
-    sma_60 = Column(Float, nullable=True)
-    rsi_14 = Column(Float, nullable=True)
-    macd_12_26_9 = Column(Float, nullable=True)
-    macds_12_26_9 = Column(Float, nullable=True)
-    macdh_12_26_9 = Column(Float, nullable=True)
-    stochk_14_3_3 = Column(Float, nullable=True)
-    stochd_14_3_3 = Column(Float, nullable=True)
-    adx_14 = Column(Float, nullable=True)
-    dmp_14 = Column(Float, nullable=True)
-    dmn_14 = Column(Float, nullable=True)
-    bbl_20_2_0 = Column(Float, nullable=True)
-    bbm_20_2_0 = Column(Float, nullable=True)
-    bbu_20_2_0 = Column(Float, nullable=True)
-    kcle_20_2_0 = Column(Float, nullable=True)
-    kcbe_20_2_0 = Column(Float, nullable=True)
-    kcue_20_2_0 = Column(Float, nullable=True)
-    atr_14 = Column(Float, nullable=True)
-    volume_sma_20 = Column(Float, nullable=True)
 
 
 class TrendType(str, enum.Enum):

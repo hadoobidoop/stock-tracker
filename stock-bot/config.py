@@ -30,24 +30,14 @@ DATABASE_URL = (
     f"mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     "?charset=utf8mb4"
 )
+DATA_RETENTION_DAYS = 30
+
+LOOKBACK_PERIOD_DAYS_FOR_INTRADAY=1
 # ====================
 # 모니터링할 주식 심볼 목록 (미국 주식)
 # ====================
 STOCK_SYMBOLS = [
-    "MSFT", "AAPL", "NVDA", "GOOGL", "GOOG", "AMZN", "META", "AVGO", "TSLA",
-    "COST", "ADBE", "PEP", "AMD", "CSCO", "NFLX", "TMUS", "INTC", "CMCSA",
-    "QCOM", "INTU", "TXN", "AMGN", "HON", "BKNG", "SBUX", "ISRG", "VRTX",
-    "GILD", "MDLZ", "ADP", "LRCX", "REGN", "ADI", "PYPL", "PANW", "SNPS",
-    "AMAT", "CDNS", "MU", "ASML", "KLAC", "MELI", "MAR", "CSX", "ABNB",
-    "ORLY", "PCAR", "EXC", "CRWD", "FTNT", "AEP", "AZN", "LULU", "KDP",
-    "ROP", "DXCM", "MNST", "PAYX", "WDAY", "CPRT", "MRVL", "CEG", "IDXX",
-    "EA", "MCHP", "CTAS", "ROST", "KHC", "BIIB", "FAST", "ODFL", "WBD",
-    "XEL", "TTD", "BKR", "DDOG", "GEHC", "ILMN", "MRNA", "SIRI", "VRSK",
-    "ZS", "WBA", "ALGN", "EBAY", "ATVI", "JD", "SGEN", "TEAM", "ZM", "ON",
-    "CTSH", "CHTR", "PDD", "DLTR", "FANG", "ANSS", "NXPI", "PCG",
-    "TSLL", "GLDM", "QQQM", "VEEV", "X", "ARKG", "WM", "CIBR", "JEPQ", "JEPI", "VDC", "SCHD", "DUK", "BITX", "LLY",
-    "NUE", "NEE",
-    "KHC", "PFE", "MRK"
+    "MSFT", "AAPL", "NVDA"
 ]
 
 # ====================
