@@ -46,7 +46,7 @@ STOCK_SYMBOLS = [
 # 데이터 수집 및 분석 주기 (분 단위)
 # yfinance의 1분봉 데이터는 7일 이내의 기간만 조회 가능하며, 잦은 호출 시 IP 밴이 될 수 있습니다.
 # 5분 또는 15분 간격 추천 (API 호출 제한 및 데이터 지연 고려)
-COLLECTION_INTERVAL_MINUTES = 1  # 매 5분마다 1분봉 데이터 수집 및 분석
+COLLECTION_INTERVAL_MINUTES = 5  # 매 5분마다 1분봉 데이터 수집 및 분석
 
 # 거래량 증가 필터링을 위한 배수 (현재 거래량 > 평균 거래량 * 이 값)
 VOLUME_SURGE_FACTOR = 1.2

@@ -103,12 +103,46 @@ def calculate_intraday_indicators(df_intraday: pd.DataFrame) -> pd.DataFrame:
     # 6. 볼린저 밴드 (Bollinger Bands)
     # 기본 설정: length=20, std=2.0
     df_intraday.ta.bbands(length=20, append=True)  # length 명시적으로 20으로 설정
+    logger.info("--- 켈트너 채널 심층 디버깅 시작 ---")
+    try:
+        # 1. 계산에 사용될 데이터의 유효성 검증
+        required_cols = ['High', 'Low', 'Close']
+        # 계산에 직접적으로 영향을 미치는 최근 60개 데이터에 NaN이 있는지 확인
+        recent_data = df_intraday.tail(60)
+        nan_check = recent_data[required_cols].isnull().sum()
 
-    # 7. 켈트너 채널 (Keltner Channels)
-    # 기본 설정: length=20, scalar=2 (pandas_ta는 kc_length, kc_scalar 사용)
-    # mamode='ema'를 명시하여 KCLe, KCMe, KCUe 컬럼이 생성되도록 함
-    df_intraday.ta.kc(length=20, append=True, mamode='ema')
+        logger.info(f"계산 직전 DataFrame 전체 길이: {len(df_intraday)}")
+        logger.info(f"최근 60개 데이터의 NaN 개수:\n{nan_check.to_string()}")
 
+        if nan_check.sum() > 0:
+            logger.warning("계산에 사용될 데이터에 NaN 값이 포함되어 있습니다. 이것이 원인일 수 있습니다.")
+
+        # 2. pandas_ta.kc 함수를 직접 호출하여 반환 값 확인
+        # append=True 대신, 결과를 변수에 직접 할당하여 무엇이 반환되는지 확인
+        kc_result = pandas_ta.kc(
+            high=df_intraday['High'],
+            low=df_intraday['Low'],
+            close=df_intraday['Close'],
+            length=20,
+            mamode='ema'
+        )
+
+        # 3. 반환된 결과(kc_result)를 정밀하게 검사
+        if kc_result is None:
+            logger.error("심각: pandas_ta.kc() 함수가 'None'을 반환했습니다.")
+        elif kc_result.empty:
+            logger.error("심각: pandas_ta.kc() 함수가 '비어있는 DataFrame'을 반환했습니다.")
+        else:
+            logger.info(f"성공: pandas_ta.kc()가 결과를 반환했습니다. (결과 형태: {kc_result.shape})")
+            logger.info(f"반환된 결과의 마지막 3개 행:\n{kc_result.tail(3).to_string()}")
+            # 성공했다면 수동으로 원본 DataFrame에 결과를 합침
+            df_intraday = pd.concat([df_intraday, kc_result], axis=1)
+
+    except Exception as e:
+        # 4. 라이브러리 내부에서 발생했지만 숨겨졌을 수 있는 모든 예외(Exception)를 포착
+        logger.error(f"심각: pandas_ta.kc() 함수 호출 중 예외가 발생했습니다: {e}", exc_info=True)
+
+    logger.info("--- 켈트너 채널 심층 디버깅 끝 ---")
     # 8. 거래량 이동평균 (거래량 필터링을 위함)
     df_intraday['Volume_SMA_20'] = df_intraday['Volume'].rolling(window=20).mean()
 

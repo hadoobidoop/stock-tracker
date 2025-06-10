@@ -132,6 +132,12 @@ def save_technical_indicators(df_indicators: pd.DataFrame, ticker: str, interval
 
     try:
         df_to_save = df_indicators.copy()
+        # --- [수정 코드 추가] ---
+        # 기존에 있을 수 있는 Ticker 컬럼을 삭제하여 중복 방지
+        if 'Ticker' in df_to_save.columns:
+            df_to_save = df_to_save.drop(columns=['Ticker'])
+        # --- [수정 코드 끝] ---
+
         if not isinstance(df_to_save.index, pd.DatetimeIndex):
             logger.error(f"Indicator DataFrame for {ticker} does not have a DatetimeIndex. Skipping save.")
             return

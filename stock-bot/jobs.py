@@ -220,6 +220,11 @@ def run_realtime_signal_detection_job():
                 logger.warning(f"Not enough data for {symbol} in local DB to perform analysis.")
                 continue
 
+            # --- [디버깅 로그 추가] ---
+            logger.info(f"[{symbol}] 데이터 길이 {len(df_intraday_raw)}로 지표 계산을 시작합니다.")
+            logger.info(f"[{symbol}] 전달 직전 데이터 확인 (마지막 3개 행):\n{df_intraday_raw.tail(3).to_string()}")
+            # --- [디버깅 로그 끝] ---
+
             df_with_indicators = calculate_intraday_indicators(df_intraday_raw.copy())
             if df_with_indicators.empty: continue
 

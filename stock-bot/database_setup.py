@@ -76,10 +76,10 @@ class TechnicalIndicator(Base):
     bbl_20_2_0 = Column(Float, nullable=True)
     bbm_20_2_0 = Column(Float, nullable=True)
     bbu_20_2_0 = Column(Float, nullable=True)
-    kcle_20_2_0 = Column(Float, nullable=True)
-    kcbe_20_2_0 = Column(Float, nullable=True)
-    kcue_20_2_0 = Column(Float, nullable=True)
-    atr_14 = Column(Float, nullable=True)
+    kcle_20_2 = Column(Float, nullable=True)
+    kcbe_20_2 = Column(Float, nullable=True)
+    kcue_20_2 = Column(Float, nullable=True)
+    atrr_14 = Column(Float, nullable=True)
     volume_sma_20 = Column(Float, nullable=True)
 
     __table_args__ = (
