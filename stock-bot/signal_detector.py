@@ -68,10 +68,11 @@ def detect_weighted_signals(df_intraday: pd.DataFrame,
     sell_details = []
 
     # ATR 값 가져오기 (1분봉 데이터에서 계산된 ATR 사용)
-    atr_col_name = [col for col in df_intraday.columns if col.startswith('')]
-    current_atr = latest_data.get(atr_col_name[0]) if atr_col_name else 0.0
-    if pd.isna(current_atr):
-        current_atr = 0.0  # NaN일 경우 0으로 처리
+    atr_col_name_intraday = [col for col in df_intraday.columns if col.startswith('ATR_')] # 'ATR_'로 수정
+    current_atr_intraday = latest_data.get(atr_col_name_intraday[0]) if atr_col_name_intraday else 0.0
+    if pd.isna(current_atr_intraday):
+        current_atr_intraday = 0.0
+
 
     # --- 시장 추세에 따른 신호 임계값 동적 조정 ---
     adjusted_signal_threshold = SIGNAL_THRESHOLD

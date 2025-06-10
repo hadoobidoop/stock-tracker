@@ -147,9 +147,7 @@ def run_realtime_signal_detection_job():
     global daily_data_cache
 
     current_et = get_current_et_time()
-    if not is_market_open(current_et):
-        logger.debug(f"Market is closed. Skipping real-time job.")
-        return
+
 
     logger.info("JOB START: Real-time signal detection job...")
     stocks_to_analyze = get_stocks_to_analyze()

@@ -129,6 +129,7 @@ def save_technical_indicators(df_indicators: pd.DataFrame, ticker: str, interval
     """(최종 검증) 벡터화를 사용하여 계산된 기술적 지표를 안정적이고 빠르게 저장합니다."""
     if df_indicators.empty: return
     db: Session = next(get_db())
+
     try:
         df_to_save = df_indicators.copy()
         if not isinstance(df_to_save.index, pd.DatetimeIndex):
@@ -142,6 +143,8 @@ def save_technical_indicators(df_indicators: pd.DataFrame, ticker: str, interval
         model_columns = set(TechnicalIndicator.__table__.columns.keys())
         cols_to_keep = [col for col in df_to_save.columns if col in model_columns]
         df_to_save = df_to_save[cols_to_keep]
+        df_to_save = df_to_save.astype(object).where(pd.notnull(df_to_save), None)
+
         records_to_upsert = df_to_save.to_dict(orient='records')
         if not records_to_upsert: return
         stmt = mysql_insert(TechnicalIndicator).values(records_to_upsert)
