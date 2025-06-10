@@ -100,6 +100,9 @@ def calculate_intraday_indicators(df_intraday: pd.DataFrame) -> pd.DataFrame:
     # 기본 설정: length=14
     df_intraday.ta.adx(append=True)  # ADX_14, DMN_14, DMP_14 컬럼 생성
 
+    # 9. ATR (Average True Range) -- 새로 추가된 부분
+    df_intraday.ta.atr(length=14, append=True)  # 1분봉 데이터에도 ATR 계산
+
     # 6. 볼린저 밴드 (Bollinger Bands)
     # 기본 설정: length=20, std=2.0
     df_intraday.ta.bbands(length=20, append=True)  # length 명시적으로 20으로 설정
@@ -145,9 +148,6 @@ def calculate_intraday_indicators(df_intraday: pd.DataFrame) -> pd.DataFrame:
     logger.info("--- 켈트너 채널 심층 디버깅 끝 ---")
     # 8. 거래량 이동평균 (거래량 필터링을 위함)
     df_intraday['Volume_SMA_20'] = df_intraday['Volume'].rolling(window=20).mean()
-
-    # 9. ATR (Average True Range) -- 새로 추가된 부분
-    df_intraday.ta.atr(length=14, append=True)  # 1분봉 데이터에도 ATR 계산
 
     # --- 추가할 진단 코드 ---
     logger.info(f"DEBUG: Columns after indicator calculation: {df_intraday.columns.tolist()}")
