@@ -86,20 +86,39 @@ def get_long_term_trend(df_hourly: pd.DataFrame) -> tuple[TrendType, dict]:
         return TrendType.NEUTRAL, trend_values
 
 
+# 기존 run_daily_buy_price_prediction_job 함수를 아래 코드로 전체 교체하십시오.
+
 def run_daily_buy_price_prediction_job():
-    """[최종 수정본] 매일 장 마감 후 실행되는 다음 날 예상 매수 가격 예측 작업 (청킹 적용)"""
-    logger.info("JOB START: Daily buy price prediction job...")
+    """[최종 수정본] 매일 장 마감 후 실행되는 다음 날 예상 매수 가격 예측 작업 (장기 추세 필터링 적용)"""
+    logger.info("JOB START: Daily buy price prediction job with trend filter...")
 
     stocks_to_analyze = get_stocks_to_analyze()
     if not stocks_to_analyze:
         logger.warning("No stocks marked for analysis. Skipping job.")
         return
 
-    # --- [신규] 일봉 데이터 요청에도 청킹(Chunking) 로직 적용 ---
+    # --- 1. 장기 추세 판단을 위한 데이터 준비 (1시간봉 데이터 리샘플링) ---
+    long_term_trends = {}
+    try:
+        all_hourly_data = get_bulk_resampled_ohlcv_from_db(
+            stocks_to_analyze,
+            datetime.now(timezone.utc) - timedelta(days=31), # 최근 한 달 데이터로 추세 판단
+            datetime.now(timezone.utc),
+            freq='H'
+        )
+        for symbol, df_hourly in all_hourly_data.items():
+            trend, _ = get_long_term_trend(df_hourly) # jobs.py에 이미 있는 함수 재사용
+            long_term_trends[symbol] = trend
+            logger.debug(f"Determined long-term trend for {symbol}: {trend.value}")
+    except Exception as e:
+        logger.error(f"Failed to determine long-term trends for prediction job: {e}")
+        # 추세 판단에 실패하면 작업을 중단하여 위험을 방지
+        return
+
+    # --- 2. 일봉 데이터 수집 (기존 로직과 동일) ---
     chunk_size = 25
     all_daily_data_dict = {}
     chunks = [stocks_to_analyze[i:i + chunk_size] for i in range(0, len(stocks_to_analyze), chunk_size)]
-
     logger.info(f"Fetching daily data in {len(chunks)} chunks of size {chunk_size}...")
     for i, chunk in enumerate(chunks):
         logger.debug(f"Fetching daily data for chunk {i + 1}/{len(chunks)}...")
@@ -111,7 +130,7 @@ def run_daily_buy_price_prediction_job():
             )
             if chunk_data:
                 all_daily_data_dict.update(chunk_data)
-            sleep(1)  # API 부하 감소
+            sleep(1)
         except Exception as e:
             logger.error(f"Failed to fetch daily data for chunk {i + 1}: {e}")
 
@@ -119,14 +138,27 @@ def run_daily_buy_price_prediction_job():
         logger.error("Failed to fetch any daily data. Aborting prediction job.")
         return
 
-    # --- 가져온 데이터를 기반으로 각 종목 분석 ---
+    # --- 3. 추세 필터링을 적용하여 각 종목 분석 ---
     logger.info(f"Starting prediction analysis for {len(all_daily_data_dict)} successfully fetched stocks...")
     current_et = get_current_et_time()
 
     for symbol, df_daily in all_daily_data_dict.items():
         try:
+            # --- [핵심 수정] ---
+            # 해당 종목의 장기 추세를 확인
+            symbol_trend = long_term_trends.get(symbol, TrendType.NEUTRAL)
+
+            # 장기 추세가 BEARISH(하락)이면 예측을 건너뜀
+            if symbol_trend == TrendType.BEARISH:
+                logger.info(f"Skipping prediction for {symbol} due to BEARISH long-term trend.")
+                continue
+            # --- [핵심 수정 끝] ---
+
             if df_daily.empty: continue
-            prediction_result = predict_next_day_buy_price(df_daily.copy(), symbol)
+
+            # price_predictor 함수에 추세 정보를 전달 (향후 확장을 위해)
+            prediction_result = predict_next_day_buy_price(df_daily.copy(), symbol, long_term_trend=symbol_trend)
+
             if prediction_result:
                 save_daily_prediction({
                     'prediction_date_utc': (current_et + timedelta(days=1)).date(),
@@ -139,8 +171,6 @@ def run_daily_buy_price_prediction_job():
             logger.error(f"An error occurred during prediction analysis for {symbol}: {e}")
 
     logger.info("JOB END: Daily buy price prediction job completed.")
-
-
 
 def run_realtime_signal_detection_job():
     """(최종 검증) 하이브리드 데이터 전략을 사용하여 API 호출을 최소화하고 안정성을 극대화합니다."""

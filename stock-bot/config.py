@@ -37,7 +37,7 @@ LOOKBACK_PERIOD_DAYS_FOR_INTRADAY=1
 # 모니터링할 주식 심볼 목록 (미국 주식)
 # ====================
 STOCK_SYMBOLS = [
-    "MSFT", "AAPL", "NVDA"
+    "MSFT"
 ]
 
 # ====================

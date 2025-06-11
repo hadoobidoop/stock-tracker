@@ -71,11 +71,7 @@ def calculate_daily_indicators(df_daily: pd.DataFrame, fib_lookback_days: int) -
     }
 
 
-# --- 1분봉 데이터용 지표 계산 함수 ---
 def calculate_intraday_indicators(df_intraday: pd.DataFrame) -> pd.DataFrame:
-    """
-    1분봉 데이터에 기반한 실시간 신호 감지용 지표들을 계산합니다.
-    """
     if df_intraday.empty:
         logger.warning("Intraday DataFrame is empty, cannot calculate intraday indicators.")
         return df_intraday

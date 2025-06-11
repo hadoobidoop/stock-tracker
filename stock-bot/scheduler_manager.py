@@ -37,10 +37,9 @@ def setup_scheduler():
     # 작업 3: 장 중 실시간 신호 감지
     scheduler.add_job(
         run_realtime_signal_detection_job,
-        'interval',
-        minutes=COLLECTION_INTERVAL_MINUTES,
+        trigger=CronTrigger(day_of_week='mon-fri', hour='9-16', minute=1), # 월-금, 장중 시간(9시-16시), 매시 1분에 실행
         id='realtime_signal_job',
-        name='Real-time Signal Detection'
+        name='Real-time Signal Detection (Hourly)'
     )
 
     # --- [5단계 수정] 신규 작업 추가: 데이터베이스 유지보수 ---
