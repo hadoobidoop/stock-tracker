@@ -32,6 +32,9 @@ class IntradayOhlcv(Base):
     low = Column(Float)
     close = Column(Float)
     volume = Column(BigInteger)
+    
+    # 데이터 간격 (예: '1m', '5m', '15m', '1h')
+    interval = Column(String(5), nullable=False, default='1m')
 
     # SQLAlchemy를 위한 명시적 제약 조건 정의
     __table_args__ = (

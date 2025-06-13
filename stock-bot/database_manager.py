@@ -11,7 +11,7 @@ import json
 logger = logging.getLogger(__name__)
 
 
-def save_intraday_ohlcv(df_ohlcv: pd.DataFrame, ticker: str):
+def save_intraday_ohlcv(df_ohlcv: pd.DataFrame, ticker: str, interval: str = '1m'):
     """(최종 오류 수정) NaN 데이터를 완벽하게 정제한 후, 안정적으로 DB에 저장합니다."""
     if df_ohlcv.empty:
         return
@@ -20,9 +20,6 @@ def save_intraday_ohlcv(df_ohlcv: pd.DataFrame, ticker: str):
     try:
         df_to_save = df_ohlcv.copy()
 
-        # --- [수정된 부분 시작] ---
-        # 1. 가격 정보(OHLC)가 하나라도 없는 행(row)은 분석 가치가 없으므로 먼저 삭제합니다.
-        #    이것이 'Unknown column 'nan'' 오류의 근본적인 해결책입니다.
         df_to_save.dropna(subset=['Open', 'High', 'Low', 'Close'], inplace=True)
 
         # 만약 모든 행이 유효하지 않아 삭제되었다면, 더 이상 진행하지 않습니다.
@@ -36,9 +33,10 @@ def save_intraday_ohlcv(df_ohlcv: pd.DataFrame, ticker: str):
             return
         df_to_save['timestamp_utc'] =  pd.to_datetime(df_to_save.index).to_pydatetime()
         df_to_save['ticker'] = ticker
+        df_to_save['interval'] = interval
 
-        df_to_save = df_to_save[['timestamp_utc', 'ticker', 'Open', 'High', 'Low', 'Close', 'Volume']]
-        df_to_save.columns = ['timestamp_utc', 'ticker', 'open', 'high', 'low', 'close', 'volume']
+        df_to_save = df_to_save[['timestamp_utc', 'ticker', 'interval', 'Open', 'High', 'Low', 'Close', 'Volume']]
+        df_to_save.columns = ['timestamp_utc', 'ticker', 'interval', 'open', 'high', 'low', 'close', 'volume']
 
         # 3. Volume 컬럼에 남아있을 수 있는 NaN 값을 0으로 채우고 정수형으로 변환합니다.
         df_to_save['volume'] = df_to_save['volume'].fillna(0).astype('int64')
@@ -52,12 +50,12 @@ def save_intraday_ohlcv(df_ohlcv: pd.DataFrame, ticker: str):
         on_duplicate_key_stmt = stmt.on_duplicate_key_update(
             open=stmt.inserted.open, high=stmt.inserted.high,
             low=stmt.inserted.low, close=stmt.inserted.close,
-            volume=stmt.inserted.volume,
+            volume=stmt.inserted.volume, interval=stmt.inserted.interval
         )
 
         db.execute(on_duplicate_key_stmt)
         db.commit()
-        logger.debug(f"Successfully upserted {len(records_to_upsert)} OHLCV records for {ticker}.")
+        logger.debug(f"Successfully upserted {len(records_to_upsert)} OHLCV records for {ticker} with interval {interval}.")
 
     except Exception as e:
         logger.error(f"Error upserting OHLCV data for {ticker}: {e}", exc_info=True)
@@ -132,11 +130,9 @@ def save_technical_indicators(df_indicators: pd.DataFrame, ticker: str, interval
 
     try:
         df_to_save = df_indicators.copy()
-        # --- [수정 코드 추가] ---
-        # 기존에 있을 수 있는 Ticker 컬럼을 삭제하여 중복 방지
+
         if 'Ticker' in df_to_save.columns:
             df_to_save = df_to_save.drop(columns=['Ticker'])
-        # --- [수정 코드 끝] ---
 
         if not isinstance(df_to_save.index, pd.DatetimeIndex):
             logger.error(f"Indicator DataFrame for {ticker} does not have a DatetimeIndex. Skipping save.")
@@ -174,13 +170,11 @@ def get_db():
 
 
 def get_stocks_to_analyze() -> list[str]:
-    """[신규] 분석이 필요한(need_analysis=True) 주식 티커 목록을 DB에서 가져옵니다."""
+    """분석이 필요한(need_analysis=True) 주식 티커 목록을 DB에서 가져옵니다."""
     db: Session = next(get_db())
     try:
-        # StockMetadata 테이블에서 need_analysis가 True인 티커만 조회
         stocks = db.query(StockMetadata.ticker).filter(StockMetadata.need_analysis == True,
                                                        StockMetadata.is_active == True).all()
-        # 결과는 [(ticker1,), (ticker2,)] 형태이므로, 각 튜플의 첫 번째 요소를 추출하여 리스트로 변환
         return [stock[0] for stock in stocks]
     except Exception as e:
         logger.error(f"Error fetching stocks to analyze: {e}")

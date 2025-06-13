@@ -44,56 +44,25 @@ def send_telegram_message(message: str):
 def format_signal_message(
         ticker: str,
         signal_type: str,
-        signal_score: int,  # signal_detector에서 계산된 최종 점수
-        signal_details_list: list,  # signal_detector에서 온 상세 조건 목록
-        current_data: pd.Series,  # 현재 데이터 (마지막 봉)
-        prev_data: pd.Series,  # 이전 데이터 (바로 이전 봉)
-        stop_loss_price: float = None  # ATR 기반 손절매 가격 추가
+        signal_score: int,
+        signal_details_list: list,
+        current_data: pd.Series,
+        prev_data: pd.Series,
+        stop_loss_price: float = None
 ) -> str:
     """
-    실시간 매수/매도 신호 알림 메시지를 포맷합니다.
-    모든 필요한 지표 값과 조건이 메시지에 포함됩니다.
+    신호 메시지를 포맷팅합니다.
     """
-    # 현재 봉의 타임스탬프를 사용하여 메시지 시간 표시
-    timestamp = current_data.name.strftime('%Y-%m-%d %H:%M:%S')
+    message = f"🔔 *{ticker} {signal_type} 신호 감지*\n"
+    message += f"신호 강도: {signal_score}\n\n"
 
-    emoji = "🔥" if signal_type == "BUY" else "📉"
-    action_text = "매수" if signal_type == "BUY" else "매도"
-
-    # 켈트너 채널 중간선 (KCMe_20_2)이 없을 경우 BBM_20_2.0 (볼린저 밴드 중간선) 사용
-    # indicator_calculator에서 KCMe_20_2.0가 생성될 것으로 예상
-    keltner_middle = current_data.get('KCMe_20_2.0', current_data.get('BBM_20_2.0', 0.0))  # 컬럼명 변경
-
-    message = (
-        f"{emoji} *[{ticker}] {action_text} 신호 발생!* {emoji}\n"
-        f"🗓️ 시간: `{timestamp}`\n"
-        f"💰 현재 종가: *${current_data['Close']:.2f}*\n"
-        f"⭐ *신호 점수: {signal_score} / {SIGNAL_THRESHOLD} (임계값)* ⭐\n"
-        f"\n"
-        f"*--- 지표 상세 ---*\n"
-        f"📊 SMA (5/20/60): {current_data['SMA_5']:.2f} / {current_data['SMA_20']:.2f} / {current_data['SMA_60']:.2f}\n"
-        f"📈 RSI (14): {current_data['RSI_14']:.2f}\n"
-        f"📉 MACD / Signal: {current_data['MACD_12_26_9']:.2f} / {current_data['MACDs_12_26_9']:.2f}\n"
-        f"📊 STOCH (%K/%D): {current_data['STOCHk_14_3_3']:.2f} / {current_data['STOCHd_14_3_3']:.2f}\n"
-        f"💪 ADX (14): {current_data['ADX_14']:.2f} (+DI:{current_data['DMP_14']:.2f}, -DI:{current_data['DMN_14']:.2f})\n"  # ADX는 DMP, DMN도 함께 표시하여 방향성 확인
-        f"📈 거래량: {current_data['Volume']:,} (20일 평균: {current_data['Volume_SMA_20']:.0f})\n"  # 현재 거래량과 평균 거래량 함께 표시
-        f"📈 볼린저 밴드 (상/중/하): {current_data['BBU_20_2.0']:.2f} / {current_data['BBM_20_2.0']:.2f} / {current_data['BBL_20_2.0']:.2f}\n"
-        f"📈 켈트너 채널 (상/중/하): {current_data.get('KCUe_20_2', 0.0):.2f} /  {current_data.get('KCBe_20_2', 0.0):.2f} / {current_data.get('KCLe_20_2', 0.0):.2f}\n"  # KCLe, KCUe도 get()으로 안전하게 접근 (컬럼명 변경)
-        f"\n"
-    )
-
-    message += f"*--- 신호 발생 조건 ---*\n"
-    # signal_details_list는 signal_detector에서 조건이 충족될 때 추가한 상세 설명 문자열 리스트입니다.
     if signal_details_list:
+        message += "*감지된 조건:*\n"
         for detail in signal_details_list:
-            message += f"- ✅ {detail}\n"
-    else:
-        message += "- 특정 조건 없음 (점수만으로 발생)\n"  # 모든 조건이 명시되지 않았거나 점수만으로 임계값 초과 시
+            message += f"• {detail}\n"
 
-    # --- 손절매 가격 정보 추가 ---
     if stop_loss_price is not None:
         message += f"\n⚠️ *예상 손절매 가격: ${stop_loss_price:.2f}*\n"
-    # --- 손절매 가격 정보 추가 끝 ---
 
     message += f"\n💡 기술적 분석에 기반한 신호이며, 신중한 판단이 필요합니다."
 

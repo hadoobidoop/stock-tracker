@@ -8,7 +8,9 @@ from apscheduler.triggers.cron import CronTrigger
 # 설정과 작업 함수들 import
 from config import DAILY_PREDICTION_HOUR_ET, DAILY_PREDICTION_MINUTE_ET, COLLECTION_INTERVAL_MINUTES
 from jobs import update_stock_metadata_from_yfinance, run_daily_buy_price_prediction_job, \
-    run_realtime_signal_detection_job, run_database_housekeeping_job
+    run_realtime_signal_detection_job, run_database_housekeeping_job, \
+    run_intraday_data_correction_job, run_daily_ohlcv_correction_job, \
+    run_intraday_data_collection_job
 
 logger = logging.getLogger(__name__)
 
@@ -42,15 +44,37 @@ def setup_scheduler():
         name='Real-time Signal Detection (Hourly)'
     )
 
-    # --- [5단계 수정] 신규 작업 추가: 데이터베이스 유지보수 ---
-    # 매주 일요일 새벽 4시 5분 (미국 동부시간 기준)에 실행
+    # 작업 4: 데이터베이스 유지보수 (매주 일요일 새벽 4시 5분)
     scheduler.add_job(
         run_database_housekeeping_job,
         trigger=CronTrigger(day_of_week='sun', hour=4, minute=5),
         id='database_housekeeping_job',
         name='Database Housekeeping (Delete old data)'
     )
-    # --- [수정된 부분 끝] ---
+
+    # 작업 5: 장 마감 후 1분봉 데이터 보정 (매일 16:30)
+    scheduler.add_job(
+        run_intraday_data_correction_job,
+        trigger=CronTrigger(day_of_week='mon-fri', hour=16, minute=30),
+        id='intraday_data_correction_job',
+        name='Intraday OHLCV Data Correction'
+    )
+
+    # 작업 6: 일봉 데이터 보정 (매일 17:00)
+    scheduler.add_job(
+        run_daily_ohlcv_correction_job,
+        trigger=CronTrigger(day_of_week='mon-fri', hour=17, minute=0),
+        id='daily_ohlcv_correction_job',
+        name='Daily OHLCV Data Correction'
+    )
+
+    # 작업 7: 장중 1분봉 데이터 수집 (매일 9:30-16:00, 5분 간격)
+    scheduler.add_job(
+        run_intraday_data_collection_job,
+        trigger=CronTrigger(day_of_week='mon-fri', hour='9-16', minute='*/5'),  # 매 5분마다 실행
+        id='intraday_data_collection_job',
+        name='Intraday OHLCV Data Collection'
+    )
 
     return scheduler
 

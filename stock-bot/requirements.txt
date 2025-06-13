@@ -11,3 +11,4 @@ mysql-connector-python
 sqlalchemy
 python-dotenv
 pytz
+backtesting
