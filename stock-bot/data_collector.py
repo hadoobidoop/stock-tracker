@@ -6,6 +6,7 @@ import pandas as pd
 import ast  # ast 모듈 임포트
 from typing import Union, List, Dict  # 타입 힌트를 위해 Union, List, Dict 임포트
 from datetime import datetime
+from database_manager import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +128,43 @@ def get_ohlcv_data(symbols: Union[str, List[str]], period: str, interval: str) -
         logger.error(f"An unexpected error occurred while fetching data for {symbols_list}: {e}")
         return pd.DataFrame() if is_single_symbol else {}
 
+def get_latest_intraday_from_db(symbol: str, limit: int = 10) -> pd.DataFrame:
+    """
+    데이터베이스에서 가장 최신 1분봉 데이터를 지정된 개수(limit)만큼 가져옵니다.
+    """
+    logger.debug(f"Getting latest {limit} intraday data for {symbol} from DB...")
+    try:
+        # 최신 데이터를 가져오기 위해 'ORDER BY timestamp DESC'와 'LIMIT' 사용
+        query = """
+                SELECT timestamp, open, high, low, close, volume
+                FROM intraday_ohlcv
+                WHERE symbol = %s
+                ORDER BY timestamp DESC
+                    LIMIT %s \
+                """
+        df = pd.read_sql_query(
+            query,
+            get_db(),
+            params=(symbol, limit), # 파라미터로 limit 전달
+            parse_dates=['timestamp']
+        )
+
+        if df.empty:
+            logger.warning(f"No intraday data found for {symbol} in DB.")
+            return pd.DataFrame() # None 대신 빈 데이터프레임 반환을 권장
+
+        # 1. timestamp를 인덱스로 설정
+        df.set_index('timestamp', inplace=True)
+
+        # 2. 데이터가 최신순(DESC)으로 조회되었으므로, 시간순(ASC)으로 다시 정렬
+        # 대부분의 분석 로직은 시간순으로 데이터를 다루기 때문에 필수적입니다.
+        df.sort_index(inplace=True)
+
+        return df
+
+    except Exception as e:
+        logger.error(f"Error getting latest intraday data for {symbol}: {str(e)}")
+        return pd.DataFrame() # 에러 발생 시에도 빈 데이터프레임 반환
 
 def get_existing_intraday_data(symbol: str, start_time: datetime, end_time: datetime) -> pd.DataFrame:
     """데이터베이스에서 기존 1분봉 데이터를 가져옵니다."""
@@ -141,7 +179,7 @@ def get_existing_intraday_data(symbol: str, start_time: datetime, end_time: date
         """
         df = pd.read_sql_query(
             query,
-            get_db_connection(),
+            get_db(),
             params=(symbol, start_time, end_time),
             parse_dates=['timestamp']
         )
