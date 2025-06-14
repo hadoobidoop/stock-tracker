@@ -30,23 +30,3 @@ daily_data_cache = {
 }
 logger = logging.getLogger(__name__)
 
-def get_long_term_trend(df_hourly: pd.DataFrame) -> tuple[TrendType, dict]:
-    """[수정됨] 1시간봉 데이터로 장기 추세를 판단하고, TrendType Enum으로 반환합니다."""
-    if df_hourly.empty or len(df_hourly) < 50:
-        return TrendType.NEUTRAL, {}
-
-    df_hourly['SMA_50'] = df_hourly['Close'].rolling(window=50).mean()
-    last_close = df_hourly.iloc[-1]['Close']
-    last_sma = df_hourly.iloc[-1]['SMA_50']
-    trend_values = {'close': last_close, 'sma': last_sma}
-
-    if pd.isna(last_sma) or pd.isna(last_close):
-        return TrendType.NEUTRAL, trend_values
-
-    if last_close > last_sma:
-        return TrendType.BULLISH, trend_values
-    elif last_close < last_sma:
-        return TrendType.BEARISH, trend_values
-    else:
-        return TrendType.NEUTRAL, trend_values
-

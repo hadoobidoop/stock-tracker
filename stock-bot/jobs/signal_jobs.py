@@ -11,8 +11,7 @@ from ..database_setup import TrendType
 from ..database_manager import get_intraday_ohlcv_for_analysis
 from ..indicator_calculator import calculate_daily_indicators, calculate_intraday_indicators
 from ..signal_detector import detect_weighted_signals
-from ..utils import get_current_et_time, is_market_open
-from prediction_jobs import get_long_term_trend
+from ..utils import get_current_et_time, is_market_open, get_long_term_trend
 
 logger = logging.getLogger(__name__)
 
