@@ -5,6 +5,7 @@ import logging
 import pandas as pd
 import ast  # ast 모듈 임포트
 from typing import Union, List, Dict  # 타입 힌트를 위해 Union, List, Dict 임포트
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -125,3 +126,31 @@ def get_ohlcv_data(symbols: Union[str, List[str]], period: str, interval: str) -
     except Exception as e:
         logger.error(f"An unexpected error occurred while fetching data for {symbols_list}: {e}")
         return pd.DataFrame() if is_single_symbol else {}
+
+
+def get_existing_intraday_data(symbol: str, start_time: datetime, end_time: datetime) -> pd.DataFrame:
+    """데이터베이스에서 기존 1분봉 데이터를 가져옵니다."""
+    try:
+        # 데이터베이스에서 해당 기간의 데이터 조회
+        query = """
+            SELECT timestamp, open, high, low, close, volume
+            FROM intraday_ohlcv
+            WHERE symbol = %s
+            AND timestamp BETWEEN %s AND %s
+            ORDER BY timestamp
+        """
+        df = pd.read_sql_query(
+            query,
+            get_db_connection(),
+            params=(symbol, start_time, end_time),
+            parse_dates=['timestamp']
+        )
+        
+        if not df.empty:
+            # timestamp를 인덱스로 설정
+            df.set_index('timestamp', inplace=True)
+            return df
+        return None
+    except Exception as e:
+        logger.error(f"Error getting existing intraday data for {symbol}: {str(e)}")
+        return None

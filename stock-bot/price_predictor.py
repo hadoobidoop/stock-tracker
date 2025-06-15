@@ -25,12 +25,9 @@ def predict_next_day_buy_price(df_daily_ohlcv: pd.DataFrame, ticker: str, long_t
               예: {'price_type': 'Pivot S1', 'price': 123.45, 'range_low': 123.00, 'range_high': 123.90, 'reason': 'Close near S1', 'score': 15}
               예측이 불가능하거나 점수가 낮으면 빈 딕셔너리 반환.
     """
-    # --- [핵심 수정] ---
-    # 함수 시작 부분에 방어 코드 추가
     if long_term_trend == TrendType.BEARISH:
         logger.debug(f"Prediction for {ticker} aborted as long-term trend is BEARISH.")
         return {}
-    # --- [핵심 수정 끝] ---
 
     if df_daily_ohlcv.empty or len(df_daily_ohlcv) < max(FIB_LOOKBACK_DAYS, 2):
         logger.warning(
