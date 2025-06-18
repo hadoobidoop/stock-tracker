@@ -21,3 +21,8 @@ class StockRepository(ABC):
     def save_metadata(self, metadata: StockMetadata) -> None:
         """종목의 메타데이터를 저장하거나 업데이트합니다."""
         pass
+
+    @abstractmethod
+    def save_metadata_bulk(self, metadata_list: List[StockMetadata]) -> None:
+        """여러 종목의 메타데이터를 한 번에 저장하거나 업데이트합니다."""
+        pass

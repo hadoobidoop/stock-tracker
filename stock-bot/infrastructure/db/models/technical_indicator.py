@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, Float, DateTime, PrimaryKeyConstraint
-from infrastructure.db.config.settings import Base
+from infrastructure.db.db_manager import Base
 
 
 class TechnicalIndicator(Base):

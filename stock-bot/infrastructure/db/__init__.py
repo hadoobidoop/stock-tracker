@@ -1,7 +1,7 @@
 """Database infrastructure package"""
 
-from .config.settings import engine, SessionLocal, Base, DATABASE_URL
-from .database import init_db, get_db
+from .config.settings import DATABASE_URL
+from .db_manager import engine, SessionLocal, Base, init_db, get_db
 from .models import (
     TrendType,
     SignalType,

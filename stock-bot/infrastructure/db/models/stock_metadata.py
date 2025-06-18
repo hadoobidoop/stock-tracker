@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Float, DateTime, Text
 from sqlalchemy.sql import func
-from infrastructure.db.config.settings import Base
+from infrastructure.db.db_manager import Base
 
 
 class StockMetadata(Base):
