@@ -4,6 +4,7 @@
 """
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+from contextlib import contextmanager
 
 # 설정 파일에서 DATABASE_URL을 가져옵니다.
 from infrastructure.db.config.settings import DATABASE_URL
@@ -31,6 +32,7 @@ def init_db():
     create_db_and_tables()
 
 
+@contextmanager
 def get_db():
     """데이터베이스 세션을 생성하고 반환하는 제너레이터입니다."""
     db = SessionLocal()

@@ -9,16 +9,16 @@ logger = logging.getLogger(__name__)
 
 def get_ohlcv_data(
     symbols: Union[str, List[str]],
-    interval: str,
     period: str,
+    interval: str,
 ) -> Tuple[Dict[str, pd.DataFrame], List[str]]:
     """
     야후 파이낸스에서 OHLCV 데이터를 가져옵니다.
 
     Args:
         symbols (Union[str, List[str]]): 주식 티커 심볼 또는 심볼 리스트.
-        interval (str): 데이터 간격 (예: '1d', '1h', '1m').
         period (str): 현재로부터의 기간 (예: '7d', '1mo', '1y').
+        interval (str): 데이터 간격 (예: '1d', '1h', '1m').
 
     Returns:
         Tuple[Dict[str, pd.DataFrame], List[str]]:
