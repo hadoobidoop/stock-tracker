@@ -35,19 +35,38 @@ class SQLStockRepository(StockRepository):
             logger.info("No metadata to save.")
             return
 
-        values_to_insert = [asdict(data) for data in metadata_list]
-        update_dict = {
-            col.name: col for col in mysql_insert(DbStockMetadata).inserted
-            if col.name not in ['ticker', 'id']
-        }
-        stmt = mysql_insert(DbStockMetadata).values(values_to_insert)
-        on_duplicate_key_stmt = stmt.on_duplicate_key_update(update_dict)
-
         try:
             with get_db() as db:
+                table = DbStockMetadata.__table__
+                valid_columns = {c.name for c in table.columns}
+                
+                values_to_insert = []
+                for metadata in metadata_list:
+                    record = asdict(metadata)
+                    filtered_record = {
+                        k.lower(): v for k, v in record.items()
+                        if k.lower() in valid_columns
+                    }
+                    values_to_insert.append(filtered_record)
+
+                if not values_to_insert:
+                    return
+
+                stmt = mysql_insert(DbStockMetadata).values(values_to_insert)
+                
+                valid_update_columns = valid_columns - {'id', 'ticker', 'created_at'}
+                
+                update_dict = {
+                    col: stmt.inserted[col]
+                    for col in valid_update_columns
+                }
+                
+                on_duplicate_key_stmt = stmt.on_duplicate_key_update(**update_dict)
                 db.execute(on_duplicate_key_stmt)
                 db.commit()
+                
                 logger.info(f"Successfully saved {len(metadata_list)} metadata records.")
+                
         except Exception as e:
             logger.error(f"Failed to bulk save metadata: {e}", exc_info=True)
             # Rollback is implicitly handled by the session context manager on error
