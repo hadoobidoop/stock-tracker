@@ -1,0 +1,1 @@
+"""Composite signal detectors."""

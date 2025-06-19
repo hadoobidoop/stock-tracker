@@ -1,0 +1,1 @@
+"""Trend following signal detectors.""" 
