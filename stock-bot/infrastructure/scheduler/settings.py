@@ -26,6 +26,6 @@ REALTIME_SIGNAL_JOB = {
     'cron': {
         'day_of_week': 'mon-fri',
         'hour': '9-16',
-        'minute': '*' # 매분 실행으로 변경. 필요시 '*/5' 등으로 조절 가능
+        'minute': '*/30'
     }
 }
