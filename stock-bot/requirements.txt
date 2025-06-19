@@ -13,4 +13,3 @@ python-dotenv
 pytz
 backtesting
 boto3
-pynamodb

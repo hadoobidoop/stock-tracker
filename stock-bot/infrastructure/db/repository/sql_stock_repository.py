@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.mysql import insert as mysql_insert
@@ -35,7 +36,7 @@ class SQLStockRepository(StockRepository):
             return
 
         # 도메인 모델 리스트를 DB 모델 딕셔너리 리스트로 변환합니다.
-        values_to_insert = [data.dict() for data in metadata_list]
+        values_to_insert = [asdict(data) for data in metadata_list]
 
         # ON DUPLICATE KEY UPDATE를 위한 딕셔너리를 만듭니다.
         # ticker를 제외한 모든 필드를 업데이트 대상으로 지정합니다.

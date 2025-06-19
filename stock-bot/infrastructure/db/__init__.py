@@ -9,7 +9,6 @@ from .models import (
     TechnicalIndicator,
     StockMetadata,
     TradingSignal,
-    DailyPrediction,
 )
 
 __all__ = [

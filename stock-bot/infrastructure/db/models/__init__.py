@@ -5,7 +5,6 @@ from .intraday_ohlcv import IntradayOhlcv
 from .technical_indicator import TechnicalIndicator
 from .stock_metadata import StockMetadata
 from .trading_signal import TradingSignal
-from .daily_prediction import DailyPrediction
 
 __all__ = [
     'TrendType',
@@ -14,5 +13,4 @@ __all__ = [
     'TechnicalIndicator',
     'StockMetadata',
     'TradingSignal',
-    'DailyPrediction',
 ]

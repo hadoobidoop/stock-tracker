@@ -1,8 +1,8 @@
 from time import sleep
 import yfinance
 
-from domain.stock.config.settings import STOCK_SYMBOLS
-from domain.stock.service.stock_metadata_service import update_stock_metadata
+from domain.stock.config import STOCK_SYMBOLS
+from domain.stock.service import update_stock_metadata
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
