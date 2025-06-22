@@ -35,14 +35,22 @@ class StockAnalysisService:
             logger.error(f"Error getting stocks to analyze: {e}")
             return STOCK_SYMBOLS
     
-    def get_market_trend(self) -> TrendType:
-        """시장 추세를 판단합니다."""
+    def get_market_trend(self, market_data: pd.DataFrame = None) -> TrendType:
+        """
+        시장 추세를 판단합니다.
+        
+        Args:
+            market_data: 백테스팅용 시장 데이터 (제공되지 않으면 실시간 데이터 조회)
+        """
         try:
-            market_symbol = REALTIME_SIGNAL_DETECTION["MARKET_INDEX_SYMBOL"]
             sma_period = REALTIME_SIGNAL_DETECTION["MARKET_TREND_SMA_PERIOD"]
             
-            data, _ = get_ohlcv_data(market_symbol, f"{sma_period}d", '1d')
-            df_market = data.get(market_symbol)
+            if market_data is None:
+                market_symbol = REALTIME_SIGNAL_DETECTION["MARKET_INDEX_SYMBOL"]
+                data, _ = get_ohlcv_data(market_symbol, f"{sma_period}d", '1d')
+                df_market = data.get(market_symbol)
+            else:
+                df_market = market_data
 
             if df_market is not None and not df_market.empty and len(df_market) >= sma_period:
                 df_market[f'SMA_{sma_period}'] = df_market['Close'].rolling(window=sma_period).mean()

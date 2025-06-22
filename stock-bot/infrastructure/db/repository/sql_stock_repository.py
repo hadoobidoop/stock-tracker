@@ -1,12 +1,18 @@
 from dataclasses import asdict
-from typing import List, Optional
+from typing import List, Optional, Dict
+from datetime import datetime, timedelta, timezone
+import pandas as pd
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.mysql import insert as mysql_insert
+from sqlalchemy import func
+import time
 
 from domain.stock.models.stock_metadata import StockMetadata as DomainStockMetadata
 from domain.stock.repository.stock_repository import StockRepository
 from infrastructure.db.db_manager import get_db
 from infrastructure.db.models import StockMetadata as DbStockMetadata
+from infrastructure.db.models.intraday_ohlcv import IntradayOhlcv
+from infrastructure.client.yahoo.yahoo_client import get_ohlcv_data
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
@@ -105,4 +111,64 @@ class SQLStockRepository(StockRepository):
             
         except Exception as e:
             logger.error(f"Error getting stocks for analysis: {e}")
-            return [] 
+            return []
+
+    def fetch_and_cache_ohlcv(self, tickers: List[str], days: int, interval: str) -> Dict[str, pd.DataFrame]:
+        """
+        주어진 종목들의 OHLCV 데이터를 Yahoo Finance에서 조회합니다.
+        API 호출량을 최소화하기 위해 한 번에 여러 종목을 조회합니다.
+        
+        Args:
+            tickers: 조회할 종목 리스트
+            days: 조회할 일수
+            interval: 데이터 간격 ('1h', '1d' 등)
+            
+        Returns:
+            Dict[str, pd.DataFrame]: 종목별 OHLCV 데이터프레임
+        """
+        try:
+            # yfinance의 period 파라미터 형식으로 변환
+            period = f"{days+2}d"  # 충분한 데이터를 위해 2일 추가
+            
+            # 첫 시도
+            data_dict, failed_tickers = get_ohlcv_data(tickers, period, interval)
+            
+            # 실패한 티커에 대해 한 번 더 시도 (API 제한 때문일 수 있음)
+            if failed_tickers:
+                logger.warning(f"Retrying failed tickers after 2 seconds: {failed_tickers}")
+                time.sleep(2)  # API 제한 회피를 위한 대기
+                
+                # 실패한 티커들만 다시 시도
+                retry_data, still_failed = get_ohlcv_data(failed_tickers, period, interval)
+                data_dict.update(retry_data)
+                
+                if still_failed:
+                    logger.error(f"Failed to fetch data for tickers even after retry: {still_failed}")
+            
+            # 요청한 기간에 맞게 데이터 필터링 (UTC 타임존 적용)
+            start_date = datetime.now(timezone.utc) - timedelta(days=days)
+            filtered_dict = {}
+            
+            for ticker, df in data_dict.items():
+                if not df.empty:
+                    # 타임스탬프가 UTC가 아니면 UTC로 변환
+                    if df.index.tz is None:
+                        df.index = df.index.tz_localize('UTC')
+                    elif df.index.tz.tzname(None) != 'UTC':  # None은 현재 시점을 의미
+                        df.index = df.index.tz_convert('UTC')
+                    
+                    # 요청한 기간으로 필터링
+                    filtered_df = df[df.index >= start_date]
+                    if not filtered_df.empty:
+                        filtered_dict[ticker] = filtered_df
+                    else:
+                        logger.warning(f"No data within requested period for {ticker}")
+                        filtered_dict[ticker] = pd.DataFrame()
+                else:
+                    filtered_dict[ticker] = pd.DataFrame()
+            
+            return filtered_dict
+                
+        except Exception as e:
+            logger.error(f"Error fetching OHLCV data from Yahoo Finance: {e}", exc_info=True)
+            return {ticker: pd.DataFrame() for ticker in tickers} 

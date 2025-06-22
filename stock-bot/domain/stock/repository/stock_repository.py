@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Dict
+import pandas as pd
 
 from domain.stock.models.stock_metadata import StockMetadata
 from domain.stock.models.stock_ohlcv import StockOhlcv
@@ -30,4 +31,19 @@ class StockRepository(ABC):
     @abstractmethod
     def get_stocks_for_analysis(self) -> List[StockMetadata]:
         """분석 대상 주식 목록을 조회합니다."""
+        pass
+
+    @abstractmethod
+    def fetch_and_cache_ohlcv(self, tickers: List[str], days: int, interval: str) -> Dict[str, pd.DataFrame]:
+        """
+        주어진 종목들의 OHLCV 데이터를 조회하고 캐시합니다.
+        
+        Args:
+            tickers: 조회할 종목 리스트
+            days: 조회할 일수
+            interval: 데이터 간격 ('1h', '1d' 등)
+            
+        Returns:
+            Dict[str, pd.DataFrame]: 종목별 OHLCV 데이터프레임
+        """
         pass

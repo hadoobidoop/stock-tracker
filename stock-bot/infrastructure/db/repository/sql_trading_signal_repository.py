@@ -5,7 +5,7 @@ from infrastructure.logging import get_logger
 from infrastructure.db import get_db
 from infrastructure.db.models.trading_signal import TradingSignal as TradingSignalModel
 from domain.analysis.repository.trading_signal_repository import TradingSignalRepository
-from domain.analysis.models.trading_signal import TradingSignal
+from domain.analysis.models.trading_signal import TradingSignal, SignalEvidence
 
 logger = get_logger(__name__)
 
@@ -28,7 +28,8 @@ class SQLTradingSignalRepository(TradingSignalRepository):
                     trend_ref_close=signal.trend_ref_close,
                     trend_ref_value=signal.trend_ref_value,
                     details=signal.details,
-                    stop_loss_price=signal.stop_loss_price
+                    stop_loss_price=signal.stop_loss_price,
+                    evidence=signal.evidence.to_dict() if signal.evidence else None
                 )
                 
                 db.add(signal_model)
@@ -58,7 +59,8 @@ class SQLTradingSignalRepository(TradingSignalRepository):
                         trend_ref_close=signal.trend_ref_close,
                         trend_ref_value=signal.trend_ref_value,
                         details=signal.details,
-                        stop_loss_price=signal.stop_loss_price
+                        stop_loss_price=signal.stop_loss_price,
+                        evidence=signal.evidence.to_dict() if signal.evidence else None
                     )
                     signal_models.append(signal_model)
                 
@@ -136,6 +138,13 @@ class SQLTradingSignalRepository(TradingSignalRepository):
     
     def _convert_to_domain(self, db_signal: TradingSignalModel) -> TradingSignal:
         """DB 모델을 도메인 모델로 변환합니다."""
+        evidence = None
+        if db_signal.evidence:
+            try:
+                evidence = SignalEvidence.from_dict(db_signal.evidence)
+            except Exception as e:
+                logger.warning(f"Failed to parse evidence for signal {db_signal.signal_id}: {e}")
+        
         return TradingSignal(
             ticker=db_signal.ticker,
             signal_type=db_signal.signal_type,
@@ -147,5 +156,6 @@ class SQLTradingSignalRepository(TradingSignalRepository):
             trend_ref_close=db_signal.trend_ref_close,
             trend_ref_value=db_signal.trend_ref_value,
             details=db_signal.details,
-            stop_loss_price=db_signal.stop_loss_price
+            stop_loss_price=db_signal.stop_loss_price,
+            evidence=evidence
         ) 

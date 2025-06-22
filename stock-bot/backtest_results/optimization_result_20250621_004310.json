@@ -1,0 +1,329 @@
+{
+  "best_parameters": {
+    "parameters": {
+      "commission_rate": 0.0005,
+      "risk_per_trade": 0.01,
+      "data_interval": "1h"
+    },
+    "total_return_percent": 0.0,
+    "annualized_return_percent": 0.0,
+    "max_drawdown_percent": 0.0,
+    "sharpe_ratio": 0.0,
+    "win_rate": 0.0,
+    "total_trades": 0,
+    "profit_factor": 0.0
+  },
+  "all_results": [
+    {
+      "parameters": {
+        "commission_rate": 0.0005,
+        "risk_per_trade": 0.01,
+        "data_interval": "1h"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    {
+      "parameters": {
+        "commission_rate": 0.0005,
+        "risk_per_trade": 0.01,
+        "data_interval": "1d"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    {
+      "parameters": {
+        "commission_rate": 0.0005,
+        "risk_per_trade": 0.02,
+        "data_interval": "1h"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    {
+      "parameters": {
+        "commission_rate": 0.0005,
+        "risk_per_trade": 0.02,
+        "data_interval": "1d"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    {
+      "parameters": {
+        "commission_rate": 0.0005,
+        "risk_per_trade": 0.03,
+        "data_interval": "1h"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    {
+      "parameters": {
+        "commission_rate": 0.0005,
+        "risk_per_trade": 0.03,
+        "data_interval": "1d"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    {
+      "parameters": {
+        "commission_rate": 0.001,
+        "risk_per_trade": 0.01,
+        "data_interval": "1h"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    {
+      "parameters": {
+        "commission_rate": 0.001,
+        "risk_per_trade": 0.01,
+        "data_interval": "1d"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    {
+      "parameters": {
+        "commission_rate": 0.001,
+        "risk_per_trade": 0.02,
+        "data_interval": "1h"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    {
+      "parameters": {
+        "commission_rate": 0.001,
+        "risk_per_trade": 0.02,
+        "data_interval": "1d"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    {
+      "parameters": {
+        "commission_rate": 0.001,
+        "risk_per_trade": 0.03,
+        "data_interval": "1h"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    {
+      "parameters": {
+        "commission_rate": 0.001,
+        "risk_per_trade": 0.03,
+        "data_interval": "1d"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    {
+      "parameters": {
+        "commission_rate": 0.002,
+        "risk_per_trade": 0.01,
+        "data_interval": "1h"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    {
+      "parameters": {
+        "commission_rate": 0.002,
+        "risk_per_trade": 0.01,
+        "data_interval": "1d"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    {
+      "parameters": {
+        "commission_rate": 0.002,
+        "risk_per_trade": 0.02,
+        "data_interval": "1h"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    {
+      "parameters": {
+        "commission_rate": 0.002,
+        "risk_per_trade": 0.02,
+        "data_interval": "1d"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    {
+      "parameters": {
+        "commission_rate": 0.002,
+        "risk_per_trade": 0.03,
+        "data_interval": "1h"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    {
+      "parameters": {
+        "commission_rate": 0.002,
+        "risk_per_trade": 0.03,
+        "data_interval": "1d"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    }
+  ],
+  "optimization_summary": {
+    "best_total_return": {
+      "parameters": {
+        "commission_rate": 0.0005,
+        "risk_per_trade": 0.01,
+        "data_interval": "1h"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    "best_sharpe_ratio": {
+      "parameters": {
+        "commission_rate": 0.0005,
+        "risk_per_trade": 0.01,
+        "data_interval": "1h"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    "best_win_rate": {
+      "parameters": {
+        "commission_rate": 0.0005,
+        "risk_per_trade": 0.01,
+        "data_interval": "1h"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    "minimum_drawdown": {
+      "parameters": {
+        "commission_rate": 0.0005,
+        "risk_per_trade": 0.01,
+        "data_interval": "1h"
+      },
+      "total_return_percent": 0.0,
+      "annualized_return_percent": 0.0,
+      "max_drawdown_percent": 0.0,
+      "sharpe_ratio": 0.0,
+      "win_rate": 0.0,
+      "total_trades": 0,
+      "profit_factor": 0.0
+    },
+    "total_combinations_tested": 18
+  }
+}

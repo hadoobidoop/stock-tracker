@@ -52,10 +52,12 @@ def calculate_stochastic(df: pd.DataFrame, k_period: int = 14, d_period: int = 3
 def calculate_bollinger_bands(df: pd.DataFrame, period: int = 20, std_dev: float = 2.0) -> pd.DataFrame:
     """볼린저 밴드를 계산합니다."""
     df = df.copy()
-    df[f'BBM_{period}_{std_dev}_0'] = df['Close'].rolling(window=period).mean()
+    # std_dev를 정수로 변환하여 일관된 컬럼명 사용
+    std_dev_int = int(std_dev)
+    df[f'BBM_{period}_{std_dev_int}_0'] = df['Close'].rolling(window=period).mean()
     bb_std = df['Close'].rolling(window=period).std()
-    df[f'BBU_{period}_{std_dev}_0'] = df[f'BBM_{period}_{std_dev}_0'] + (bb_std * std_dev)
-    df[f'BBL_{period}_{std_dev}_0'] = df[f'BBM_{period}_{std_dev}_0'] - (bb_std * std_dev)
+    df[f'BBU_{period}_{std_dev_int}_0'] = df[f'BBM_{period}_{std_dev_int}_0'] + (bb_std * std_dev)
+    df[f'BBL_{period}_{std_dev_int}_0'] = df[f'BBM_{period}_{std_dev_int}_0'] - (bb_std * std_dev)
     return df
 
 
@@ -82,12 +84,19 @@ def calculate_adx(df: pd.DataFrame, period: int = 14) -> pd.DataFrame:
     """ADX(Average Directional Index)를 계산합니다."""
     df = df.copy()
     
+    # 데이터가 충분하지 않으면 빈 컬럼들을 만들어서 반환
+    if len(df) < period * 2:
+        df[f'ADX_{period}'] = np.nan
+        df[f'DMP_{period}'] = np.nan
+        df[f'DMN_{period}'] = np.nan
+        return df
+    
     # +DM, -DM 계산
     high_diff = df['High'].diff()
     low_diff = df['Low'].diff()
     
-    plus_dm = np.where((high_diff > low_diff) & (high_diff > 0), high_diff, 0)
-    minus_dm = np.where((low_diff > high_diff) & (low_diff > 0), -low_diff, 0)
+    plus_dm = np.where((high_diff > -low_diff) & (high_diff > 0), high_diff, 0)
+    minus_dm = np.where((-low_diff > high_diff) & (-low_diff > 0), -low_diff, 0)
     
     # True Range 계산
     tr1 = df['High'] - df['Low']
@@ -95,7 +104,7 @@ def calculate_adx(df: pd.DataFrame, period: int = 14) -> pd.DataFrame:
     tr3 = abs(df['Low'] - df['Close'].shift())
     tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
     
-    # Smoothed values
+    # Wilder's smoothing (초기값 설정 후 점진적 업데이트)
     tr_smooth = tr.rolling(window=period).mean()
     plus_dm_smooth = pd.Series(plus_dm).rolling(window=period).mean()
     minus_dm_smooth = pd.Series(minus_dm).rolling(window=period).mean()
@@ -105,10 +114,13 @@ def calculate_adx(df: pd.DataFrame, period: int = 14) -> pd.DataFrame:
     minus_di = 100 * (minus_dm_smooth / tr_smooth)
     
     # DX 계산
-    dx = 100 * abs(plus_di - minus_di) / (plus_di + minus_di)
+    sum_di = plus_di + minus_di
+    dx = 100 * abs(plus_di - minus_di) / sum_di.replace(0, np.nan)
     
-    # ADX 계산
-    df[f'ADX_{period}'] = dx.rolling(window=period).mean()
+    # ADX 계산 (단순 이동평균)
+    adx = dx.rolling(window=period).mean()
+    
+    df[f'ADX_{period}'] = adx
     df[f'DMP_{period}'] = plus_di
     df[f'DMN_{period}'] = minus_di
     
@@ -207,4 +219,172 @@ def get_trend_direction(df: pd.DataFrame, short_period: int = 20, long_period: i
             return "NEUTRAL"
     except Exception as e:
         logger.error(f"Error determining trend direction: {e}")
-        return "NEUTRAL" 
+        return "NEUTRAL"
+
+
+def calculate_daily_indicators(df: pd.DataFrame) -> pd.DataFrame:
+    """일봉 기반 장기 추세 지표를 계산합니다."""
+    try:
+        from domain.analysis.config.analysis_settings import DAILY_TECHNICAL_INDICATORS
+        
+        df = df.copy()
+        
+        # 설정값 가져오기
+        sma_periods = DAILY_TECHNICAL_INDICATORS["SMA_PERIODS"]
+        rsi_period = DAILY_TECHNICAL_INDICATORS["RSI_PERIOD"]
+        bb_period = DAILY_TECHNICAL_INDICATORS["BB_PERIOD"]
+        bb_std_dev = DAILY_TECHNICAL_INDICATORS["BB_STD_DEV"]
+        adx_period = DAILY_TECHNICAL_INDICATORS["ADX_PERIOD"]
+        
+        # 장기 추세 지표들 계산
+        df = calculate_sma(df, sma_periods)
+        df = calculate_rsi(df, rsi_period)
+        df = calculate_bollinger_bands(df, bb_period, bb_std_dev)
+        df = calculate_adx(df, adx_period)
+        
+        return df
+    except Exception as e:
+        logger.error(f"Error calculating daily indicators: {e}")
+        return df
+
+
+def calculate_hourly_indicators(df: pd.DataFrame) -> pd.DataFrame:
+    """시간봉 기반 단기 신호 지표를 계산합니다."""
+    try:
+        from domain.analysis.config.analysis_settings import HOURLY_TECHNICAL_INDICATORS
+        
+        df = df.copy()
+        
+        # 설정값 가져오기
+        sma_periods = HOURLY_TECHNICAL_INDICATORS["SMA_PERIODS"]
+        rsi_period = HOURLY_TECHNICAL_INDICATORS["RSI_PERIOD"]
+        macd_fast = HOURLY_TECHNICAL_INDICATORS["MACD_FAST"]
+        macd_slow = HOURLY_TECHNICAL_INDICATORS["MACD_SLOW"]
+        macd_signal = HOURLY_TECHNICAL_INDICATORS["MACD_SIGNAL"]
+        stoch_k_period = HOURLY_TECHNICAL_INDICATORS["STOCH_K_PERIOD"]
+        stoch_d_period = HOURLY_TECHNICAL_INDICATORS["STOCH_D_PERIOD"]
+        atr_period = HOURLY_TECHNICAL_INDICATORS["ATR_PERIOD"]
+        volume_sma_period = HOURLY_TECHNICAL_INDICATORS["VOLUME_SMA_PERIOD"]
+        
+        # 단기 신호 지표들 계산
+        df = calculate_sma(df, sma_periods)
+        df = calculate_rsi(df, rsi_period)
+        df = calculate_macd(df, macd_fast, macd_slow, macd_signal)
+        df = calculate_stochastic(df, stoch_k_period, stoch_d_period)
+        df = calculate_atr(df, atr_period)
+        df = calculate_volume_sma(df, volume_sma_period)
+        
+        return df
+    except Exception as e:
+        logger.error(f"Error calculating hourly indicators: {e}")
+        return df
+
+
+def calculate_multi_timeframe_indicators(daily_df: pd.DataFrame, hourly_df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
+    """
+    다중 시간대 지표를 계산합니다.
+    
+    Args:
+        daily_df: 일봉 데이터
+        hourly_df: 시간봉 데이터
+    
+    Returns:
+        Dict: {'daily': 일봉지표, 'hourly': 시간봉지표}
+    """
+    try:
+        result = {}
+        
+        # 일봉 지표 계산
+        if not daily_df.empty:
+            result['daily'] = calculate_daily_indicators(daily_df)
+            logger.debug(f"Calculated daily indicators: {len(result['daily'])} bars")
+        
+        # 시간봉 지표 계산
+        if not hourly_df.empty:
+            result['hourly'] = calculate_hourly_indicators(hourly_df)
+            logger.debug(f"Calculated hourly indicators: {len(result['hourly'])} bars")
+        
+        return result
+    except Exception as e:
+        logger.error(f"Error calculating multi-timeframe indicators: {e}")
+        return {'daily': pd.DataFrame(), 'hourly': pd.DataFrame()}
+
+
+def get_trend_direction_multi_timeframe(daily_indicators: pd.DataFrame, hourly_indicators: pd.DataFrame) -> Dict[str, str]:
+    """
+    다중 시간대 추세 방향을 분석합니다.
+    
+    Returns:
+        Dict: {'daily_trend': '상승/하락/중립', 'hourly_trend': '상승/하락/중립', 'consensus': '일치/불일치'}
+    """
+    try:
+        result = {
+            'daily_trend': 'NEUTRAL',
+            'hourly_trend': 'NEUTRAL',
+            'consensus': 'NEUTRAL'
+        }
+        
+        # 일봉 추세 (SMA_50 기준)
+        if not daily_indicators.empty and 'SMA_50' in daily_indicators.columns:
+            latest_close = daily_indicators.iloc[-1]['Close']
+            latest_sma50 = daily_indicators.iloc[-1]['SMA_50']
+            
+            if not pd.isna(latest_sma50):
+                if latest_close > latest_sma50 * 1.02:  # 2% 이상 위
+                    result['daily_trend'] = 'BULLISH'
+                elif latest_close < latest_sma50 * 0.98:  # 2% 이상 아래
+                    result['daily_trend'] = 'BEARISH'
+        
+        # 시간봉 추세 (SMA_20 기준)
+        if not hourly_indicators.empty and 'SMA_20' in hourly_indicators.columns:
+            latest_close = hourly_indicators.iloc[-1]['Close']
+            latest_sma20 = hourly_indicators.iloc[-1]['SMA_20']
+            
+            if not pd.isna(latest_sma20):
+                if latest_close > latest_sma20:
+                    result['hourly_trend'] = 'BULLISH'
+                elif latest_close < latest_sma20:
+                    result['hourly_trend'] = 'BEARISH'
+        
+        # 컨센서스 판단
+        if result['daily_trend'] == result['hourly_trend']:
+            result['consensus'] = result['daily_trend']
+        else:
+            result['consensus'] = 'MIXED'
+        
+        return result
+    except Exception as e:
+        logger.error(f"Error analyzing multi-timeframe trend: {e}")
+        return {'daily_trend': 'NEUTRAL', 'hourly_trend': 'NEUTRAL', 'consensus': 'NEUTRAL'}
+
+
+def validate_multi_timeframe_data(daily_df: pd.DataFrame, hourly_df: pd.DataFrame) -> Dict[str, bool]:
+    """
+    다중 시간대 데이터의 유효성을 검증합니다.
+    
+    Returns:
+        Dict: {'daily_valid': bool, 'hourly_valid': bool, 'sufficient_for_analysis': bool}
+    """
+    try:
+        min_daily_length = 200  # 일봉 최소 200개 (약 10개월)
+        min_hourly_length = 60   # 시간봉 최소 60개 (약 3일)
+        
+        daily_valid = not daily_df.empty and len(daily_df) >= min_daily_length
+        hourly_valid = not hourly_df.empty and len(hourly_df) >= min_hourly_length
+        
+        return {
+            'daily_valid': daily_valid,
+            'hourly_valid': hourly_valid,
+            'sufficient_for_analysis': daily_valid and hourly_valid,
+            'daily_length': len(daily_df) if not daily_df.empty else 0,
+            'hourly_length': len(hourly_df) if not hourly_df.empty else 0
+        }
+    except Exception as e:
+        logger.error(f"Error validating multi-timeframe data: {e}")
+        return {
+            'daily_valid': False,
+            'hourly_valid': False,
+            'sufficient_for_analysis': False,
+            'daily_length': 0,
+            'hourly_length': 0
+        } 

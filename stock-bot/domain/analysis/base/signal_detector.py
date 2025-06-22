@@ -38,6 +38,21 @@ class SignalDetector(ABC):
         adjustment_factors = SIGNAL_ADJUSTMENT_FACTORS_BY_TREND.get(market_trend.value, {})
         return adjustment_factors.get(factor_type, 1.0)
     
+    def validate_required_columns(self, df: pd.DataFrame, required_columns: List[str]) -> bool:
+        """필수 컬럼들이 DataFrame에 존재하고 유효한지 검증합니다."""
+        if df.empty:
+            return False
+        
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            return False
+        
+        # 최소 2개의 행이 있는지 확인 (현재와 이전 데이터 비교용)
+        if len(df) < 2:
+            return False
+        
+        return True
+    
     def validate_required_columns(self, df: pd.DataFrame, required_prefixes: List[str]) -> bool:
         """필요한 컬럼들이 DataFrame에 존재하는지 확인합니다."""
         current_cols = df.columns

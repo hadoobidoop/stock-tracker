@@ -20,4 +20,7 @@ class TradingSignal(Base):
 
     details = Column(JSON)
     price_at_signal = Column(Float)
-    stop_loss_price = Column(Float, nullable=True) 
+    stop_loss_price = Column(Float, nullable=True)
+    
+    # 상세한 매수매도 근거 저장 (새로 추가)
+    evidence = Column(JSON, nullable=True) 

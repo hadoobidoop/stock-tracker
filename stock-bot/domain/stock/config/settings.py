@@ -5,3 +5,6 @@ from typing import List
 STOCK_SYMBOLS: List[str] = [
     "AAPL", "BITX", "GOOGL", "AMZN", "NVDA", "META", "TSLL"
 ]
+
+# 시장 지수 티커 (S&P 500)
+MARKET_INDEX_TICKER: str = "^GSPC"
