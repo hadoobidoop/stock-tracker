@@ -1,12 +1,28 @@
 #!/usr/bin/env python3
 """
-백테스팅 실행 스크립트
+백테스팅 실행 스크립트 - 다중 전략 시스템 지원
 
-이 스크립트는 기존 신호 감지 전략을 사용하여 백테스팅을 실행합니다.
-모든 매수매도 전략이 완전히 재현됩니다.
+이 스크립트는 새로운 다중 전략 시스템을 활용하여 다양한 백테스팅을 실행합니다.
+
+새로운 기능:
+1. 특정 전략으로 백테스팅
+2. 전략 조합으로 백테스팅  
+3. 자동 전략 선택 백테스팅
+4. 전략 비교 백테스팅
+5. 기존 레거시 방식 지원
 
 사용 예시:
-python run_backtest.py --tickers AAPL MSFT NVDA --start-date 2023-01-01 --end-date 2024-01-01
+# 특정 전략으로 백테스팅
+python run_backtest.py --tickers AAPL MSFT NVDA --start-date 2023-01-01 --end-date 2024-01-01 --mode strategy --strategy AGGRESSIVE
+
+# 전략 비교
+python run_backtest.py --tickers AAPL MSFT NVDA --start-date 2023-01-01 --end-date 2024-01-01 --mode strategy-comparison
+
+# 전략 조합
+python run_backtest.py --tickers AAPL MSFT NVDA --start-date 2023-01-01 --end-date 2024-01-01 --mode strategy-mix --strategy-mix balanced_mix
+
+# 자동 전략 선택
+python run_backtest.py --tickers AAPL MSFT NVDA --start-date 2023-01-01 --end-date 2024-01-01 --mode auto-strategy
 """
 
 import argparse
@@ -20,13 +36,14 @@ sys.path.insert(0, str(project_root))
 
 from infrastructure.logging import get_logger
 from domain.backtesting.service.backtesting_service import BacktestingService
+from domain.analysis.config.strategy_settings import StrategyType
 
 logger = get_logger(__name__)
 
 
 def parse_arguments():
     """명령행 인수 파싱"""
-    parser = argparse.ArgumentParser(description='백테스팅 실행 스크립트')
+    parser = argparse.ArgumentParser(description='다중 전략 백테스팅 실행 스크립트')
     
     # 필수 인수
     parser.add_argument('--tickers', nargs='+', required=True,
@@ -56,14 +73,33 @@ def parse_arguments():
                        help='결과 저장 디렉토리 (기본값: ./backtest_results)')
     
     parser.add_argument('--mode', default='single',
-                       choices=['single', 'optimization', 'walk-forward', 'comparison'],
+                       choices=['single', 'strategy', 'strategy-mix', 'auto-strategy', 
+                               'strategy-comparison', 'optimization', 'walk-forward', 'comparison'],
                        help='실행 모드 (기본값: single)')
+    
+    # 새로운 전략 관련 인수들
+    parser.add_argument('--strategy', 
+                       choices=['CONSERVATIVE', 'BALANCED', 'AGGRESSIVE', 'MOMENTUM', 
+                               'TREND_FOLLOWING', 'CONTRARIAN', 'SCALPING', 'SWING'],
+                       help='사용할 전략 (strategy 모드에서 필수)')
+    
+    parser.add_argument('--strategy-mix',
+                       choices=['balanced_mix', 'conservative_mix', 'aggressive_mix'],
+                       help='사용할 전략 조합 (strategy-mix 모드에서 필수)')
+    
+    parser.add_argument('--compare-strategies', nargs='+',
+                       choices=['CONSERVATIVE', 'BALANCED', 'AGGRESSIVE', 'MOMENTUM', 
+                               'TREND_FOLLOWING', 'CONTRARIAN', 'SCALPING', 'SWING'],
+                       help='비교할 전략들 (지정하지 않으면 모든 전략 비교)')
+    
+    parser.add_argument('--use-legacy', action='store_true',
+                       help='레거시 신호 감지 시스템 사용')
     
     return parser.parse_args()
 
 
 def run_single_backtest(service: BacktestingService, args):
-    """단일 백테스트 실행"""
+    """단일 백테스트 실행 (기존 호환성)"""
     logger.info("=== 단일 백테스트 실행 ===")
     
     start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
@@ -76,12 +112,142 @@ def run_single_backtest(service: BacktestingService, args):
         initial_capital=args.initial_capital,
         commission_rate=args.commission_rate,
         risk_per_trade=args.risk_per_trade,
+        data_interval=args.data_interval,
+        use_enhanced_signals=not args.use_legacy
+    )
+    
+    # 결과 출력
+    print_backtest_summary(result, "단일 백테스트")
+    
+    # 상세 리포트 생성 및 저장
+    save_backtest_report(service, result, args, "single_backtest")
+    
+    return result
+
+
+def run_strategy_backtest(service: BacktestingService, args):
+    """특정 전략으로 백테스트 실행"""
+    if not args.strategy:
+        raise ValueError("--strategy 인수가 필요합니다.")
+    
+    logger.info(f"=== {args.strategy} 전략 백테스트 실행 ===")
+    
+    start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
+    end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
+    strategy_type = StrategyType[args.strategy]
+    
+    result = service.run_specific_strategy_backtest(
+        tickers=args.tickers,
+        start_date=start_date,
+        end_date=end_date,
+        strategy_type=strategy_type,
+        initial_capital=args.initial_capital,
+        commission_rate=args.commission_rate,
+        risk_per_trade=args.risk_per_trade,
         data_interval=args.data_interval
     )
     
     # 결과 출력
+    print_backtest_summary(result, f"{args.strategy} 전략 백테스트")
+    
+    # 상세 리포트 생성 및 저장
+    save_backtest_report(service, result, args, f"strategy_{args.strategy.lower()}_backtest")
+    
+    return result
+
+
+def run_strategy_mix_backtest(service: BacktestingService, args):
+    """전략 조합으로 백테스트 실행"""
+    if not args.strategy_mix:
+        raise ValueError("--strategy-mix 인수가 필요합니다.")
+    
+    logger.info(f"=== {args.strategy_mix} 전략 조합 백테스트 실행 ===")
+    
+    start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
+    end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
+    
+    result = service.run_strategy_mix_backtest(
+        tickers=args.tickers,
+        start_date=start_date,
+        end_date=end_date,
+        mix_name=args.strategy_mix,
+        initial_capital=args.initial_capital,
+        commission_rate=args.commission_rate,
+        risk_per_trade=args.risk_per_trade,
+        data_interval=args.data_interval
+    )
+    
+    # 결과 출력
+    print_backtest_summary(result, f"{args.strategy_mix} 전략 조합 백테스트")
+    
+    # 상세 리포트 생성 및 저장
+    save_backtest_report(service, result, args, f"strategy_mix_{args.strategy_mix}_backtest")
+    
+    return result
+
+
+def run_auto_strategy_backtest(service: BacktestingService, args):
+    """자동 전략 선택으로 백테스트 실행"""
+    logger.info("=== 자동 전략 선택 백테스트 실행 ===")
+    
+    start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
+    end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
+    
+    result = service.run_auto_strategy_backtest(
+        tickers=args.tickers,
+        start_date=start_date,
+        end_date=end_date,
+        initial_capital=args.initial_capital,
+        commission_rate=args.commission_rate,
+        risk_per_trade=args.risk_per_trade,
+        data_interval=args.data_interval
+    )
+    
+    # 결과 출력
+    print_backtest_summary(result, "자동 전략 선택 백테스트")
+    
+    # 상세 리포트 생성 및 저장
+    save_backtest_report(service, result, args, "auto_strategy_backtest")
+    
+    return result
+
+
+def run_strategy_comparison(service: BacktestingService, args):
+    """전략 비교 백테스트 실행"""
+    logger.info("=== 전략 비교 백테스트 실행 ===")
+    
+    start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
+    end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
+    
+    # 비교할 전략들 결정
+    strategies = None
+    if args.compare_strategies:
+        strategies = [StrategyType[s] for s in args.compare_strategies]
+    
+    comparison_result = service.compare_all_strategies(
+        tickers=args.tickers,
+        start_date=start_date,
+        end_date=end_date,
+        initial_capital=args.initial_capital,
+        commission_rate=args.commission_rate,
+        risk_per_trade=args.risk_per_trade,
+        data_interval=args.data_interval,
+        strategies=strategies
+    )
+    
+    # 결과 출력
+    print_strategy_comparison_results(comparison_result)
+    
+    # 결과 저장
+    save_strategy_comparison_results(comparison_result, args)
+    
+    return comparison_result
+
+
+def print_backtest_summary(result, title):
+    """백테스트 결과 요약 출력"""
     print("\n" + "="*60)
-    print("백테스트 결과 요약")
+    print(f"{title} 결과 요약")
     print("="*60)
     print(f"기간: {result.start_date.strftime('%Y-%m-%d')} ~ {result.end_date.strftime('%Y-%m-%d')}")
     print(f"초기 자본: ${result.initial_capital:,.2f}")
@@ -93,20 +259,87 @@ def run_single_backtest(service: BacktestingService, args):
     print(f"총 거래 수: {result.total_trades}")
     print(f"승률: {result.win_rate:.1%}")
     print(f"수익 팩터: {result.profit_factor:.2f}")
-    print("="*60)
     
-    # 상세 리포트 생성 및 저장
+    # 전략 정보 출력
+    strategy_info = result.backtest_settings
+    if strategy_info.get('strategy_type'):
+        print(f"사용 전략: {strategy_info['strategy_type']}")
+    if strategy_info.get('strategy_mix'):
+        print(f"전략 조합: {strategy_info['strategy_mix']}")
+    if strategy_info.get('auto_strategy_selection'):
+        print("자동 전략 선택: 활성화")
+    
+    print("="*60)
+
+
+def print_strategy_comparison_results(comparison_result):
+    """전략 비교 결과 출력"""
+    summary = comparison_result['comparison_summary']
+    analysis = comparison_result['strategy_analysis']
+    
+    print("\n" + "="*80)
+    print("전략 비교 결과")
+    print("="*80)
+    print(f"테스트 기간: {summary['comparison_period']}")
+    print(f"비교 전략 수: {summary['strategies_tested']}")
+    print(f"최고 전략 (샤프 비율): {summary['best_strategy']}")
+    
+    print("\n📊 전략별 성과 요약:")
+    print("-" * 80)
+    print(f"{'전략명':<15} {'수익률':<10} {'샤프비율':<10} {'승률':<8} {'최대낙폭':<10} {'거래수':<8}")
+    print("-" * 80)
+    
+    for strategy_name, data in analysis.items():
+        print(f"{strategy_name:<15} "
+              f"{data['total_return_percent']:>7.2f}% "
+              f"{data['sharpe_ratio']:>9.2f} "
+              f"{data['win_rate']:>6.1%} "
+              f"{data['max_drawdown_percent']:>8.2f}% "
+              f"{data['total_trades']:>7}")
+    
+    print("\n🏆 순위 (샤프 비율 기준):")
+    for i, (strategy, sharpe) in enumerate(summary['ranking_by_sharpe'], 1):
+        print(f"{i}. {strategy}: {sharpe:.2f}")
+    
+    print("\n💰 순위 (총 수익률 기준):")
+    for i, (strategy, return_pct) in enumerate(summary['ranking_by_return'], 1):
+        print(f"{i}. {strategy}: {return_pct:.2f}%")
+    
+    print("="*80)
+
+
+def save_backtest_report(service: BacktestingService, result, args, prefix):
+    """백테스트 리포트 저장"""
     output_dir = Path(args.output_dir)
     output_dir.mkdir(exist_ok=True)
     
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    report_path = output_dir / f"backtest_report_{timestamp}.json"
+    report_path = output_dir / f"{prefix}_{timestamp}.json"
     
     report = service.generate_report(result, str(report_path))
     
     print(f"\n상세 리포트가 저장되었습니다: {report_path}")
+
+
+def save_strategy_comparison_results(comparison_result, args):
+    """전략 비교 결과 저장"""
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(exist_ok=True)
     
-    return result
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    result_path = output_dir / f"strategy_comparison_{timestamp}.json"
+    
+    # 결과를 JSON 직렬화 가능하도록 변환
+    serializable_result = {
+        'strategy_analysis': comparison_result['strategy_analysis'],
+        'comparison_summary': comparison_result['comparison_summary']
+    }
+    
+    import json
+    with open(result_path, 'w', encoding='utf-8') as f:
+        json.dump(serializable_result, f, indent=2, default=str, ensure_ascii=False)
+    
+    print(f"\n전략 비교 결과가 저장되었습니다: {result_path}")
 
 
 def run_parameter_optimization(service: BacktestingService, args):
@@ -203,9 +436,9 @@ def run_walk_forward_analysis(service: BacktestingService, args):
     return walk_forward_result
 
 
-def run_strategy_comparison(service: BacktestingService, args):
-    """전략 비교 분석"""
-    logger.info("=== 전략 비교 분석 실행 ===")
+def run_legacy_strategy_comparison(service: BacktestingService, args):
+    """레거시 전략 비교 분석"""
+    logger.info("=== 레거시 전략 비교 분석 실행 ===")
     
     start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
     end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
@@ -298,12 +531,20 @@ def main():
         # 모드에 따른 실행
         if args.mode == 'single':
             run_single_backtest(service, args)
+        elif args.mode == 'strategy':
+            run_strategy_backtest(service, args)
+        elif args.mode == 'strategy-mix':
+            run_strategy_mix_backtest(service, args)
+        elif args.mode == 'auto-strategy':
+            run_auto_strategy_backtest(service, args)
+        elif args.mode == 'strategy-comparison':
+            run_strategy_comparison(service, args)
         elif args.mode == 'optimization':
             run_parameter_optimization(service, args)
         elif args.mode == 'walk-forward':
             run_walk_forward_analysis(service, args)
         elif args.mode == 'comparison':
-            run_strategy_comparison(service, args)
+            run_legacy_strategy_comparison(service, args)
         
         logger.info("백테스트가 성공적으로 완료되었습니다.")
         

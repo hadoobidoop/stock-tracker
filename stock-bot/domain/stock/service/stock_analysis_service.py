@@ -71,6 +71,8 @@ class StockAnalysisService:
                 df_market = market_data
 
             if df_market is not None and not df_market.empty and len(df_market) >= sma_period:
+                # Warning 방지를 위해 copy() 사용
+                df_market = df_market.copy()
                 df_market[f'SMA_{sma_period}'] = df_market['Close'].rolling(window=sma_period).mean()
                 latest_close = df_market.iloc[-1]['Close']
                 latest_sma = df_market.iloc[-1][f'SMA_{sma_period}']
@@ -94,6 +96,8 @@ class StockAnalysisService:
             if df is None or df.empty or len(df) < sma_period:
                 return TrendType.NEUTRAL, {}
             
+            # Warning 방지를 위해 copy() 사용
+            df = df.copy()
             df[f'SMA_{sma_period}'] = df['Close'].rolling(window=sma_period).mean()
             latest_close = df.iloc[-1]['Close']
             latest_sma = df.iloc[-1][f'SMA_{sma_period}']

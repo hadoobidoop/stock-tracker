@@ -1,228 +1,273 @@
-# Stock Tracker Bot
+# Stock Analyzer Bot 📈
 
-실시간 주식 분석 및 신호 감지 시스템
+주식 기술적 분석 및 자동 신호 감지를 위한 고급 전략 시스템
 
-## 개요
+## 🎯 새로운 전략 시스템 특징
 
-이 프로젝트는 Yahoo Finance API를 활용하여 실시간으로 주식 데이터를 분석하고, 다양한 기술적 지표를 기반으로 매수/매도 신호를 감지하는 자동화된 시스템입니다.
+### Multi-Strategy Support
+- **동적 전략 교체**: 런타임에 전략을 바꿀 수 있는 "Hot-swapping" 지원
+- **전략 조합**: 여러 전략을 조합하여 앙상블 방식으로 분석
+- **자동 전략 선택**: 시장 상황에 따라 최적 전략 자동 선택
+- **지표 프리컴퓨팅**: 모든 기술적 지표를 미리 계산하여 성능 최적화
 
-## 주요 기능
+### 8가지 전략 타입
+1. **CONSERVATIVE** - 보수적 투자 전략
+2. **BALANCED** - 균형잡힌 기본 전략
+3. **AGGRESSIVE** - 공격적 고수익 추구 전략
+4. **MOMENTUM** - 모멘텀 기반 전략
+5. **TREND_FOLLOWING** - 추세 추종 전략
+6. **CONTRARIAN** - 역투자 전략
+7. **SCALPING** - 단기 스캘핑 전략
+8. **SWING** - 스윙 트레이딩 전략
 
-### 1. 실시간 신호 감지
-- **시간봉 분석**: 1시간봉 데이터를 기반으로 실시간 신호 감지
-- **다중 지표 분석**: RSI, MACD, 스토캐스틱, 볼린저 밴드 등 다양한 기술적 지표 활용
-- **시장 추세 반영**: S&P 500 기준 전체 시장 추세를 신호에 반영
-- **장기 추세 확인**: 50일 이동평균을 기준으로 한 장기 추세 분석
+### 전략 조합 모드
+- **SINGLE**: 단일 전략 사용
+- **WEIGHTED**: 가중 평균 조합
+- **VOTING**: 투표 방식 조합
+- **ENSEMBLE**: 앙상블 방식 조합
 
-### 2. 기술적 지표 계산
-- **이동평균선 (SMA)**: 5일, 20일, 60일 이동평균
-- **RSI (Relative Strength Index)**: 14일 기준 과매수/과매도 판단
-- **MACD**: 12, 26, 9 설정으로 추세 전환 감지
-- **스토캐스틱**: %K, %D 크로스오버 신호
-- **볼린저 밴드**: 20일, 2표준편차 설정
-- **ATR (Average True Range)**: 변동성 측정
-- **ADX (Average Directional Index)**: 추세 강도 측정
+## 🚀 사용법
 
-### 3. 스케줄링 시스템
-- **자동 실행**: APScheduler를 사용한 자동화된 작업 실행
-- **장 시간 감지**: 미국 동부 시간 기준 장 시간에만 실행
-- **메타데이터 업데이트**: 주간 자동 메타데이터 업데이트
-- **일봉 데이터 수집**: 매일 장 마감 후 자동 일봉 데이터 수집 및 저장
+### 기본 실행
+```bash
+# 기본 balanced 전략으로 실행
+python main.py
 
-### 4. 데이터 관리
-- **캐싱 시스템**: 일일 데이터 캐시로 API 호출 최적화
-- **데이터베이스 저장**: SQLAlchemy를 사용한 지표 및 신호 데이터 저장
-- **피보나치 레벨**: 지지/저항 레벨 계산
-- **일봉 데이터 저장**: 6개월치 일봉 OHLCV 데이터 자동 수집 및 업데이트
-
-## 프로젝트 구조
-
-```
-stock-bot/
-├── domain/                          # 도메인 로직
-│   ├── analysis/                    # 분석 관련
-│   │   ├── base/                    # 기본 클래스
-│   │   ├── config/                  # 분석 설정
-│   │   ├── detectors/               # 신호 감지기
-│   │   ├── service/                 # 분석 서비스
-│   │   └── utils/                   # 분석 유틸리티
-│   ├── notification/                # 알림 시스템
-│   └── stock/                       # 주식 관련
-├── infrastructure/                  # 인프라스트럭처
-│   ├── client/                      # 외부 API 클라이언트
-│   ├── db/                          # 데이터베이스
-│   ├── logging/                     # 로깅 시스템
-│   └── scheduler/                   # 스케줄러
-├── main.py                          # 메인 실행 파일
-└── requirements.txt                 # 의존성 목록
+# 특정 전략으로 실행
+python main.py --strategy conservative
+python main.py --strategy aggressive
+python main.py --strategy momentum
 ```
 
-## 설치 및 실행
+### 전략 조합 사용
+```bash
+# 균형잡힌 조합 전략
+python main.py --strategy-mix balanced_mix
 
-### 1. 의존성 설치
+# 보수적 조합 전략
+python main.py --strategy-mix conservative_mix
+
+# 공격적 조합 전략
+python main.py --strategy-mix aggressive_mix
+```
+
+### 자동 전략 선택
+```bash
+# 시장 상황에 따른 자동 전략 선택
+python main.py --auto-strategy
+```
+
+### 전략 설정 관리
+```bash
+# 사용 가능한 전략 목록 보기
+python main.py --list-strategies
+
+# 전략 설정 파일에서 로드
+python main.py --load-strategies ./strategy_configs/my_config.json
+```
+
+## 🎮 전략 데모 실행
+
+전략 시스템의 모든 기능을 체험해볼 수 있는 데모를 제공합니다:
+
+```bash
+python strategy_demo.py
+```
+
+데모에서 확인할 수 있는 기능:
+- 전략 간 실시간 교체
+- 전략 조합 및 앙상블
+- 모든 전략 동시 분석
+- 지표 프리컴퓨팅 성능
+- 자동 전략 선택
+- 성능 모니터링
+
+## 🔧 고급 사용법
+
+### 프로그래밍 방식 사용
+
+```python
+from domain.analysis.service.signal_detection_service import EnhancedSignalDetectionService
+from domain.analysis.config.strategy_settings import StrategyType
+
+# 서비스 초기화
+service = EnhancedSignalDetectionService()
+service.initialize()
+
+# 특정 전략으로 분석
+result = service.detect_signals_with_strategy(
+    df_with_indicators, "AAPL", StrategyType.MOMENTUM
+)
+
+# 모든 전략으로 분석
+all_results = service.analyze_all_strategies(df_with_indicators, "AAPL")
+
+# 전략 교체
+service.switch_strategy(StrategyType.AGGRESSIVE)
+
+# 전략 조합 설정
+service.set_strategy_mix("balanced_mix")
+```
+
+### 지표 프리컴퓨팅
+
+```python
+# 특정 종목의 모든 지표를 미리 계산
+df_with_indicators = service.precompute_indicators_for_ticker("AAPL", df)
+
+# 캐시 관리
+service.clear_indicator_cache("AAPL")  # 특정 종목 캐시 삭제
+service.clear_indicator_cache()        # 모든 캐시 삭제
+```
+
+## 📊 모니터링 및 성능
+
+### 성능 지표 확인
+```python
+# 현재 전략 정보
+current_info = service.get_current_strategy_info()
+
+# 사용 가능한 전략 목록
+strategies = service.get_available_strategies()
+
+# 전략별 성능 요약
+performance = service.get_strategy_performance_summary()
+```
+
+### 전략 설정 저장/로드
+```python
+# 현재 전략 설정 저장
+service.save_strategy_configs("./my_strategies.json")
+
+# 전략 설정 로드
+service.load_strategy_configs("./my_strategies.json")
+```
+
+## 🏗️ 아키텍처
+
+### 핵심 컴포넌트
+- **StrategyManager**: 전략 관리 및 교체
+- **BaseStrategy**: 전략 추상화 기반 클래스
+- **StrategyFactory**: 전략 인스턴스 생성
+- **EnhancedSignalDetectionService**: 통합 신호 감지 서비스
+
+### 호환성
+- 기존 `DetectorFactory` 및 `SignalDetectionService`와 완전 호환
+- 레거시 코드 수정 없이 새로운 시스템 활용 가능
+- 점진적 마이그레이션 지원
+
+## 📈 성능 최적화
+
+- **지표 캐싱**: 동일한 지표를 여러 번 계산하지 않음
+- **병렬 처리**: 여러 전략을 동시에 실행 가능
+- **메모리 효율성**: 필요한 데이터만 메모리에 보관
+- **선택적 지표 계산**: 전략에 필요한 지표만 계산
+
+## 🔍 백테스팅
+
+새로운 다중 전략 백테스팅 시스템이 완전히 통합되어 있어 모든 전략들의 성능을 검증할 수 있습니다.
+
+### 기본 백테스팅
+```bash
+# 기본 백테스팅 (기존 호환성)
+python run_backtest.py --tickers AAPL MSFT --start-date 2023-01-01 --end-date 2024-01-01
+
+# 레거시 시스템 사용
+python run_backtest.py --mode single --use-legacy --tickers AAPL --start-date 2023-01-01 --end-date 2024-01-01
+```
+
+### 특정 전략 백테스팅
+```bash
+# AGGRESSIVE 전략으로 백테스팅
+python run_backtest.py --mode strategy --strategy AGGRESSIVE --tickers AAPL MSFT --start-date 2023-01-01 --end-date 2024-01-01
+
+# CONSERVATIVE 전략으로 백테스팅
+python run_backtest.py --mode strategy --strategy CONSERVATIVE --tickers AAPL MSFT --start-date 2023-01-01 --end-date 2024-01-01
+
+# MOMENTUM 전략으로 백테스팅
+python run_backtest.py --mode strategy --strategy MOMENTUM --tickers AAPL NVDA --start-date 2023-01-01 --end-date 2024-01-01
+```
+
+### 전략 비교 백테스팅
+```bash
+# 모든 주요 전략 비교
+python run_backtest.py --mode strategy-comparison --tickers AAPL MSFT --start-date 2023-01-01 --end-date 2024-01-01
+
+# 특정 전략들만 비교
+python run_backtest.py --mode strategy-comparison --compare-strategies CONSERVATIVE BALANCED AGGRESSIVE --tickers AAPL --start-date 2023-01-01 --end-date 2024-01-01
+```
+
+### 전략 조합 백테스팅
+```bash
+# 균형잡힌 전략 조합
+python run_backtest.py --mode strategy-mix --strategy-mix balanced_mix --tickers AAPL --start-date 2023-01-01 --end-date 2024-01-01
+
+# 보수적 전략 조합
+python run_backtest.py --mode strategy-mix --strategy-mix conservative_mix --tickers AAPL MSFT --start-date 2023-01-01 --end-date 2024-01-01
+
+# 공격적 전략 조합
+python run_backtest.py --mode strategy-mix --strategy-mix aggressive_mix --tickers NVDA TSLA --start-date 2023-01-01 --end-date 2024-01-01
+```
+
+### 자동 전략 선택 백테스팅
+```bash
+# 시장 상황에 따른 자동 전략 선택
+python run_backtest.py --mode auto-strategy --tickers AAPL MSFT --start-date 2023-01-01 --end-date 2024-01-01
+```
+
+### 고급 백테스팅 옵션
+```bash
+# 매개변수 최적화
+python run_backtest.py --mode optimization --tickers AAPL --start-date 2023-01-01 --end-date 2024-01-01
+
+# 워크 포워드 분석
+python run_backtest.py --mode walk-forward --tickers AAPL MSFT --start-date 2023-01-01 --end-date 2024-01-01
+
+# 커스텀 설정
+python run_backtest.py --mode strategy --strategy AGGRESSIVE --tickers AAPL --start-date 2023-01-01 --end-date 2024-01-01 --initial-capital 50000 --commission-rate 0.002 --risk-per-trade 0.03
+```
+
+### 백테스팅 데모
+전체 백테스팅 기능들을 체험해볼 수 있는 데모:
+```bash
+python strategy_backtest_demo.py
+```
+
+### 백테스팅 결과 분석
+백테스팅 결과는 자동으로 `./backtest_results/` 디렉토리에 저장되며, 다음과 같은 정보를 포함합니다:
+- 총 수익률 및 연환산 수익률
+- 샤프 비율 및 최대 낙폭
+- 승률 및 수익 팩터
+- 전략별 성과 비교
+- 상세 거래 로그
+
+---
+
+## 설치 및 설정
+
+### 요구사항
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. 환경 설정
-`.env` 파일을 생성하고 다음 설정을 추가하세요:
-```env
-DATABASE_URL=sqlite:///stock_bot.db
-LOG_LEVEL=INFO
-```
+### 데이터베이스 설정
+SQLite 데이터베이스가 자동으로 생성됩니다.
 
-### 3. 실행
-```bash
-# 메인 애플리케이션 실행
-python main.py
+### 환경 변수
+필요한 API 키나 설정을 환경 변수로 설정하세요.
 
-# 실시간 신호 감지 작업 테스트
-python test_realtime_job.py
+---
 
-# 일봉 데이터 수집 작업 테스트
-python test_daily_ohlcv_job.py
+## 🤝 기여하기
 
-# 1시간봉 데이터 수집 작업 테스트
-python test_hourly_ohlcv_job.py
-```
+새로운 전략을 추가하거나 기존 전략을 개선하려면:
 
-## 설정
+1. `domain/analysis/strategy/strategy_implementations.py`에 새 전략 클래스 추가
+2. `domain/analysis/config/strategy_settings.py`에 전략 설정 추가
+3. 테스트 및 검증
 
-### 분석할 주식 설정
-`domain/stock/config/settings.py`에서 분석할 주식 목록을 설정할 수 있습니다:
-```python
-STOCK_SYMBOLS = [
-    "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA"
-]
-```
+---
 
-### 스케줄링 설정
-`infrastructure/scheduler/settings.py`에서 작업 실행 시간을 조정할 수 있습니다:
-```python
-# 실시간 신호 감지 작업
-REALTIME_SIGNAL_JOB = {
-    'id': 'realtime_signal_job',
-    'name': 'Real-time Signal Detection (Hourly)',
-    'cron': {
-        'day_of_week': 'mon-fri',    # 월-금
-        'hour': '9-16',              # 9시-16시
-        'minute': '*/30'             # 30분마다 실행
-    }
-}
+## 📞 지원
 
-# 일봉 데이터 수집 작업
-DAILY_OHLCV_UPDATE_JOB = {
-    'id': 'daily_ohlcv_update_job',
-    'name': 'Daily OHLCV Data Update',
-    'cron': {
-        'day_of_week': 'mon-fri',    # 월-금 (장날만)
-        'hour': 17,                  # 오후 5시 (장 마감 후)
-        'minute': 0
-    }
-}
-
-# 1시간봉 데이터 수집 작업
-HOURLY_OHLCV_UPDATE_JOB = {
-    'id': 'hourly_ohlcv_update_job',
-    'name': 'Hourly OHLCV Data Update',
-    'cron': {
-        'day_of_week': 'mon-fri',    # 월-금 (장날만)
-        'hour': '9-16',              # 9시-16시 (장 시간)
-        'minute': 10                 # 매시 10분
-    }
-}
-```
-
-## 신호 감지 시스템
-
-### 신호 감지기 종류
-1. **추세 추종 감지기**
-   - SMA 골든/데드 크로스
-   - MACD 크로스오버
-   - ADX 강한 추세
-
-2. **모멘텀 감지기**
-   - RSI 과매수/과매도
-   - 스토캐스틱 크로스
-
-3. **거래량 감지기**
-   - 거래량 급증 감지
-
-4. **복합 감지기**
-   - MACD + 거래량 확인
-   - RSI + 스토캐스틱 동시 신호
-
-### 신호 점수 시스템
-- 각 감지기는 가중치를 가짐
-- 시장 추세에 따라 점수 조정
-- 임계값 이상의 점수에서 신호 발생
-
-## 데이터베이스 스키마
-
-### 주요 테이블
-- `stock_metadata`: 주식 메타데이터
-- `technical_indicators`: 기술적 지표 데이터
-- `trading_signals`: 거래 신호 데이터
-- `ohlcv_data`: OHLCV 데이터 (분봉/일봉 통합 저장)
-
-## 로깅
-
-시스템은 상세한 로깅을 제공합니다:
-- 작업 실행 상태
-- 신호 감지 결과
-- 오류 및 예외 상황
-- 성능 메트릭
-
-## 일봉 데이터 수집 시스템
-
-### 일봉 데이터 자동 수집
-- **실행 시간**: 매일 오후 5시 (장 마감 후)
-- **데이터 범위**: 최근 6개월 일봉 데이터
-- **업데이트 방식**: 기존 데이터가 있으면 업데이트, 없으면 새로 생성 (UPSERT)
-- **데이터 검증**: NaN 값 제거, 필수 컬럼 확인
-
-### 1시간봉 데이터 자동 수집
-- **실행 시간**: 매시 10분 (9시 10분, 10시 10분, ... 16시 10분)
-- **데이터 범위**: 최근 3일 1시간봉 데이터
-- **업데이트 방식**: 기존 데이터가 있으면 업데이트, 없으면 새로 생성 (UPSERT)
-- **데이터 검증**: NaN 값 제거, 필수 컬럼 확인
-
-### 수동 실행
-일봉 데이터 수집 작업을 수동으로 실행하려면:
-```bash
-python test_daily_ohlcv_job.py
-```
-
-1시간봉 데이터 수집 작업을 수동으로 실행하려면:
-```bash
-python test_hourly_ohlcv_job.py
-```
-
-### 데이터 저장 구조
-OHLCV 데이터는 `ohlcv_data` 테이블에 저장되며, `interval` 컬럼으로 구분됩니다:
-- **timestamp_utc**: 시간 타임스탬프 (기본키의 일부)
-- **ticker**: 종목 코드 (기본키의 일부)
-- **open, high, low, close**: 가격 데이터
-- **volume**: 거래량
-- **interval**: 데이터 간격 ('1d' for 일봉, '1h' for 1시간봉)
-
-## 개발 가이드
-
-### 새로운 신호 감지기 추가
-1. `domain/analysis/detectors/` 하위에 새 감지기 클래스 생성
-2. `SignalDetector` 추상 클래스 상속
-3. `detect_signals` 메서드 구현
-4. `DetectorFactory`에 등록
-
-### 새로운 기술적 지표 추가
-1. `domain/analysis/utils/technical_indicators.py`에 계산 함수 추가
-2. `calculate_all_indicators` 함수에 통합
-3. 데이터베이스 스키마 업데이트
-
-## 라이선스
-
-이 프로젝트는 MIT 라이선스 하에 배포됩니다.
-
-## 기여
-
-버그 리포트, 기능 요청, 풀 리퀘스트를 환영합니다. 
+문제가 있거나 질문이 있으시면 이슈를 등록해주세요. 

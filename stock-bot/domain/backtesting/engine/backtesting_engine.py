@@ -5,7 +5,15 @@ import pandas as pd
 
 from infrastructure.logging import get_logger
 from infrastructure.db.models.enums import TrendType
+
+# 기존 호환성을 위한 import
 from domain.analysis.service.signal_detection_service import DetectorFactory
+
+# 새로운 전략 시스템 import
+from domain.analysis.service.signal_detection_service import EnhancedSignalDetectionService
+from domain.analysis.config.strategy_settings import StrategyType, STRATEGY_CONFIGS
+from domain.analysis.strategy.base_strategy import StrategyResult
+
 from domain.analysis.utils import calculate_all_indicators, calculate_fibonacci_levels
 from domain.stock.service.stock_analysis_service import StockAnalysisService
 from domain.analysis.config.analysis_settings import (
@@ -23,19 +31,38 @@ logger = get_logger(__name__)
 
 class BacktestingEngine:
     """
-    백테스팅 엔진 - Look-Ahead Bias가 제거된 버전
+    백테스팅 엔진 - 다중 전략 시스템 지원
+    
+    새로운 기능:
+    1. 특정 전략으로 백테스팅
+    2. 전략 조합으로 백테스팅  
+    3. 전략 비교 백테스팅
+    4. 자동 전략 선택 백테스팅
+    5. 기존 레거시 방식 지원
     """
 
     def __init__(self,
                  stock_analysis_service: StockAnalysisService,
                  initial_capital: float = 100000.0,
                  commission_rate: float = 0.001,
-                 risk_per_trade: float = 0.02):
+                 risk_per_trade: float = 0.02,
+                 use_enhanced_signals: bool = True,
+                 strategy_type: StrategyType = None):
         self.stock_analysis_service = stock_analysis_service
         self.initial_capital = initial_capital
         self.commission_rate = commission_rate
         self.risk_per_trade = risk_per_trade
+        self.use_enhanced_signals = use_enhanced_signals
 
+        # 새로운 전략 시스템
+        if use_enhanced_signals:
+            self.enhanced_service = EnhancedSignalDetectionService()
+            self.strategy_type = strategy_type or StrategyType.BALANCED
+            self._initialize_enhanced_service()
+        else:
+            self.enhanced_service = None
+
+        # 기존 호환성을 위한 레거시 시스템
         self.detector_factory = DetectorFactory()
         self.orchestrator = self.detector_factory.create_default_orchestrator()
 
@@ -48,19 +75,49 @@ class BacktestingEngine:
         }
 
         logger.info(f"BacktestingEngine initialized with capital: ${initial_capital:,.2f}")
+        if use_enhanced_signals:
+            logger.info(f"Using enhanced strategy system with strategy: {self.strategy_type}")
+        else:
+            logger.info("Using legacy detector system")
+
+    def _initialize_enhanced_service(self):
+        """향상된 신호 감지 서비스 초기화"""
+        if self.enhanced_service:
+            try:
+                # 백테스팅에서는 모든 전략을 초기화 (전략 비교와 조합을 위해)
+                all_strategies = [
+                    StrategyType.CONSERVATIVE,
+                    StrategyType.BALANCED,
+                    StrategyType.AGGRESSIVE,
+                    StrategyType.MOMENTUM,
+                    StrategyType.TREND_FOLLOWING,
+                    StrategyType.CONTRARIAN
+                ]
+                success = self.enhanced_service.initialize(all_strategies)
+                if success:
+                    self.enhanced_service.switch_strategy(self.strategy_type)
+                    logger.info(f"Enhanced signal detection service initialized with all strategies, current: {self.strategy_type}")
+                else:
+                    logger.warning("Failed to initialize enhanced service, falling back to legacy")
+                    self.use_enhanced_signals = False
+            except Exception as e:
+                logger.error(f"Error initializing enhanced service: {e}")
+                self.use_enhanced_signals = False
 
     def run_backtest(self,
                      tickers: List[str],
                      start_date: datetime,
                      end_date: datetime,
                      data_interval: str = '1h') -> BacktestResult:
+        """기본 백테스트 실행 (현재 설정된 전략 사용)"""
         # 입력된 날짜에 타임존이 없으면 UTC로 설정
         if start_date.tzinfo is None:
             start_date = start_date.replace(tzinfo=timezone.utc)
         if end_date.tzinfo is None:
             end_date = end_date.replace(tzinfo=timezone.utc)
             
-        logger.info(f"Starting backtest for {len(tickers)} tickers from {start_date} to {end_date}")
+        strategy_name = self.strategy_type.value if self.use_enhanced_signals else "Legacy"
+        logger.info(f"Starting backtest for {len(tickers)} tickers from {start_date} to {end_date} using {strategy_name}")
 
         portfolio = Portfolio(
             initial_cash=self.initial_capital,
@@ -68,32 +125,146 @@ class BacktestingEngine:
             commission_rate=self.commission_rate
         )
 
+        backtest_settings = {
+            'tickers': tickers,
+            'data_interval': data_interval,
+            'commission_rate': self.commission_rate,
+            'risk_per_trade': self.risk_per_trade,
+            'signal_threshold': SIGNAL_THRESHOLD,
+            'use_enhanced_signals': self.use_enhanced_signals,
+            'strategy_type': self.strategy_type.value if self.strategy_type else None
+        }
+
         result = BacktestResult(
             start_date=start_date,
             end_date=end_date,
             initial_capital=self.initial_capital,
             final_capital=0.0,
             portfolio=portfolio,
-            backtest_settings={
-                'tickers': tickers,
-                'data_interval': data_interval,
-                'commission_rate': self.commission_rate,
-                'risk_per_trade': self.risk_per_trade,
-                'signal_threshold': SIGNAL_THRESHOLD
-            }
+            backtest_settings=backtest_settings
         )
 
+        # 백테스트 실행
+        success = self._execute_backtest_logic(tickers, start_date, end_date, data_interval, portfolio, result)
+        
+        if success:
+            logger.info(f"Backtest completed using {strategy_name}. Final capital: ${result.final_capital:,.2f}")
+        
+        return result
+
+    def run_strategy_backtest(self,
+                            tickers: List[str],
+                            start_date: datetime,
+                            end_date: datetime,
+                            strategy_type: StrategyType,
+                            data_interval: str = '1h') -> BacktestResult:
+        """특정 전략으로 백테스트 실행"""
+        # 전략 변경
+        original_strategy = self.strategy_type
+        self.strategy_type = strategy_type
+        
+        if self.use_enhanced_signals and self.enhanced_service:
+            self.enhanced_service.switch_strategy(strategy_type)
+        
+        try:
+            result = self.run_backtest(tickers, start_date, end_date, data_interval)
+            result.backtest_settings['strategy_type'] = strategy_type.value
+            return result
+        finally:
+            # 원래 전략으로 복구
+            self.strategy_type = original_strategy
+            if self.use_enhanced_signals and self.enhanced_service:
+                self.enhanced_service.switch_strategy(original_strategy)
+
+    def run_strategy_mix_backtest(self,
+                                tickers: List[str],
+                                start_date: datetime,
+                                end_date: datetime,
+                                mix_name: str,
+                                data_interval: str = '1h') -> BacktestResult:
+        """전략 조합으로 백테스트 실행"""
+        if not self.use_enhanced_signals or not self.enhanced_service:
+            raise ValueError("전략 조합 백테스트는 향상된 신호 감지 서비스가 필요합니다.")
+        
+        # 전략 조합 설정
+        success = self.enhanced_service.set_strategy_mix(mix_name)
+        if not success:
+            raise ValueError(f"전략 조합 '{mix_name}'을 설정할 수 없습니다.")
+        
+        try:
+            result = self.run_backtest(tickers, start_date, end_date, data_interval)
+            result.backtest_settings['strategy_mix'] = mix_name
+            return result
+        finally:
+            # 단일 전략으로 복구
+            self.enhanced_service.switch_strategy(self.strategy_type)
+
+    def run_auto_strategy_backtest(self,
+                                 tickers: List[str],
+                                 start_date: datetime,
+                                 end_date: datetime,
+                                 data_interval: str = '1h') -> BacktestResult:
+        """자동 전략 선택으로 백테스트 실행"""
+        if not self.use_enhanced_signals or not self.enhanced_service:
+            raise ValueError("자동 전략 선택 백테스트는 향상된 신호 감지 서비스가 필요합니다.")
+        
+        # 자동 전략 선택 활성화
+        self.enhanced_service.enable_auto_strategy_selection(True)
+        
+        try:
+            result = self.run_backtest(tickers, start_date, end_date, data_interval)
+            result.backtest_settings['auto_strategy_selection'] = True
+            return result
+        finally:
+            # 자동 선택 비활성화
+            self.enhanced_service.enable_auto_strategy_selection(False)
+
+    def compare_strategies(self,
+                          tickers: List[str],
+                          start_date: datetime,
+                          end_date: datetime,
+                          strategies: List[StrategyType],
+                          data_interval: str = '1h') -> Dict[str, BacktestResult]:
+        """여러 전략으로 동시에 백테스트하여 비교"""
+        logger.info(f"Comparing {len(strategies)} strategies")
+        
+        results = {}
+        
+        for strategy_type in strategies:
+            logger.info(f"Running backtest with {strategy_type.value} strategy")
+            
+            try:
+                result = self.run_strategy_backtest(
+                    tickers, start_date, end_date, strategy_type, data_interval
+                )
+                results[strategy_type.value] = result
+                
+                logger.info(f"{strategy_type.value} strategy completed - "
+                          f"Return: {result.total_return_percent:.2f}%, "
+                          f"Win Rate: {result.win_rate:.1%}")
+                
+            except Exception as e:
+                logger.error(f"Error running backtest with {strategy_type.value}: {e}")
+                continue
+        
+        return results
+
+    def _execute_backtest_logic(self,
+                              tickers: List[str],
+                              start_date: datetime,
+                              end_date: datetime,
+                              data_interval: str,
+                              portfolio: Portfolio,
+                              result: BacktestResult) -> bool:
+        """백테스트 로직 실행"""
         extended_start = start_date - timedelta(days=REALTIME_SIGNAL_DETECTION["FIB_LOOKBACK_DAYS"])
 
         try:
             logger.info("Fetching historical data for all tickers and market index...")
 
-            # [수정] 시장 지수 티커를 포함하여 모든 데이터를 한번에 조회
+            # 시장 지수 티커를 포함하여 모든 데이터를 한번에 조회
             tickers_to_fetch = tickers + [MARKET_INDEX_TICKER]
 
-            # 참고: 여기서는 stock_analysis_service의 get_stock_data_for_analysis를 직접 호출하지 않고,
-            # 실제로는 이 서비스 내의 repository.fetch_and_cache_ohlcv를 호출하는 것과 같습니다.
-            # 백테스팅의 데이터 조회 로직은 엔진에 집중시키는 것이 좋습니다.
             all_fetched_data = self.stock_analysis_service.stock_repository.fetch_and_cache_ohlcv(
                 tickers_to_fetch,
                 (end_date - extended_start).days,
@@ -105,21 +276,20 @@ class BacktestingEngine:
 
             if not all_data:
                 logger.error("No data loaded for any ticker")
-                return result
+                return False
             if market_index_data is None or market_index_data.empty:
                 logger.error(f"Market index data ({MARKET_INDEX_TICKER}) could not be loaded.")
-                return result
+                return False
 
             self._execute_backtest_by_timeframe(all_data, market_index_data, portfolio, result, start_date, end_date)
 
             self._finalize_backtest_result(portfolio, result, all_data)
 
-            logger.info(f"Backtest completed. Final capital: ${result.final_capital:,.2f}")
+            return True
 
         except Exception as e:
-            logger.error(f"Error during backtest: {e}", exc_info=True)
-
-        return result
+            logger.error(f"Error during backtest execution: {e}", exc_info=True)
+            return False
 
     def _execute_backtest_by_timeframe(self,
                                        all_data: Dict[str, pd.DataFrame],
@@ -172,12 +342,12 @@ class BacktestingEngine:
                                     current_time: datetime,
                                     current_prices: Dict[str, float]) -> None:
 
-        # [수정] market_index_data를 인자로 전달하여 Look-Ahead Bias 방지
+        # market_index_data를 인자로 전달하여 Look-Ahead Bias 방지
         self._update_daily_cache(all_data, market_index_data, current_time)
 
         market_trend = self.daily_data_cache["market_trend"]
 
-        # [추가] 최대 보유 기간 체크 (5일)
+        # 최대 보유 기간 체크 (5일)
         max_holding_period = timedelta(days=5)
         for ticker, position in list(portfolio.open_positions.items()):
             if current_time - position.entry_timestamp > max_holding_period:
@@ -204,11 +374,12 @@ class BacktestingEngine:
                 daily_extras = self.daily_data_cache["daily_extras"].get(ticker, {})
                 long_term_trend = self.daily_data_cache["long_term_trends"].get(ticker, TrendType.NEUTRAL)
 
-                signal_result = self.orchestrator.detect_signals(
+                # 신호 감지 - 새로운 전략 시스템 또는 레거시 시스템 사용
+                signal_result = self._detect_signals(
                     df_with_indicators, ticker, market_trend, long_term_trend, daily_extras
                 )
 
-                if signal_result and signal_result.get('score', 0) >= SIGNAL_THRESHOLD:
+                if signal_result and self._is_valid_signal(signal_result):
                     self._execute_trade(
                         signal_result, ticker, current_time, current_prices.get(ticker),
                         portfolio, market_trend, long_term_trend
@@ -216,6 +387,56 @@ class BacktestingEngine:
             except Exception as e:
                 logger.error(f"Error processing signals for {ticker} at {current_time}: {e}")
                 continue
+
+    def _detect_signals(self,
+                       df_with_indicators: pd.DataFrame,
+                       ticker: str,
+                       market_trend: TrendType,
+                       long_term_trend: TrendType,
+                       daily_extras: Dict) -> Optional[Dict]:
+        """신호 감지 - 새로운 전략 시스템 또는 레거시 시스템 사용"""
+        
+        if self.use_enhanced_signals and self.enhanced_service and self.enhanced_service.is_initialized:
+            try:
+                # 새로운 전략 시스템 사용
+                strategy_result: StrategyResult = self.enhanced_service.analyze_with_current_strategy(
+                    df_with_indicators, ticker, market_trend, long_term_trend, daily_extras
+                )
+                
+                # StrategyResult를 레거시 형태로 변환
+                return {
+                    'score': strategy_result.total_score,
+                    'type': 'BUY' if strategy_result.has_signal else None,
+                    'details': strategy_result.signals_detected,
+                    'stop_loss_price': None,  # 필요시 구현
+                    'strategy_name': strategy_result.strategy_name,
+                    'strategy_result': strategy_result  # 추가 정보 보존
+                }
+                
+            except Exception as e:
+                logger.warning(f"Enhanced signal detection failed for {ticker}: {e}, falling back to legacy")
+                # 폴백: 레거시 시스템 사용
+        
+        # 레거시 시스템 사용
+        return self.orchestrator.detect_signals(
+            df_with_indicators, ticker, market_trend, long_term_trend, daily_extras
+        )
+
+    def _is_valid_signal(self, signal_result: Dict) -> bool:
+        """신호 유효성 검사"""
+        if not signal_result:
+            return False
+        
+        score = signal_result.get('score', 0)
+        signal_type = signal_result.get('type')
+        
+        # 새로운 전략 시스템의 경우
+        if 'strategy_result' in signal_result:
+            strategy_result: StrategyResult = signal_result['strategy_result']
+            return strategy_result.has_signal
+        
+        # 레거시 시스템의 경우
+        return score >= SIGNAL_THRESHOLD and signal_type is not None
 
     def _update_daily_cache(self,
                             all_data: Dict[str, pd.DataFrame],

@@ -8,6 +8,9 @@ from domain.stock.service.stock_analysis_service import StockAnalysisService
 from domain.stock.repository.stock_repository import StockRepository
 from infrastructure.db.repository.sql_stock_repository import SQLStockRepository
 
+# 새로운 전략 시스템 import
+from domain.analysis.config.strategy_settings import StrategyType, STRATEGY_CONFIGS
+
 from ..engine.backtesting_engine import BacktestingEngine
 from ..models.backtest_result import BacktestResult
 
@@ -15,7 +18,7 @@ logger = get_logger(__name__)
 
 
 class BacktestingService:
-    """백테스팅 서비스 - 고수준 백테스팅 기능 제공"""
+    """백테스팅 서비스 - 다중 전략 시스템 지원"""
     
     def __init__(self, 
                  stock_repository: Optional[StockRepository] = None):
@@ -26,7 +29,7 @@ class BacktestingService:
         self.stock_repository = stock_repository or SQLStockRepository()
         self.stock_analysis_service = StockAnalysisService(self.stock_repository)
         
-        logger.info("BacktestingService initialized")
+        logger.info("BacktestingService initialized with multi-strategy support")
     
     def run_strategy_backtest(self,
                             tickers: List[str],
@@ -35,9 +38,11 @@ class BacktestingService:
                             initial_capital: float = 100000.0,
                             commission_rate: float = 0.001,
                             risk_per_trade: float = 0.02,
-                            data_interval: str = '1h') -> BacktestResult:
+                            data_interval: str = '1h',
+                            strategy_type: StrategyType = None,
+                            use_enhanced_signals: bool = True) -> BacktestResult:
         """
-        전략 백테스트 실행
+        전략 백테스트 실행 (기존 호환성 유지)
         
         Args:
             tickers: 백테스트할 종목 리스트
@@ -47,6 +52,8 @@ class BacktestingService:
             commission_rate: 수수료율
             risk_per_trade: 거래당 리스크 비율
             data_interval: 데이터 간격
+            strategy_type: 사용할 전략 (None이면 BALANCED)
+            use_enhanced_signals: 새로운 전략 시스템 사용 여부
         """
         logger.info(f"Starting strategy backtest for {len(tickers)} tickers")
         
@@ -55,7 +62,9 @@ class BacktestingService:
             stock_analysis_service=self.stock_analysis_service,
             initial_capital=initial_capital,
             commission_rate=commission_rate,
-            risk_per_trade=risk_per_trade
+            risk_per_trade=risk_per_trade,
+            use_enhanced_signals=use_enhanced_signals,
+            strategy_type=strategy_type
         )
         
         # 백테스트 실행
@@ -66,10 +75,204 @@ class BacktestingService:
             data_interval=data_interval
         )
         
-        logger.info(f"Backtest completed. Return: {result.total_return_percent:.2f}%, "
+        strategy_name = strategy_type.value if strategy_type else "Default"
+        logger.info(f"Backtest completed using {strategy_name}. Return: {result.total_return_percent:.2f}%, "
                    f"Win Rate: {result.win_rate:.1%}")
         
         return result
+
+    def run_specific_strategy_backtest(self,
+                                     tickers: List[str],
+                                     start_date: datetime,
+                                     end_date: datetime,
+                                     strategy_type: StrategyType,
+                                     initial_capital: float = 100000.0,
+                                     commission_rate: float = 0.001,
+                                     risk_per_trade: float = 0.02,
+                                     data_interval: str = '1h') -> BacktestResult:
+        """특정 전략으로 백테스트 실행"""
+        logger.info(f"Running backtest with {strategy_type.value} strategy")
+        
+        # 백테스팅 엔진 초기화
+        engine = BacktestingEngine(
+            stock_analysis_service=self.stock_analysis_service,
+            initial_capital=initial_capital,
+            commission_rate=commission_rate,
+            risk_per_trade=risk_per_trade,
+            use_enhanced_signals=True,
+            strategy_type=strategy_type
+        )
+        
+        # 특정 전략으로 백테스트 실행
+        result = engine.run_strategy_backtest(
+            tickers=tickers,
+            start_date=start_date,
+            end_date=end_date,
+            strategy_type=strategy_type,
+            data_interval=data_interval
+        )
+        
+        logger.info(f"{strategy_type.value} strategy backtest completed. "
+                   f"Return: {result.total_return_percent:.2f}%, Win Rate: {result.win_rate:.1%}")
+        
+        return result
+
+    def run_strategy_mix_backtest(self,
+                                tickers: List[str],
+                                start_date: datetime,
+                                end_date: datetime,
+                                mix_name: str,
+                                initial_capital: float = 100000.0,
+                                commission_rate: float = 0.001,
+                                risk_per_trade: float = 0.02,
+                                data_interval: str = '1h') -> BacktestResult:
+        """전략 조합으로 백테스트 실행"""
+        logger.info(f"Running backtest with strategy mix: {mix_name}")
+        
+        # 백테스팅 엔진 초기화
+        engine = BacktestingEngine(
+            stock_analysis_service=self.stock_analysis_service,
+            initial_capital=initial_capital,
+            commission_rate=commission_rate,
+            risk_per_trade=risk_per_trade,
+            use_enhanced_signals=True,
+            strategy_type=StrategyType.BALANCED  # 기본값, 믹스에서 변경됨
+        )
+        
+        # 전략 조합으로 백테스트 실행
+        result = engine.run_strategy_mix_backtest(
+            tickers=tickers,
+            start_date=start_date,
+            end_date=end_date,
+            mix_name=mix_name,
+            data_interval=data_interval
+        )
+        
+        logger.info(f"Strategy mix '{mix_name}' backtest completed. "
+                   f"Return: {result.total_return_percent:.2f}%, Win Rate: {result.win_rate:.1%}")
+        
+        return result
+
+    def run_auto_strategy_backtest(self,
+                                 tickers: List[str],
+                                 start_date: datetime,
+                                 end_date: datetime,
+                                 initial_capital: float = 100000.0,
+                                 commission_rate: float = 0.001,
+                                 risk_per_trade: float = 0.02,
+                                 data_interval: str = '1h') -> BacktestResult:
+        """자동 전략 선택으로 백테스트 실행"""
+        logger.info("Running backtest with automatic strategy selection")
+        
+        # 백테스팅 엔진 초기화
+        engine = BacktestingEngine(
+            stock_analysis_service=self.stock_analysis_service,
+            initial_capital=initial_capital,
+            commission_rate=commission_rate,
+            risk_per_trade=risk_per_trade,
+            use_enhanced_signals=True,
+            strategy_type=StrategyType.BALANCED
+        )
+        
+        # 자동 전략 선택으로 백테스트 실행
+        result = engine.run_auto_strategy_backtest(
+            tickers=tickers,
+            start_date=start_date,
+            end_date=end_date,
+            data_interval=data_interval
+        )
+        
+        logger.info(f"Auto strategy selection backtest completed. "
+                   f"Return: {result.total_return_percent:.2f}%, Win Rate: {result.win_rate:.1%}")
+        
+        return result
+
+    def compare_all_strategies(self,
+                             tickers: List[str],
+                             start_date: datetime,
+                             end_date: datetime,
+                             initial_capital: float = 100000.0,
+                             commission_rate: float = 0.001,
+                             risk_per_trade: float = 0.02,
+                             data_interval: str = '1h',
+                             strategies: List[StrategyType] = None) -> Dict[str, Any]:
+        """모든 전략 또는 지정된 전략들을 비교"""
+        if strategies is None:
+            strategies = [
+                StrategyType.CONSERVATIVE,
+                StrategyType.BALANCED,
+                StrategyType.AGGRESSIVE,
+                StrategyType.MOMENTUM,
+                StrategyType.TREND_FOLLOWING,
+                StrategyType.CONTRARIAN
+            ]
+        
+        logger.info(f"Comparing {len(strategies)} strategies")
+        
+        # 백테스팅 엔진 초기화
+        engine = BacktestingEngine(
+            stock_analysis_service=self.stock_analysis_service,
+            initial_capital=initial_capital,
+            commission_rate=commission_rate,
+            risk_per_trade=risk_per_trade,
+            use_enhanced_signals=True,
+            strategy_type=StrategyType.BALANCED
+        )
+        
+        # 전략 비교 실행
+        comparison_results = engine.compare_strategies(
+            tickers=tickers,
+            start_date=start_date,
+            end_date=end_date,
+            strategies=strategies,
+            data_interval=data_interval
+        )
+        
+        # 결과 분석
+        strategy_analysis = {}
+        best_strategy = None
+        best_sharpe = float('-inf')
+        
+        for strategy_name, result in comparison_results.items():
+            analysis = {
+                'total_return_percent': result.total_return_percent,
+                'annualized_return_percent': result.annualized_return_percent,
+                'max_drawdown_percent': result.max_drawdown_percent,
+                'sharpe_ratio': result.sharpe_ratio,
+                'win_rate': result.win_rate,
+                'total_trades': result.total_trades,
+                'profit_factor': result.profit_factor,
+                'final_capital': result.final_capital
+            }
+            strategy_analysis[strategy_name] = analysis
+            
+            # 최고 전략 찾기 (샤프 비율 기준)
+            if result.sharpe_ratio > best_sharpe:
+                best_sharpe = result.sharpe_ratio
+                best_strategy = strategy_name
+        
+        comparison_summary = {
+            'best_strategy': best_strategy,
+            'strategies_tested': len(strategies),
+            'comparison_period': f"{start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}",
+            'ranking_by_sharpe': sorted(
+                [(name, data['sharpe_ratio']) for name, data in strategy_analysis.items()],
+                key=lambda x: x[1], reverse=True
+            ),
+            'ranking_by_return': sorted(
+                [(name, data['total_return_percent']) for name, data in strategy_analysis.items()],
+                key=lambda x: x[1], reverse=True
+            )
+        }
+        
+        logger.info(f"Strategy comparison completed. Best strategy: {best_strategy} "
+                   f"(Sharpe: {best_sharpe:.2f})")
+        
+        return {
+            'strategy_results': comparison_results,
+            'strategy_analysis': strategy_analysis,
+            'comparison_summary': comparison_summary
+        }
     
     def run_parameter_optimization(self,
                                  tickers: List[str],

@@ -1,0 +1,67 @@
+{
+  "strategy_analysis": {
+    "conservative": {
+      "total_return_percent": 0.3099041860001016,
+      "annualized_return_percent": 0.3092681554474064,
+      "max_drawdown_percent": 0.5316021412162206,
+      "sharpe_ratio": 0.26455820036642685,
+      "win_rate": 0.6226415094339622,
+      "total_trades": 106,
+      "profit_factor": 1.2942974069374698,
+      "final_capital": 100309.9041860001
+    },
+    "balanced": {
+      "total_return_percent": 0.3099041860001016,
+      "annualized_return_percent": 0.3092681554474064,
+      "max_drawdown_percent": 0.5316021412162206,
+      "sharpe_ratio": 0.26455820036642685,
+      "win_rate": 0.6226415094339622,
+      "total_trades": 106,
+      "profit_factor": 1.2942974069374698,
+      "final_capital": 100309.9041860001
+    },
+    "aggressive": {
+      "total_return_percent": 0.3099041860001016,
+      "annualized_return_percent": 0.3092681554474064,
+      "max_drawdown_percent": 0.5316021412162206,
+      "sharpe_ratio": 0.26455820036642685,
+      "win_rate": 0.6226415094339622,
+      "total_trades": 106,
+      "profit_factor": 1.2942974069374698,
+      "final_capital": 100309.9041860001
+    }
+  },
+  "comparison_summary": {
+    "best_strategy": "conservative",
+    "strategies_tested": 3,
+    "comparison_period": "2024-01-01 to 2025-01-01",
+    "ranking_by_sharpe": [
+      [
+        "conservative",
+        0.26455820036642685
+      ],
+      [
+        "balanced",
+        0.26455820036642685
+      ],
+      [
+        "aggressive",
+        0.26455820036642685
+      ]
+    ],
+    "ranking_by_return": [
+      [
+        "conservative",
+        0.3099041860001016
+      ],
+      [
+        "balanced",
+        0.3099041860001016
+      ],
+      [
+        "aggressive",
+        0.3099041860001016
+      ]
+    ]
+  }
+}

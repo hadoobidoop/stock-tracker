@@ -1,0 +1,1 @@
+# Strategy pattern implementation for trading strategies 
