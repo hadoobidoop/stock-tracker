@@ -1,0 +1,180 @@
+{
+  "executive_summary": {
+    "backtest_period": "2024-01-01 to 2024-06-22",
+    "total_return": "-7.60%",
+    "annualized_return": "-15.38%",
+    "max_drawdown": "0.10%",
+    "sharpe_ratio": "2.17",
+    "win_rate": "100.0%",
+    "total_trades": 1
+  },
+  "detailed_metrics": {
+    "backtest_period": {
+      "start_date": "2024-01-01T00:00:00+00:00",
+      "end_date": "2024-06-22T00:00:00+00:00",
+      "duration_days": 173
+    },
+    "capital": {
+      "initial_capital": 100000.0,
+      "final_capital": 92395.37496,
+      "total_return_percent": -7.604625039999998,
+      "annualized_return_percent": -15.378969792168428
+    },
+    "risk_metrics": {
+      "max_drawdown_percent": 0.0997587799999892,
+      "sharpe_ratio": 2.1653758643523022,
+      "sortino_ratio": 0.0
+    },
+    "trade_statistics": {
+      "total_trades": 1,
+      "winning_trades": 1,
+      "losing_trades": 0,
+      "win_rate": 1.0,
+      "profit_factor": Infinity,
+      "average_win": 7412.519999999998,
+      "average_loss": 0.0,
+      "largest_win": 7412.519999999998,
+      "largest_loss": 0.0,
+      "average_holding_period_hours": 8738.0
+    },
+    "detailed_analysis": {
+      "signal_strength_analysis": {
+        "weak": {
+          "trades": [
+            "Trade(trade_id='c1080d8a-3db0-4135-8502-48688836f7f3', ticker='GOOGL', trade_type=<TradeType.SELL: 'SELL'>, status=<TradeStatus.CLOSED: 'CLOSED'>, entry_timestamp=Timestamp('2024-06-21 17:30:00+0000', tz='UTC'), entry_price=180.07, entry_quantity=554, entry_signal_details=['RSI \uacfc\ub9e4\uc218 \uad6c\uac04 (85.50)'], entry_signal_score=7, exit_timestamp=Timestamp('2025-06-20 19:30:00+0000', tz='UTC'), exit_price=166.69, exit_signal_details=['\ubc31\ud14c\uc2a4\ud2b8 \uc885\ub8cc\ub85c \uc778\ud55c \uac15\uc81c \uccad\uc0b0'], exit_signal_score=0, stop_loss_price=182.33557142857143, take_profit_price=175.53885714285713, pnl=7412.519999999998, pnl_percent=7.430443716332535, holding_period_hours=8738.0, market_trend_at_entry='NEUTRAL', long_term_trend_at_entry='NEUTRAL', metadata={})"
+          ],
+          "win_rate": 1.0,
+          "avg_return": 7.430443716332535
+        },
+        "medium": {
+          "trades": [],
+          "win_rate": 0.0,
+          "avg_return": 0.0
+        },
+        "strong": {
+          "trades": [],
+          "win_rate": 0.0,
+          "avg_return": 0.0
+        }
+      },
+      "market_condition_analysis": {
+        "BULLISH": {
+          "trades": [],
+          "win_rate": 0.0,
+          "avg_return": 0.0
+        },
+        "BEARISH": {
+          "trades": [],
+          "win_rate": 0.0,
+          "avg_return": 0.0
+        },
+        "NEUTRAL": {
+          "trades": [
+            "Trade(trade_id='c1080d8a-3db0-4135-8502-48688836f7f3', ticker='GOOGL', trade_type=<TradeType.SELL: 'SELL'>, status=<TradeStatus.CLOSED: 'CLOSED'>, entry_timestamp=Timestamp('2024-06-21 17:30:00+0000', tz='UTC'), entry_price=180.07, entry_quantity=554, entry_signal_details=['RSI \uacfc\ub9e4\uc218 \uad6c\uac04 (85.50)'], entry_signal_score=7, exit_timestamp=Timestamp('2025-06-20 19:30:00+0000', tz='UTC'), exit_price=166.69, exit_signal_details=['\ubc31\ud14c\uc2a4\ud2b8 \uc885\ub8cc\ub85c \uc778\ud55c \uac15\uc81c \uccad\uc0b0'], exit_signal_score=0, stop_loss_price=182.33557142857143, take_profit_price=175.53885714285713, pnl=7412.519999999998, pnl_percent=7.430443716332535, holding_period_hours=8738.0, market_trend_at_entry='NEUTRAL', long_term_trend_at_entry='NEUTRAL', metadata={})"
+          ],
+          "win_rate": 1.0,
+          "avg_return": 7.430443716332535
+        }
+      },
+      "holding_period_analysis": {
+        "short": {
+          "trades": [],
+          "description": "< 24\uc2dc\uac04"
+        },
+        "medium": {
+          "trades": [],
+          "description": "1-7\uc77c"
+        },
+        "long": {
+          "trades": [
+            "Trade(trade_id='c1080d8a-3db0-4135-8502-48688836f7f3', ticker='GOOGL', trade_type=<TradeType.SELL: 'SELL'>, status=<TradeStatus.CLOSED: 'CLOSED'>, entry_timestamp=Timestamp('2024-06-21 17:30:00+0000', tz='UTC'), entry_price=180.07, entry_quantity=554, entry_signal_details=['RSI \uacfc\ub9e4\uc218 \uad6c\uac04 (85.50)'], entry_signal_score=7, exit_timestamp=Timestamp('2025-06-20 19:30:00+0000', tz='UTC'), exit_price=166.69, exit_signal_details=['\ubc31\ud14c\uc2a4\ud2b8 \uc885\ub8cc\ub85c \uc778\ud55c \uac15\uc81c \uccad\uc0b0'], exit_signal_score=0, stop_loss_price=182.33557142857143, take_profit_price=175.53885714285713, pnl=7412.519999999998, pnl_percent=7.430443716332535, holding_period_hours=8738.0, market_trend_at_entry='NEUTRAL', long_term_trend_at_entry='NEUTRAL', metadata={})"
+          ],
+          "description": "> 7\uc77c",
+          "win_rate": 1.0,
+          "avg_return": 7.430443716332535,
+          "trade_count": 1
+        }
+      }
+    },
+    "settings": {
+      "tickers": [
+        "AAPL",
+        "AMZN",
+        "GOOGL",
+        "META",
+        "NVDA"
+      ],
+      "data_interval": "1h",
+      "commission_rate": 0.001,
+      "risk_per_trade": 0.02,
+      "signal_threshold": 6
+    }
+  },
+  "trade_analysis": {
+    "signal_strength": {
+      "weak": {
+        "trades": [
+          "Trade(trade_id='c1080d8a-3db0-4135-8502-48688836f7f3', ticker='GOOGL', trade_type=<TradeType.SELL: 'SELL'>, status=<TradeStatus.CLOSED: 'CLOSED'>, entry_timestamp=Timestamp('2024-06-21 17:30:00+0000', tz='UTC'), entry_price=180.07, entry_quantity=554, entry_signal_details=['RSI \uacfc\ub9e4\uc218 \uad6c\uac04 (85.50)'], entry_signal_score=7, exit_timestamp=Timestamp('2025-06-20 19:30:00+0000', tz='UTC'), exit_price=166.69, exit_signal_details=['\ubc31\ud14c\uc2a4\ud2b8 \uc885\ub8cc\ub85c \uc778\ud55c \uac15\uc81c \uccad\uc0b0'], exit_signal_score=0, stop_loss_price=182.33557142857143, take_profit_price=175.53885714285713, pnl=7412.519999999998, pnl_percent=7.430443716332535, holding_period_hours=8738.0, market_trend_at_entry='NEUTRAL', long_term_trend_at_entry='NEUTRAL', metadata={})"
+        ],
+        "win_rate": 1.0,
+        "avg_return": 7.430443716332535
+      },
+      "medium": {
+        "trades": [],
+        "win_rate": 0.0,
+        "avg_return": 0.0
+      },
+      "strong": {
+        "trades": [],
+        "win_rate": 0.0,
+        "avg_return": 0.0
+      }
+    },
+    "market_conditions": {
+      "BULLISH": {
+        "trades": [],
+        "win_rate": 0.0,
+        "avg_return": 0.0
+      },
+      "BEARISH": {
+        "trades": [],
+        "win_rate": 0.0,
+        "avg_return": 0.0
+      },
+      "NEUTRAL": {
+        "trades": [
+          "Trade(trade_id='c1080d8a-3db0-4135-8502-48688836f7f3', ticker='GOOGL', trade_type=<TradeType.SELL: 'SELL'>, status=<TradeStatus.CLOSED: 'CLOSED'>, entry_timestamp=Timestamp('2024-06-21 17:30:00+0000', tz='UTC'), entry_price=180.07, entry_quantity=554, entry_signal_details=['RSI \uacfc\ub9e4\uc218 \uad6c\uac04 (85.50)'], entry_signal_score=7, exit_timestamp=Timestamp('2025-06-20 19:30:00+0000', tz='UTC'), exit_price=166.69, exit_signal_details=['\ubc31\ud14c\uc2a4\ud2b8 \uc885\ub8cc\ub85c \uc778\ud55c \uac15\uc81c \uccad\uc0b0'], exit_signal_score=0, stop_loss_price=182.33557142857143, take_profit_price=175.53885714285713, pnl=7412.519999999998, pnl_percent=7.430443716332535, holding_period_hours=8738.0, market_trend_at_entry='NEUTRAL', long_term_trend_at_entry='NEUTRAL', metadata={})"
+        ],
+        "win_rate": 1.0,
+        "avg_return": 7.430443716332535
+      }
+    },
+    "holding_periods": {
+      "short": {
+        "trades": [],
+        "description": "< 24\uc2dc\uac04"
+      },
+      "medium": {
+        "trades": [],
+        "description": "1-7\uc77c"
+      },
+      "long": {
+        "trades": [
+          "Trade(trade_id='c1080d8a-3db0-4135-8502-48688836f7f3', ticker='GOOGL', trade_type=<TradeType.SELL: 'SELL'>, status=<TradeStatus.CLOSED: 'CLOSED'>, entry_timestamp=Timestamp('2024-06-21 17:30:00+0000', tz='UTC'), entry_price=180.07, entry_quantity=554, entry_signal_details=['RSI \uacfc\ub9e4\uc218 \uad6c\uac04 (85.50)'], entry_signal_score=7, exit_timestamp=Timestamp('2025-06-20 19:30:00+0000', tz='UTC'), exit_price=166.69, exit_signal_details=['\ubc31\ud14c\uc2a4\ud2b8 \uc885\ub8cc\ub85c \uc778\ud55c \uac15\uc81c \uccad\uc0b0'], exit_signal_score=0, stop_loss_price=182.33557142857143, take_profit_price=175.53885714285713, pnl=7412.519999999998, pnl_percent=7.430443716332535, holding_period_hours=8738.0, market_trend_at_entry='NEUTRAL', long_term_trend_at_entry='NEUTRAL', metadata={})"
+        ],
+        "description": "> 7\uc77c",
+        "win_rate": 1.0,
+        "avg_return": 7.430443716332535,
+        "trade_count": 1
+      }
+    }
+  },
+  "monthly_performance": [
+    {
+      "month": "2024-06",
+      "start_value": 100000.0,
+      "end_value": 100210.48122000002,
+      "return_percent": 0.21048122000001604
+    }
+  ]
+}

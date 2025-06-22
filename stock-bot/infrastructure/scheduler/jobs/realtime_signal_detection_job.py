@@ -88,7 +88,15 @@ def realtime_signal_detection_job():
                     daily_indicators = calculate_daily_indicators(df_daily)
                     daily_data_cache["daily_indicators"][symbol] = daily_indicators
                     
-                    logger.debug(f"Calculated daily indicators for {symbol}: {len(daily_indicators)} bars")
+                    # 일봉 기술적 지표도 DB에 저장
+                    if daily_indicators is not None and not daily_indicators.empty:
+                        excluded_columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+                        daily_indicator_columns = [col for col in daily_indicators.columns 
+                                                if col not in excluded_columns]
+                        latest_daily_indicators = daily_indicators[daily_indicator_columns].iloc[-1:].copy()
+                        technical_indicator_repo.save_indicators(latest_daily_indicators, symbol, '1d')
+                    
+                    logger.debug(f"Calculated and stored daily indicators for {symbol}: {len(daily_indicators)} bars")
 
                 if df_hourly is not None and not df_hourly.empty:
                     long_term_trend, trend_values = stock_analysis_service.get_long_term_trend(df_hourly)
@@ -167,18 +175,16 @@ def realtime_signal_detection_job():
                     else:
                         logger.warning(f"    All values are null for {col}")
 
-            # 2.3. 기술적 지표 저장 (repository 패턴 사용)
-            indicator_columns = [
-                'SMA_5', 'SMA_20', 'SMA_60', 'RSI_14', 
-                'MACD_12_26_9', 'MACDs_12_26_9', 'MACDh_12_26_9',
-                'STOCHk_14_3_3', 'STOCHd_14_3_3', 'ADX_14', 'DMP_14', 'DMN_14',
-                'BBL_20_2_0', 'BBM_20_2_0', 'BBU_20_2_0',
-                'ATR_14', 'Volume_SMA_20'
-            ]
-            
-            available_columns = [col for col in indicator_columns if col in df_with_indicators.columns]
-            indicators_df = df_with_indicators[available_columns].copy()
-            technical_indicator_repo.save_indicators(indicators_df, symbol, '1h')
+            # 2.3. 기술적 지표 저장 (repository 패턴 사용) - 자동화된 컬럼 선택
+            excluded_columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+            indicator_columns = [col for col in df_with_indicators.columns 
+                                if col not in excluded_columns]
+
+            # 최신 시점만 저장 (효율성 개선)
+            latest_indicators_df = df_with_indicators[indicator_columns].iloc[-1:].copy()
+            technical_indicator_repo.save_indicators(latest_indicators_df, symbol, '1h')
+
+            logger.info(f"Successfully saved/updated {len(indicator_columns)} technical indicators for {symbol}")
 
             # 2.4. 신호 감지 (다중 시간대 분석 적용)
             daily_extras = daily_data_cache["daily_extras"].get(symbol, {})
@@ -211,6 +217,8 @@ def realtime_signal_detection_job():
                 signal_result = _apply_multi_timeframe_filter(signal_result, multi_timeframe_analysis)
                 if signal_result:
                     logger.info(f"Multi-timeframe signal confirmed for {symbol}: {signal_result['type']} with score {signal_result['score']}")
+                else:
+                    logger.info(f"Signal rejected by multi-timeframe filter for {symbol}")
 
             # 2.5. 신호 저장 (repository 패턴 사용)
             if signal_result and signal_result.get('score', 0) >= SIGNAL_THRESHOLD:
@@ -228,10 +236,15 @@ def realtime_signal_detection_job():
                     trend_ref_value=long_term_trend_values.get('sma'),
                     details=signal_result.get('details', []),
                     stop_loss_price=signal_result.get('stop_loss_price'),
-                    evidence=signal_result.get('evidence')  # 새로 추가된 상세 근거
+                    evidence=signal_result.get('evidence')
                 )
                 
                 trading_signal_repo.save_signal(signal)
+                logger.info(f"Saved trading signal for {symbol}: {signal_result['type']} (score: {signal_result['score']})")
+            elif signal_result:
+                logger.info(f"Signal detected but below threshold for {symbol}: {signal_result['type']} (score: {signal_result.get('score', 0)} < {SIGNAL_THRESHOLD})")
+            else:
+                logger.debug(f"No signal detected for {symbol}")
 
             # 2.6. 로깅
             if REALTIME_SIGNAL_DETECTION["LOG_DATA_LENGTH"]:
@@ -312,4 +325,6 @@ def _apply_multi_timeframe_filter(signal_result: Dict, multi_timeframe_analysis:
 
 
 if __name__ == "__main__":
+    from infrastructure.logging import setup_logging
+    setup_logging()
     realtime_signal_detection_job()

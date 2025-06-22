@@ -13,50 +13,50 @@ VOLUME_SURGE_FACTOR = 1.2
 # TA-Lib 의존성으로 인해 캔들스틱 패턴(bullish_engulfing, hammer_pattern, bearish_engulfing, shooting_star_pattern)은
 # 실제 코드에서는 사용되지 않지만, 가중치 관리 목적으로 여기에 포함합니다.
 SIGNAL_WEIGHTS = {
-    "golden_cross_sma": 4,  # SMA 골든/데드 크로스 (추세 전환)
-    "macd_cross": 4,  # MACD 골든/데드 크로스 (모멘텀 전환)
-    "volume_surge": 3,  # 거래량 급증 (신호의 강도 확인)
-    "adx_strong_trend": 3,  # ADX 강한 추세 (추세 강도 확인)
-    "rsi_bounce_drop": 2,  # RSI 과매수/과매도 구간 이탈
-    "stoch_cross": 2,  # 스토캐스틱 매수/매도 크로스
-    "bb_squeeze_expansion": 2,  # 볼린저 밴드/켈트너 채널 스퀴즈 및 확장 (변동성 변화)
-    "rsi_bb_reversal": 5,  # RSI와 볼린저 밴드 조합 반전 신호 (새로운 가중치)
-    "macd_volume_confirm": 6,  # MACD와 거래량 조합 확인 신호 (새로운 가중치)
-    "rsi_stoch_confirm": 5,  # RSI와 스토캐스틱 조합 확인 신호 (새로운 가중치)
-    "pivot_momentum_reversal": 7,  # 피봇/피보나치 + 모멘텀 반전 신호 (새로운 가중치, 높은 신뢰도)
-    "fib_momentum_reversal": 7,  # 피보나치 + 모멘텀 반전 신호 (새로운 가중치, 높은 신뢰도)
-    "candlestick_bullish_pattern": 1,  # 캔들스틱 강세 패턴 (구현 시)
-    "candlestick_bearish_pattern": 1  # 캔들스틱 약세 패턴 (구현 시)
+    "golden_cross_sma": 5,  # SMA 골든/데드 크로스 (추세 전환)
+    "macd_cross": 5,  # MACD 골든/데드 크로스 (모멘텀 전환)
+    "volume_surge": 4,  # 거래량 급증 (신호의 강도 확인)
+    "adx_strong_trend": 4,  # ADX 강한 추세 (추세 강도 확인)
+    "rsi_bounce_drop": 3,  # RSI 과매수/과매도 구간 이탈
+    "stoch_cross": 3,  # 스토캐스틱 매수/매도 크로스
+    "bb_squeeze_expansion": 3,  # 볼린저 밴드/켈트너 채널 스퀴즈 및 확장 (변동성 변화)
+    "rsi_bb_reversal": 6,  # RSI와 볼린저 밴드 조합 반전 신호 (새로운 가중치)
+    "macd_volume_confirm": 7,  # MACD와 거래량 조합 확인 신호 (새로운 가중치)
+    "rsi_stoch_confirm": 6,  # RSI와 스토캐스틱 조합 확인 신호 (새로운 가중치)
+    "pivot_momentum_reversal": 8,  # 피봇/피보나치 + 모멘텀 반전 신호 (새로운 가중치, 높은 신뢰도)
+    "fib_momentum_reversal": 8,  # 피보나치 + 모멘텀 반전 신호 (새로운 가중치, 높은 신뢰도)
+    "candlestick_bullish_pattern": 2,  # 캔들스틱 강세 패턴 (구현 시)
+    "candlestick_bearish_pattern": 2  # 캔들스틱 약세 패턴 (구현 시)
 }
 
 # 실시간 신호 발생을 위한 최소 총점
-SIGNAL_THRESHOLD = 12
+SIGNAL_THRESHOLD = 7  # 12에서 8로 완화
 
 # 시장 추세에 따른 신호 가중치 조정 계수 (새로 추가)
 SIGNAL_ADJUSTMENT_FACTORS_BY_TREND = {
     "BULLISH": {
-        "trend_follow_buy_adj": 1.0,
-        "trend_follow_sell_adj": 0.3,
+        "trend_follow_buy_adj": 1.2,  # 상승 추세에서 매수 신호 강화
+        "trend_follow_sell_adj": 0.5,  # 상승 추세에서 매도 신호 약화
         "momentum_reversal_adj": 0.8,
-        "volume_adj": 1.0,  # 불리시장에서 거래량은 긍정적
-        "bb_kc_adj": 1.0,  # 불리시장에서 확장도 긍정적
-        "pivot_fib_adj": 1.2
+        "volume_adj": 1.2,  # 불리시장에서 거래량은 더 긍정적
+        "bb_kc_adj": 1.2,  # 불리시장에서 확장도 더 긍정적
+        "pivot_fib_adj": 1.3
     },
     "BEARISH": {
-        "trend_follow_buy_adj": 0.3,
-        "trend_follow_sell_adj": 1.0,
+        "trend_follow_buy_adj": 0.5,  # 하락 추세에서 매수 신호 약화
+        "trend_follow_sell_adj": 1.2,  # 하락 추세에서 매도 신호 강화
         "momentum_reversal_adj": 0.8,
-        "volume_adj": 1.0,  # 베어리시장에서 거래량은 하락 확인
-        "bb_kc_adj": 1.0,  # 베어리시장에서 확장도 하락 확인
-        "pivot_fib_adj": 0.7
+        "volume_adj": 1.2,  # 베어리시장에서 거래량은 하락 확인
+        "bb_kc_adj": 1.2,  # 베어리시장에서 확장도 하락 확인
+        "pivot_fib_adj": 0.8
     },
     "NEUTRAL": {
-        "trend_follow_buy_adj": 0.1,
-        "trend_follow_sell_adj": 0.1,
-        "momentum_reversal_adj": 1.2,  # 중립장에서 반전 신호 가중치 높임
-        "volume_adj": 0.8,  # 중립장에서 거래량 급증은 신뢰도 약간 낮음
-        "bb_kc_adj": 1.2,  # 중립장에서 변동성 확장은 중요
-        "pivot_fib_adj": 1.5  # 중립장에서 지지/저항 신호 중요도 높임
+        "trend_follow_buy_adj": 0.3,  # 중립장에서 추세 추종 신호 더 약화
+        "trend_follow_sell_adj": 0.3,  # 중립장에서 추세 추종 신호 더 약화
+        "momentum_reversal_adj": 1.5,  # 중립장에서 반전 신호 가중치 더 높임
+        "volume_adj": 1.0,  # 중립장에서 거래량 중립적
+        "bb_kc_adj": 1.5,  # 중립장에서 변동성 확장은 더 중요
+        "pivot_fib_adj": 1.8  # 중립장에서 지지/저항 신호 중요도 더 높임
     }
 }
 
@@ -106,8 +106,8 @@ REALTIME_SIGNAL_DETECTION = {
     "LOOKBACK_PERIOD_DAYS_FOR_INTRADAY": 60,     # 시간봉 분석용 데이터 기간
     
     # 최소 데이터 요구사항
-    "MIN_HOURLY_DATA_LENGTH": 60,                # 시간봉 최소 데이터 개수
-    "MIN_DAILY_DATA_LENGTH": 200,                # 일봉 최소 데이터 개수
+    "MIN_HOURLY_DATA_LENGTH": 30,                # 시간봉 최소 데이터 개수 (60 -> 30으로 조정)
+    "MIN_DAILY_DATA_LENGTH": 120,                # 일봉 최소 데이터 개수 (200 -> 120으로 조정)
     
     # 시장 지수 설정
     "MARKET_INDEX_SYMBOL": "^GSPC",              # 시장 추세 판단용 지수 (S&P 500)

@@ -7,8 +7,8 @@ class StockMetadata(Base):
     """주식 메타데이터 테이블"""
     __tablename__ = 'stock_metadata'
     
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    ticker = Column(String(10), primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ticker = Column(String(10), unique=True, nullable=False, index=True)
     company_name = Column(String(255))
     exchange = Column(String(50))
     sector = Column(String(100))

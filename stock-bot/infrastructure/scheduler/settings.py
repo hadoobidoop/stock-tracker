@@ -29,3 +29,25 @@ REALTIME_SIGNAL_JOB = {
         'minute': '*/30'
     }
 }
+
+# 3. 일봉 OHLCV 데이터 업데이트 작업 설정
+DAILY_OHLCV_UPDATE_JOB = {
+    'id': 'daily_ohlcv_update_job',
+    'name': 'Daily OHLCV Data Update',
+    'cron': {
+        'day_of_week': 'mon-fri',  # 월-금 (장날만)
+        'hour': 17,                # 오후 5시 (장 마감 후)
+        'minute': 0
+    }
+}
+
+# 4. 1시간봉 OHLCV 데이터 업데이트 작업 설정
+HOURLY_OHLCV_UPDATE_JOB = {
+    'id': 'hourly_ohlcv_update_job',
+    'name': 'Hourly OHLCV Data Update',
+    'cron': {
+        'day_of_week': 'mon-fri',  # 월-금 (장날만)
+        'hour': '9-16',            # 9시-16시 (장 시간)
+        'minute': 10               # 매시 10분
+    }
+}

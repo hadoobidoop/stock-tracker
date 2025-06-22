@@ -109,8 +109,14 @@ class SignalDetectionOrchestrator:
         
         latest_data = df.iloc[-1]
         
-        if strong_buy_signal and long_term_trend == TrendType.BULLISH:
-            logger.info(f"BUY SIGNAL CONFIRMED for {ticker} (Score: {buy_score:.2f})")
+        # 장기 추세와 일치하면 점수 가중치 부여
+        if long_term_trend == TrendType.BULLISH:
+            buy_score *= 1.2
+        elif long_term_trend == TrendType.BEARISH:
+            sell_score *= 1.2
+        
+        if strong_buy_signal:
+            logger.info(f"BUY SIGNAL CONFIRMED for {ticker} (Score: {buy_score:.2f}, Long-term trend: {long_term_trend})")
             
             stop_loss_price = self._calculate_stop_loss(df, 'buy')
             
@@ -131,8 +137,8 @@ class SignalDetectionOrchestrator:
                 'evidence': evidence
             }
             
-        elif strong_sell_signal and long_term_trend == TrendType.BEARISH:
-            logger.info(f"SELL SIGNAL CONFIRMED for {ticker} (Score: {sell_score:.2f})")
+        elif strong_sell_signal:
+            logger.info(f"SELL SIGNAL CONFIRMED for {ticker} (Score: {sell_score:.2f}, Long-term trend: {long_term_trend})")
             
             stop_loss_price = self._calculate_stop_loss(df, 'sell')
             

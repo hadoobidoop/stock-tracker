@@ -167,7 +167,7 @@ class BacktestingEngine:
 
     def _process_signals_and_trades(self,
                                     all_data: Dict[str, pd.DataFrame],
-                                    market_index_data: pd.DataFrame, # [수정] 시장 지수 데이터 추가
+                                    market_index_data: pd.DataFrame,
                                     portfolio: Portfolio,
                                     current_time: datetime,
                                     current_prices: Dict[str, float]) -> None:
@@ -176,6 +176,17 @@ class BacktestingEngine:
         self._update_daily_cache(all_data, market_index_data, current_time)
 
         market_trend = self.daily_data_cache["market_trend"]
+
+        # [추가] 최대 보유 기간 체크 (5일)
+        max_holding_period = timedelta(days=5)
+        for ticker, position in list(portfolio.open_positions.items()):
+            if current_time - position.entry_timestamp > max_holding_period:
+                if ticker in current_prices:
+                    portfolio.close_position(
+                        ticker, current_time, current_prices[ticker],
+                        ["최대 보유 기간 초과로 인한 청산"], 0, TradeStatus.CLOSED
+                    )
+                    logger.info(f"Position in {ticker} closed due to maximum holding period exceeded")
 
         for ticker, data in all_data.items():
             if ticker in portfolio.open_positions or current_time not in data.index:

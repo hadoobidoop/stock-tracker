@@ -1,10 +1,9 @@
 from typing import List, Dict, Tuple
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from pytz import timezone
 
 from infrastructure.logging import get_logger
-from infrastructure.client.yahoo import get_ohlcv_data
 from infrastructure.db.models.enums import TrendType
 from domain.stock.repository.stock_repository import StockRepository
 from domain.stock.models.stock_metadata import StockMetadata
@@ -26,13 +25,28 @@ class StockAnalysisService:
         return datetime.now(et_tz)
     
     def get_stocks_to_analyze(self) -> List[str]:
-        """분석할 주식 목록을 반환합니다."""
+        """분석할 모든 주식 목록을 DB에서 조회하여 반환합니다."""
+        all_stocks = []
+        page = 1
+        page_size = 100  # 한 번에 조회할 주식 수
+
         try:
-            # Repository를 통해 분석 대상 주식 조회
-            stocks = self.stock_repository.get_stocks_for_analysis()
-            return [stock.ticker for stock in stocks]
+            while True:
+                stocks = self.stock_repository.get_stocks_for_analysis(page=page, page_size=page_size)
+                if not stocks:
+                    break
+                all_stocks.extend(stocks)
+                page += 1
+            
+            # DB에 데이터가 없을 경우, 초기 심볼 리스트 사용
+            if not all_stocks:
+                logger.warning("No stocks for analysis found in DB, falling back to STOCK_SYMBOLS.")
+                return STOCK_SYMBOLS
+
+            return [stock.ticker for stock in all_stocks]
         except Exception as e:
-            logger.error(f"Error getting stocks to analyze: {e}")
+            logger.error(f"Error getting stocks to analyze: {e}", exc_info=True)
+            logger.warning("Falling back to STOCK_SYMBOLS due to an error.")
             return STOCK_SYMBOLS
     
     def get_market_trend(self, market_data: pd.DataFrame = None) -> TrendType:
@@ -40,15 +54,19 @@ class StockAnalysisService:
         시장 추세를 판단합니다.
         
         Args:
-            market_data: 백테스팅용 시장 데이터 (제공되지 않으면 실시간 데이터 조회)
+            market_data: 백테스팅용 시장 데이터 (제공되지 않으면 DB에서 데이터 조회)
         """
         try:
             sma_period = REALTIME_SIGNAL_DETECTION["MARKET_TREND_SMA_PERIOD"]
             
             if market_data is None:
                 market_symbol = REALTIME_SIGNAL_DETECTION["MARKET_INDEX_SYMBOL"]
-                data, _ = get_ohlcv_data(market_symbol, f"{sma_period}d", '1d')
-                df_market = data.get(market_symbol)
+                # DB에서 시장 지수 데이터 조회
+                df_market = self.stock_repository.get_ohlcv_data_from_db(
+                    tickers=[market_symbol],
+                    days=sma_period,
+                    interval='1d'
+                ).get(market_symbol)
             else:
                 df_market = market_data
 
@@ -96,10 +114,14 @@ class StockAnalysisService:
             return TrendType.NEUTRAL, {}
     
     def get_stock_data_for_analysis(self, symbols: List[str], lookback_days: int, interval: str) -> Dict[str, pd.DataFrame]:
-        """분석용 주식 데이터를 조회합니다."""
+        """분석용 주식 데이터를 DB에서 조회합니다."""
         try:
-            data, _ = get_ohlcv_data(symbols, f"{lookback_days}d", interval)
-            return data
+            # DB에서 데이터 조회
+            return self.stock_repository.get_ohlcv_data_from_db(
+                tickers=symbols,
+                days=lookback_days,
+                interval=interval
+            )
         except Exception as e:
-            logger.error(f"Error fetching stock data: {e}")
+            logger.error(f"Error fetching stock data from DB: {e}")
             return {} 

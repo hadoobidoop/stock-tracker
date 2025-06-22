@@ -3,7 +3,7 @@ from apscheduler.triggers.cron import CronTrigger
 import pytz
 
 from infrastructure.logging import get_logger
-from infrastructure.scheduler.jobs import realtime_signal_detection_job, update_stock_metadata_job
+from infrastructure.scheduler.jobs import realtime_signal_detection_job, update_stock_metadata_job, daily_ohlcv_update_job, hourly_ohlcv_update_job
 from infrastructure.scheduler import settings
 
 logger = get_logger(__name__)
@@ -28,6 +28,22 @@ def setup_scheduler():
         trigger=CronTrigger(**settings.REALTIME_SIGNAL_JOB['cron']),
         id=settings.REALTIME_SIGNAL_JOB['id'],
         name=settings.REALTIME_SIGNAL_JOB['name']
+    )
+
+    # 작업 3: 일봉 OHLCV 데이터 업데이트
+    scheduler.add_job(
+        daily_ohlcv_update_job,
+        trigger=CronTrigger(**settings.DAILY_OHLCV_UPDATE_JOB['cron']),
+        id=settings.DAILY_OHLCV_UPDATE_JOB['id'],
+        name=settings.DAILY_OHLCV_UPDATE_JOB['name']
+    )
+
+    # 작업 4: 1시간봉 OHLCV 데이터 업데이트
+    scheduler.add_job(
+        hourly_ohlcv_update_job,
+        trigger=CronTrigger(**settings.HOURLY_OHLCV_UPDATE_JOB['cron']),
+        id=settings.HOURLY_OHLCV_UPDATE_JOB['id'],
+        name=settings.HOURLY_OHLCV_UPDATE_JOB['name']
     )
 
     return scheduler

@@ -27,11 +27,13 @@
 - **자동 실행**: APScheduler를 사용한 자동화된 작업 실행
 - **장 시간 감지**: 미국 동부 시간 기준 장 시간에만 실행
 - **메타데이터 업데이트**: 주간 자동 메타데이터 업데이트
+- **일봉 데이터 수집**: 매일 장 마감 후 자동 일봉 데이터 수집 및 저장
 
 ### 4. 데이터 관리
 - **캐싱 시스템**: 일일 데이터 캐시로 API 호출 최적화
 - **데이터베이스 저장**: SQLAlchemy를 사용한 지표 및 신호 데이터 저장
 - **피보나치 레벨**: 지지/저항 레벨 계산
+- **일봉 데이터 저장**: 6개월치 일봉 OHLCV 데이터 자동 수집 및 업데이트
 
 ## 프로젝트 구조
 
@@ -76,6 +78,12 @@ python main.py
 
 # 실시간 신호 감지 작업 테스트
 python test_realtime_job.py
+
+# 일봉 데이터 수집 작업 테스트
+python test_daily_ohlcv_job.py
+
+# 1시간봉 데이터 수집 작업 테스트
+python test_hourly_ohlcv_job.py
 ```
 
 ## 설정
@@ -91,13 +99,36 @@ STOCK_SYMBOLS = [
 ### 스케줄링 설정
 `infrastructure/scheduler/settings.py`에서 작업 실행 시간을 조정할 수 있습니다:
 ```python
+# 실시간 신호 감지 작업
 REALTIME_SIGNAL_JOB = {
     'id': 'realtime_signal_job',
     'name': 'Real-time Signal Detection (Hourly)',
     'cron': {
         'day_of_week': 'mon-fri',    # 월-금
         'hour': '9-16',              # 9시-16시
-        'minute': '*'                 # 매분 실행
+        'minute': '*/30'             # 30분마다 실행
+    }
+}
+
+# 일봉 데이터 수집 작업
+DAILY_OHLCV_UPDATE_JOB = {
+    'id': 'daily_ohlcv_update_job',
+    'name': 'Daily OHLCV Data Update',
+    'cron': {
+        'day_of_week': 'mon-fri',    # 월-금 (장날만)
+        'hour': 17,                  # 오후 5시 (장 마감 후)
+        'minute': 0
+    }
+}
+
+# 1시간봉 데이터 수집 작업
+HOURLY_OHLCV_UPDATE_JOB = {
+    'id': 'hourly_ohlcv_update_job',
+    'name': 'Hourly OHLCV Data Update',
+    'cron': {
+        'day_of_week': 'mon-fri',    # 월-금 (장날만)
+        'hour': '9-16',              # 9시-16시 (장 시간)
+        'minute': 10                 # 매시 10분
     }
 }
 ```
@@ -132,7 +163,7 @@ REALTIME_SIGNAL_JOB = {
 - `stock_metadata`: 주식 메타데이터
 - `technical_indicators`: 기술적 지표 데이터
 - `trading_signals`: 거래 신호 데이터
-- `intraday_ohlcv`: 분봉 OHLCV 데이터
+- `ohlcv_data`: OHLCV 데이터 (분봉/일봉 통합 저장)
 
 ## 로깅
 
@@ -141,6 +172,39 @@ REALTIME_SIGNAL_JOB = {
 - 신호 감지 결과
 - 오류 및 예외 상황
 - 성능 메트릭
+
+## 일봉 데이터 수집 시스템
+
+### 일봉 데이터 자동 수집
+- **실행 시간**: 매일 오후 5시 (장 마감 후)
+- **데이터 범위**: 최근 6개월 일봉 데이터
+- **업데이트 방식**: 기존 데이터가 있으면 업데이트, 없으면 새로 생성 (UPSERT)
+- **데이터 검증**: NaN 값 제거, 필수 컬럼 확인
+
+### 1시간봉 데이터 자동 수집
+- **실행 시간**: 매시 10분 (9시 10분, 10시 10분, ... 16시 10분)
+- **데이터 범위**: 최근 3일 1시간봉 데이터
+- **업데이트 방식**: 기존 데이터가 있으면 업데이트, 없으면 새로 생성 (UPSERT)
+- **데이터 검증**: NaN 값 제거, 필수 컬럼 확인
+
+### 수동 실행
+일봉 데이터 수집 작업을 수동으로 실행하려면:
+```bash
+python test_daily_ohlcv_job.py
+```
+
+1시간봉 데이터 수집 작업을 수동으로 실행하려면:
+```bash
+python test_hourly_ohlcv_job.py
+```
+
+### 데이터 저장 구조
+OHLCV 데이터는 `ohlcv_data` 테이블에 저장되며, `interval` 컬럼으로 구분됩니다:
+- **timestamp_utc**: 시간 타임스탬프 (기본키의 일부)
+- **ticker**: 종목 코드 (기본키의 일부)
+- **open, high, low, close**: 가격 데이터
+- **volume**: 거래량
+- **interval**: 데이터 간격 ('1d' for 일봉, '1h' for 1시간봉)
 
 ## 개발 가이드
 

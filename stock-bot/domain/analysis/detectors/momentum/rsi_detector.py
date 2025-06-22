@@ -35,14 +35,26 @@ class RSISignalDetector(SignalDetector):
         # 조정 계수 가져오기
         momentum_reversal_adj = self.get_adjustment_factor(market_trend, "momentum_reversal_adj")
         
-        # RSI 과매도 탈출 (RSI <= 30 -> RSI > 30)
-        if prev_data['RSI_14'] <= 30 < latest_data['RSI_14']:
-            buy_score += self.weight * momentum_reversal_adj
+        # RSI 과매도 구간 매수 신호 (RSI <= 35)
+        if latest_data['RSI_14'] <= 35:
+            strength = (35 - latest_data['RSI_14']) / 35  # 낮을수록 강한 신호
+            buy_score += self.weight * momentum_reversal_adj * (1 + strength)
+            buy_details.append(f"RSI 과매도 구간 ({latest_data['RSI_14']:.2f})")
+        
+        # RSI 과매도 탈출 매수 신호 (RSI <= 35 -> RSI > 35)
+        elif prev_data['RSI_14'] <= 35 < latest_data['RSI_14']:
+            buy_score += self.weight * momentum_reversal_adj * 1.2  # 20% 추가 가중치
             buy_details.append(f"RSI 과매도 탈출 ({prev_data['RSI_14']:.2f} -> {latest_data['RSI_14']:.2f})")
         
-        # RSI 과매수 하락 (RSI >= 70 -> RSI < 70)
-        if prev_data['RSI_14'] >= 70 > latest_data['RSI_14']:
-            sell_score += self.weight * momentum_reversal_adj
+        # RSI 과매수 구간 매도 신호 (RSI >= 65)
+        if latest_data['RSI_14'] >= 65:
+            strength = (latest_data['RSI_14'] - 65) / 35  # 높을수록 강한 신호
+            sell_score += self.weight * momentum_reversal_adj * (1 + strength)
+            sell_details.append(f"RSI 과매수 구간 ({latest_data['RSI_14']:.2f})")
+        
+        # RSI 과매수 하락 매도 신호 (RSI >= 65 -> RSI < 65)
+        elif prev_data['RSI_14'] >= 65 > latest_data['RSI_14']:
+            sell_score += self.weight * momentum_reversal_adj * 1.2  # 20% 추가 가중치
             sell_details.append(f"RSI 과매수 하락 ({prev_data['RSI_14']:.2f} -> {latest_data['RSI_14']:.2f})")
         
         return buy_score, sell_score, buy_details, sell_details 

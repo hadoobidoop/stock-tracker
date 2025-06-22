@@ -45,29 +45,55 @@ class MACDSignalDetector(SignalDetector):
         # MACD 근거 생성
         self._collect_macd_evidence(latest_data, prev_data)
         
-        # 골든 크로스 (MACD > Signal)
+        # 매수 신호 1: 골든 크로스 (MACD > Signal)
         if prev_data['MACD_12_26_9'] < prev_data['MACDs_12_26_9'] and latest_data['MACD_12_26_9'] > latest_data['MACDs_12_26_9']:
             macd_cross_buy_score = self.weight * trend_follow_buy_adj
             
-            # ADX 약세 시 가중치 감소
-            if latest_data['ADX_14'] < 25:
-                macd_cross_buy_score *= 0.5
+            # ADX 강도에 따른 가중치 조정
+            if latest_data['ADX_14'] >= 25:
+                macd_cross_buy_score *= 1.2  # 강한 추세에서 20% 가중치 증가
+                buy_details.append(f"MACD 골든 크로스 (ADX 강세로 가중치 증가: {latest_data['ADX_14']:.2f})")
+            elif latest_data['ADX_14'] >= 20:  # 완화된 기준
+                buy_details.append(f"MACD 골든 크로스 (ADX 보통: {latest_data['ADX_14']:.2f})")
+            else:
+                macd_cross_buy_score *= 0.8  # 약한 추세에서 20% 가중치 감소
                 buy_details.append(f"MACD 골든 크로스 (ADX 약세로 가중치 감소: {latest_data['ADX_14']:.2f})")
             
             buy_score += macd_cross_buy_score
             buy_details.append(f"MACD 골든 크로스 (MACD:{latest_data['MACD_12_26_9']:.2f} > Signal:{latest_data['MACDs_12_26_9']:.2f})")
         
-        # 데드 크로스 (MACD < Signal)
+        # 매수 신호 2: MACD 상승 반전
+        elif (latest_data['MACD_12_26_9'] > prev_data['MACD_12_26_9'] and 
+              latest_data['MACD_12_26_9'] < 0):  # 음수 구간에서 상승
+            strength = abs(latest_data['MACD_12_26_9']) / abs(prev_data['MACD_12_26_9'])
+            if strength < 1:  # MACD가 0에 가까워지는 중
+                buy_score += self.weight * trend_follow_buy_adj * 0.5  # 50% 가중치
+                buy_details.append(f"MACD 상승 반전 (MACD: {prev_data['MACD_12_26_9']:.2f} -> {latest_data['MACD_12_26_9']:.2f})")
+        
+        # 매도 신호 1: 데드 크로스 (MACD < Signal)
         if prev_data['MACD_12_26_9'] > prev_data['MACDs_12_26_9'] and latest_data['MACD_12_26_9'] < latest_data['MACDs_12_26_9']:
             macd_cross_sell_score = self.weight * trend_follow_sell_adj
             
-            # ADX 약세 시 가중치 감소
-            if latest_data['ADX_14'] < 25:
-                macd_cross_sell_score *= 0.5
+            # ADX 강도에 따른 가중치 조정
+            if latest_data['ADX_14'] >= 25:
+                macd_cross_sell_score *= 1.2  # 강한 추세에서 20% 가중치 증가
+                sell_details.append(f"MACD 데드 크로스 (ADX 강세로 가중치 증가: {latest_data['ADX_14']:.2f})")
+            elif latest_data['ADX_14'] >= 20:  # 완화된 기준
+                sell_details.append(f"MACD 데드 크로스 (ADX 보통: {latest_data['ADX_14']:.2f})")
+            else:
+                macd_cross_sell_score *= 0.8  # 약한 추세에서 20% 가중치 감소
                 sell_details.append(f"MACD 데드 크로스 (ADX 약세로 가중치 감소: {latest_data['ADX_14']:.2f})")
             
             sell_score += macd_cross_sell_score
             sell_details.append(f"MACD 데드 크로스 (MACD:{latest_data['MACD_12_26_9']:.2f} < Signal:{latest_data['MACDs_12_26_9']:.2f})")
+        
+        # 매도 신호 2: MACD 하락 반전
+        elif (latest_data['MACD_12_26_9'] < prev_data['MACD_12_26_9'] and 
+              latest_data['MACD_12_26_9'] > 0):  # 양수 구간에서 하락
+            strength = latest_data['MACD_12_26_9'] / prev_data['MACD_12_26_9']
+            if strength < 1:  # MACD가 0에 가까워지는 중
+                sell_score += self.weight * trend_follow_sell_adj * 0.5  # 50% 가중치
+                sell_details.append(f"MACD 하락 반전 (MACD: {prev_data['MACD_12_26_9']:.2f} -> {latest_data['MACD_12_26_9']:.2f})")
         
         return buy_score, sell_score, buy_details, sell_details
     

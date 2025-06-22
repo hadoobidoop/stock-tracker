@@ -111,12 +111,12 @@ class MultiTimeframeCompositeDetector(SignalDetector):
             signal_strength = self._calculate_signal_strength(daily_df, hourly_df, trend_analysis)
             
             # 4. 최종 신호 결정
-            if signal_strength['buy_strength'] > 0.7:  # 70% 이상의 신뢰도
+            if signal_strength['buy_strength'] > 0.5:  # 50% 이상의 신뢰도로 완화
                 buy_score = self.weight * signal_strength['buy_strength']
                 buy_details.append(f"다중시간대 매수 신호 (일봉:{trend_analysis['daily_trend']}, "
                                  f"시간봉:{trend_analysis['hourly_trend']}, 신뢰도:{signal_strength['buy_strength']:.2f})")
             
-            if signal_strength['sell_strength'] > 0.7:  # 70% 이상의 신뢰도
+            if signal_strength['sell_strength'] > 0.5:  # 50% 이상의 신뢰도로 완화
                 sell_score = self.weight * signal_strength['sell_strength']
                 sell_details.append(f"다중시간대 매도 신호 (일봉:{trend_analysis['daily_trend']}, "
                                   f"시간봉:{trend_analysis['hourly_trend']}, 신뢰도:{signal_strength['sell_strength']:.2f})")
@@ -212,43 +212,43 @@ class MultiTimeframeCompositeDetector(SignalDetector):
                 'sell_strength': 0.0
             }
             
-            # 추세 일치도에 따른 기본 점수
+            # 추세 일치도에 따른 기본 점수 (상향 조정)
             consensus_multiplier = {
-                'BULLISH': 1.0,
-                'BEARISH': 1.0,
-                'MIXED': 0.5,
-                'NEUTRAL': 0.2
+                'BULLISH': 1.2,   # 20% 상향
+                'BEARISH': 1.2,   # 20% 상향
+                'MIXED': 0.8,     # 30% 상향
+                'NEUTRAL': 0.5    # 30% 상향
             }
             
-            base_multiplier = consensus_multiplier.get(trend_analysis['consensus'], 0.2)
+            base_multiplier = consensus_multiplier.get(trend_analysis['consensus'], 0.5)
             
             # 일봉 RSI 확인 (과매수/과매도 필터)
             daily_rsi = daily_df.iloc[-1].get('RSI_14', 50)
             hourly_rsi = hourly_df.iloc[-1].get('RSI_14', 50)
             
-            # 매수 신호 강도
-            if trend_analysis['consensus'] == 'BULLISH':
+            # 매수 신호 강도 (RSI 기준 완화)
+            if trend_analysis['consensus'] in ['BULLISH', 'MIXED']:  # MIXED도 허용
                 rsi_factor = 1.0
-                if daily_rsi < 70 and hourly_rsi < 80:  # 과매수 아님
+                if daily_rsi < 75 and hourly_rsi < 85:  # 과매수 기준 완화
                     rsi_factor = 1.2
-                elif daily_rsi > 80:  # 과매수
-                    rsi_factor = 0.3
+                elif daily_rsi > 85:  # 과매수 기준 완화
+                    rsi_factor = 0.5  # 페널티 완화
                 
                 strength['buy_strength'] = (base_multiplier * rsi_factor * 
-                                          trend_analysis.get('daily_strength', 0.5) * 
-                                          trend_analysis.get('hourly_strength', 0.5))
+                                          max(trend_analysis.get('daily_strength', 0.5), 0.5) * 
+                                          max(trend_analysis.get('hourly_strength', 0.5), 0.5))
             
-            # 매도 신호 강도
-            if trend_analysis['consensus'] == 'BEARISH':
+            # 매도 신호 강도 (RSI 기준 완화)
+            if trend_analysis['consensus'] in ['BEARISH', 'MIXED']:  # MIXED도 허용
                 rsi_factor = 1.0
-                if daily_rsi > 30 and hourly_rsi > 20:  # 과매도 아님
+                if daily_rsi > 25 and hourly_rsi > 15:  # 과매도 기준 완화
                     rsi_factor = 1.2
-                elif daily_rsi < 20:  # 과매도
-                    rsi_factor = 0.3
+                elif daily_rsi < 15:  # 과매도 기준 완화
+                    rsi_factor = 0.5  # 페널티 완화
                 
                 strength['sell_strength'] = (base_multiplier * rsi_factor * 
-                                           trend_analysis.get('daily_strength', 0.5) * 
-                                           trend_analysis.get('hourly_strength', 0.5))
+                                           max(trend_analysis.get('daily_strength', 0.5), 0.5) * 
+                                           max(trend_analysis.get('hourly_strength', 0.5), 0.5))
             
             return strength
         except Exception as e:
