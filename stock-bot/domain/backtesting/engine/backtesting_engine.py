@@ -347,17 +347,6 @@ class BacktestingEngine:
 
         market_trend = self.daily_data_cache["market_trend"]
 
-        # 최대 보유 기간 체크 (5일)
-        max_holding_period = timedelta(days=5)
-        for ticker, position in list(portfolio.open_positions.items()):
-            if current_time - position.entry_timestamp > max_holding_period:
-                if ticker in current_prices:
-                    portfolio.close_position(
-                        ticker, current_time, current_prices[ticker],
-                        ["최대 보유 기간 초과로 인한 청산"], 0, TradeStatus.CLOSED
-                    )
-                    logger.info(f"Position in {ticker} closed due to maximum holding period exceeded")
-
         for ticker, data in all_data.items():
             if ticker in portfolio.open_positions or current_time not in data.index:
                 continue
