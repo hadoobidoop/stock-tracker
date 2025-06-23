@@ -1,0 +1,60 @@
+"""
+시장 데이터 업데이트 배치 잡
+버핏 지수, VIX, 10년 국채 수익률 등 시장 지표들을 정기적으로 수집합니다.
+"""
+from datetime import datetime
+
+from infrastructure.logging import get_logger
+from domain.stock.service.market_data_service import MarketDataService
+
+logger = get_logger(__name__)
+
+
+def market_data_update_job():
+    """
+    시장 데이터를 업데이트하는 스케줄링 작업입니다.
+    
+    수집하는 지표:
+    - 버핏 지수 (Wilshire 5000 / GDP)
+    - VIX (공포지수)
+    - 10년 국채 수익률
+    - 추후 확장: Put/Call 비율, Fear & Greed Index 등
+    """
+    logger.info("JOB START: Market data update...")
+    
+    try:
+        service = MarketDataService()
+        
+        # 모든 시장 지표 업데이트
+        results = service.update_all_indicators()
+        
+        # 결과 로깅
+        success_indicators = [indicator for indicator, success in results.items() if success]
+        failed_indicators = [indicator for indicator, success in results.items() if not success]
+        
+        if success_indicators:
+            logger.info(f"Successfully updated indicators: {', '.join(success_indicators)}")
+        
+        if failed_indicators:
+            logger.warning(f"Failed to update indicators: {', '.join(failed_indicators)}")
+            
+        # 최신 값들 로깅 (확인용)
+        latest_buffett = service.get_latest_buffett_indicator()
+        latest_vix = service.get_latest_vix()
+        
+        if latest_buffett:
+            logger.info(f"Latest Buffett Indicator: {latest_buffett:.2f}%")
+        if latest_vix:
+            logger.info(f"Latest VIX: {latest_vix:.2f}")
+            
+        logger.info("JOB END: Market data update completed successfully.")
+        
+    except Exception as e:
+        logger.error(f"Market data update job failed: {e}", exc_info=True)
+
+
+if __name__ == '__main__':
+    """테스트용 실행"""
+    from infrastructure.logging import setup_logging
+    setup_logging()
+    market_data_update_job() 

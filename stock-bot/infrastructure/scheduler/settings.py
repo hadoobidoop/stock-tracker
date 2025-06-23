@@ -51,3 +51,14 @@ HOURLY_OHLCV_UPDATE_JOB = {
         'minute': 10               # 매시 10분
     }
 }
+
+# 5. 시장 데이터 업데이트 작업 설정 (버핏 지수, VIX 등)
+MARKET_DATA_UPDATE_JOB = {
+    'id': 'market_data_update_job',
+    'name': 'Market Indicators Update (Buffett, VIX, etc.)',
+    'cron': {
+        'day_of_week': 'mon-fri',  # 월-금 (장날만)
+        'hour': 18,                # 오후 6시 (일봉 업데이트 후)
+        'minute': 0
+    }
+}

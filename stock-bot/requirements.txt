@@ -13,3 +13,4 @@ python-dotenv
 pytz
 backtesting
 boto3
+pandas-datareader>=0.10.0
