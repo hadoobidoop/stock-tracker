@@ -24,6 +24,9 @@ class StrategyResult:
     signals_detected: List[str]
     signal: Optional[TradingSignal] = None
     confidence: float = 0.0
+    buy_score: float = 0.0
+    sell_score: float = 0.0
+    stop_loss_price: Optional[float] = None
     
     def __post_init__(self):
         """신호 강도 자동 계산"""
@@ -85,6 +88,7 @@ class BaseStrategy(ABC):
                 "VolumeSignalDetector": "domain.analysis.detectors.volume.volume_detector.VolumeSignalDetector",
                 "ADXSignalDetector": "domain.analysis.detectors.trend_following.adx_detector.ADXSignalDetector",
                 "CompositeSignalDetector": "domain.analysis.detectors.composite.composite_detector.CompositeSignalDetector",
+                "BBSignalDetector": "domain.analysis.detectors.volatility.bb_detector.BBSignalDetector",
             }
             
             if not detector_config.enabled:
@@ -105,6 +109,9 @@ class BaseStrategy(ABC):
             # 복합 감지기인 경우 특별 처리
             if detector_config.detector_class == "CompositeSignalDetector":
                 return self._create_composite_detector(detector_config, detector_class)
+            # 파라미터가 필요한 감지기 처리 (예: BBDetector)
+            elif detector_config.parameters:
+                return detector_class(detector_config.weight, **detector_config.parameters)
             else:
                 # 단일 감지기 생성
                 return detector_class(detector_config.weight)
@@ -219,8 +226,14 @@ class BaseStrategy(ABC):
                 self.score_history.pop(0)
             self.average_score = sum(self.score_history) / len(self.score_history)
             
+            # 신호 임계값 - dict와 StrategyConfig 호환
+            if isinstance(self.config, dict):
+                signal_threshold = self.config.get('signal_threshold', 7)
+            else:
+                signal_threshold = getattr(self.config, 'signal_threshold', 7)
+            
             # 신호 여부 판단
-            has_signal = adjusted_score >= self.config.signal_threshold
+            has_signal = adjusted_score >= signal_threshold
             
             if has_signal:
                 self.signals_generated += 1
@@ -239,7 +252,10 @@ class BaseStrategy(ABC):
                 total_score=adjusted_score,
                 signal_strength="",  # __post_init__에서 자동 계산
                 signals_detected=signal_result.get('details', []),
-                signal=trading_signal
+                signal=trading_signal,
+                buy_score=signal_result.get('buy_score', 0.0),
+                sell_score=signal_result.get('sell_score', 0.0),
+                stop_loss_price=signal_result.get('stop_loss_price')
             )
             
         except Exception as e:
@@ -251,25 +267,47 @@ class BaseStrategy(ABC):
                 total_score=0.0,
                 signal_strength="WEAK",
                 signals_detected=[],
-                signal=None
+                signal=None,
+                buy_score=0.0,
+                sell_score=0.0,
+                stop_loss_price=None
             )
     
     def _adjust_score_by_strategy(self, base_score: float, market_trend: TrendType, long_term_trend: TrendType) -> float:
         """전략별 점수 조정"""
+        # 기본 점수 조정
         adjusted_score = base_score
+
+        # 시장 추세와 장기 추세에 따른 조정
+        if market_trend == TrendType.BULLISH and long_term_trend == TrendType.BULLISH:
+            adjusted_score *= 1.2  # 상승 추세에서 20% 가중
+        elif market_trend == TrendType.BEARISH and long_term_trend == TrendType.BEARISH:
+            adjusted_score *= 0.8  # 하락 추세에서 20% 감소
+
+        # 전략별 필터 적용 - dict와 StrategyConfig 호환
+        if isinstance(self.config, dict):
+            market_filters = self.config.get('market_filters', {})
+        else:
+            market_filters = getattr(self.config, 'market_filters', {}) or {}
         
-        # 시장 추세에 따른 조정
-        if market_trend == TrendType.BULLISH:
-            if self.strategy_type in [StrategyType.AGGRESSIVE, StrategyType.MOMENTUM]:
-                adjusted_score *= 1.2  # 상승장에서 공격적/모멘텀 전략 가산점
-            elif self.strategy_type == StrategyType.CONTRARIAN:
-                adjusted_score *= 0.8  # 상승장에서 역투자 전략 감점
-        elif market_trend == TrendType.BEARISH:
-            if self.strategy_type in [StrategyType.CONSERVATIVE, StrategyType.CONTRARIAN]:
-                adjusted_score *= 1.1  # 하락장에서 보수적/역투자 전략 가산점
-            elif self.strategy_type == StrategyType.AGGRESSIVE:
-                adjusted_score *= 0.9  # 하락장에서 공격적 전략 감점
+        # 추세 일치 필터
+        if market_filters.get('trend_alignment', False):
+            if market_trend != long_term_trend:
+                adjusted_score *= 0.7  # 추세가 일치하지 않으면 30% 감소
         
+        # 거래량 필터
+        if market_filters.get('volume_filter', False):
+            orchestrator = self._create_orchestrator()
+            if orchestrator.last_signals:
+                volume_signals = [s for s in orchestrator.last_signals if 'volume' in s.lower()]
+                if not volume_signals:
+                    adjusted_score *= 0.8  # 거래량 신호가 없으면 20% 감소
+
+        # 변동성 필터
+        if market_filters.get('volatility_filter', False):
+            if market_trend == TrendType.NEUTRAL:
+                adjusted_score *= 0.9  # 변동성이 낮으면 10% 감소
+
         return adjusted_score
     
     def _create_trading_signal(self, signal_result: Dict, ticker: str, score: float, 
@@ -305,22 +343,36 @@ class BaseStrategy(ABC):
     
     def get_name(self) -> str:
         """전략 이름 반환"""
-        return self.config.name
+        if isinstance(self.config, dict):
+            return self.config.get('name', f"Strategy_{self.strategy_type.value}")
+        else:
+            return self.config.name
     
     def get_description(self) -> str:
         """전략 설명 반환"""
-        return self.config.description
+        if isinstance(self.config, dict):
+            return self.config.get('description', f"Strategy for {self.strategy_type.value}")
+        else:
+            return self.config.description
     
     def get_performance_metrics(self) -> Dict[str, Any]:
         """전략 성능 지표 반환"""
+        # 신호 임계값과 리스크 - dict와 StrategyConfig 호환
+        if isinstance(self.config, dict):
+            signal_threshold = self.config.get('signal_threshold', 7)
+            risk_per_trade = self.config.get('risk_per_trade', 0.02)
+        else:
+            signal_threshold = getattr(self.config, 'signal_threshold', 7)
+            risk_per_trade = getattr(self.config, 'risk_per_trade', 0.02)
+        
         return {
             'signals_generated': self.signals_generated,
             'average_score': self.average_score,
             'last_analysis_time': self.last_analysis_time,
             'score_history_length': len(self.score_history),
             'is_initialized': self.is_initialized,
-            'signal_threshold': self.config.signal_threshold,
-            'risk_per_trade': self.config.risk_per_trade
+            'signal_threshold': signal_threshold,
+            'risk_per_trade': risk_per_trade
         }
     
     def reset_performance_metrics(self):

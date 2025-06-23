@@ -22,6 +22,7 @@ class SignalDetectionOrchestrator:
     def __init__(self):
         self.detectors: List[SignalDetector] = []
         self.signal_threshold = SIGNAL_THRESHOLD
+        self.last_signals = []  # 마지막으로 감지된 신호들을 저장하는 리스트
     
     def add_detector(self, detector: SignalDetector):
         """감지기를 추가합니다."""
@@ -60,6 +61,7 @@ class SignalDetectionOrchestrator:
         total_sell_score = 0
         all_buy_details = []
         all_sell_details = []
+        current_signals = []  # 현재 감지된 신호들을 저장
         
         # 각 감지기로부터 신호 수집
         for detector in self.detectors:
@@ -73,9 +75,18 @@ class SignalDetectionOrchestrator:
                 all_buy_details.extend(buy_details)
                 all_sell_details.extend(sell_details)
                 
+                # 감지된 신호들을 저장
+                if buy_details:
+                    current_signals.extend(buy_details)
+                if sell_details:
+                    current_signals.extend(sell_details)
+                
             except Exception as e:
                 logger.error(f"Error in detector {detector.name}: {e}", exc_info=True)
                 continue
+        
+        # 현재 감지된 신호들을 last_signals에 저장
+        self.last_signals = current_signals
         
         # 근거 수집
         all_technical_evidences = self._collect_all_technical_evidences()
@@ -130,6 +141,8 @@ class SignalDetectionOrchestrator:
             return {
                 'type': 'BUY',
                 'score': int(buy_score),
+                'buy_score': buy_score,
+                'sell_score': sell_score,
                 'details': buy_details,
                 'current_price': latest_data['Close'],
                 'timestamp': latest_data.name.to_pydatetime(),
@@ -152,6 +165,8 @@ class SignalDetectionOrchestrator:
             return {
                 'type': 'SELL',
                 'score': int(sell_score),
+                'buy_score': buy_score,
+                'sell_score': sell_score,
                 'details': sell_details,
                 'current_price': latest_data['Close'],
                 'timestamp': latest_data.name.to_pydatetime(),

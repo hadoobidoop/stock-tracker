@@ -16,6 +16,14 @@ class StrategyType(Enum):
     CONTRARIAN = "contrarian"       # 역추세 전략
     SCALPING = "scalping"           # 스캘핑 전략
     SWING = "swing"                 # 스윙 전략
+    # 새로 추가된 전략 5가지
+    MEAN_REVERSION = "mean_reversion"             # 평균 회귀 전략
+    TREND_PULLBACK = "trend_pullback"             # 추세 추종 눌림목 전략
+    VOLATILITY_BREAKOUT = "volatility_breakout"   # 변동성 돌파 전략
+    QUALITY_TREND = "quality_trend"               # 고신뢰도 복합 추세 전략
+    MULTI_TIMEFRAME = "multi_timeframe"           # 다중 시간대 확인 전략
+    VIX_FEAR_GREED = "vix_fear_greed"  # 새로운 VIX 기반 전략
+    ADX_RSI_VIX = "adx_rsi_vix"  # 추가
 
 @dataclass
 class DetectorConfig:
@@ -238,7 +246,144 @@ STRATEGY_CONFIGS = {
             "profit_target": 3.0,           # 3% 익절
             "stop_loss": 1.5                # 1.5% 손절
         }
-    )
+    ),
+
+    StrategyType.CONTRARIAN: StrategyConfig(
+        name="역추세 전략",
+        description="과매수/과매도 구간에서 추세 반전을 노리는 전략",
+        signal_threshold=7.0,
+        risk_per_trade=0.02,
+        detectors=[
+            DetectorConfig("RSISignalDetector", weight=6.0),
+            DetectorConfig("StochSignalDetector", weight=5.0),
+            # 역추세에서는 볼린저 밴드의 평균 회귀 속성을 활용
+            DetectorConfig("BBSignalDetector", weight=4.0, parameters={"detector_type": "mean_reversion"}),
+        ],
+        market_filters={
+            "trend_alignment": False, # 추세와 반대로 진입하는 것을 목표
+        },
+        position_management={
+            "max_positions": 3,
+            "position_timeout_hours": 48
+        }
+    ),
+
+    # ========================================
+    # --- 새로 추가된 5가지 전략 설정 ---
+    # ========================================
+
+    StrategyType.MEAN_REVERSION: StrategyConfig(
+        name="평균 회귀 전략",
+        description="과매수/과매도 후 평균으로 회귀하는 경향을 이용하는 전략",
+        signal_threshold=7.0,
+        risk_per_trade=0.015,
+        detectors=[
+            DetectorConfig("BBSignalDetector", weight=6.0, parameters={"detector_type": "mean_reversion"}),
+            DetectorConfig("RSISignalDetector", weight=4.0),
+            DetectorConfig("StochSignalDetector", weight=3.0),
+        ],
+        market_filters={"trend_alignment": False}, # 횡보장에서 유리
+        position_management={"max_positions": 4, "position_timeout_hours": 24}
+    ),
+
+    StrategyType.TREND_PULLBACK: StrategyConfig(
+        name="추세 추종 눌림목 전략",
+        description="상승 추세 중 일시적 하락(눌림목) 시 매수하는 전략",
+        signal_threshold=8.0,
+        risk_per_trade=0.02,
+        detectors=[
+            DetectorConfig("SMASignalDetector", weight=5.0), # 추세 확인
+            DetectorConfig("ADXSignalDetector", weight=4.0), # 추세 강도 확인
+            DetectorConfig("RSISignalDetector", weight=6.0), # 눌림목 포착
+        ],
+        market_filters={"trend_alignment": True}, # 반드시 추세와 동일한 방향
+        position_management={"max_positions": 4, "position_timeout_hours": 72}
+    ),
+
+    StrategyType.VOLATILITY_BREAKOUT: StrategyConfig(
+        name="변동성 돌파 전략",
+        description="변동성 응축 후 폭발하는 시점을 포착하는 전략",
+        signal_threshold=6.0,
+        risk_per_trade=0.025,
+        detectors=[
+            DetectorConfig("BBSignalDetector", weight=7.0, parameters={"detector_type": "breakout"}),
+            DetectorConfig("ADXSignalDetector", weight=4.0),
+            DetectorConfig("VolumeSignalDetector", weight=5.0),
+        ],
+        market_filters={"volume_confirmation": True},
+        position_management={"max_positions": 3, "position_timeout_hours": 48}
+    ),
+
+    StrategyType.QUALITY_TREND: StrategyConfig(
+        name="고신뢰도 복합 추세 전략",
+        description="여러 추세 지표가 모두 동의할 때만 진입하는 보수적 추세 전략",
+        signal_threshold=10.0,
+        risk_per_trade=0.01,
+        detectors=[
+            DetectorConfig("CompositeSignalDetector", weight=10.0, parameters={
+                "require_all": True,
+                "name": "Quality_Trend_Confirm",
+                "sub_detectors": ["SMASignalDetector", "MACDSignalDetector", "ADXSignalDetector"]
+            })
+        ],
+        market_filters={"trend_alignment": True, "trend_strength": True},
+        position_management={"max_positions": 2, "position_timeout_hours": 120}
+    ),
+
+    StrategyType.MULTI_TIMEFRAME: StrategyConfig(
+        name="다중 시간대 확인 전략",
+        description="장기 추세(일봉)와 단기(시간봉) 진입 신호를 함께 확인하는 전략",
+        signal_threshold=9.0,
+        risk_per_trade=0.02,
+        detectors=[
+            # 이 전략의 로직은 detector가 아닌 strategy 레벨에서 필터링으로 처리됨
+            # 따라서 기본적인 신호 조합을 사용
+            DetectorConfig("MACDSignalDetector", weight=5.0),
+            DetectorConfig("StochSignalDetector", weight=5.0),
+            DetectorConfig("RSISignalDetector", weight=4.0),
+        ],
+        market_filters={"multi_timeframe_confirmation": True}, # 핵심 필터
+        position_management={"max_positions": 3, "position_timeout_hours": 96}
+    ),
+
+    StrategyType.VIX_FEAR_GREED: {
+        "name": "VIX Fear & Greed 전략",
+        "description": "VIX 기반 시장 심리를 반영하는 전략",
+        "signal_threshold": 8.0,
+        "risk_per_trade": 0.015,
+        "detectors": [
+            {"detector_class": "SMASignalDetector", "enabled": True, "weight": 1.0},
+            {"detector_class": "MACDSignalDetector", "enabled": True, "weight": 1.5},
+            {"detector_class": "RSISignalDetector", "enabled": True, "weight": 1.2},
+            {"detector_class": "VolumeSignalDetector", "enabled": True, "weight": 0.8},
+        ],
+        "market_filters": {
+            "trend_alignment": True,
+            "volume_filter": True,
+            "market_sentiment_filter": True,
+        },
+        "position_management": {
+            "stop_loss_atr_multiplier": 2.5,
+            "take_profit_ratio": 2.0,
+            "position_sizing": "market_volatility",
+            "max_risk_per_trade": 0.015,
+        }
+    },
+
+    StrategyType.ADX_RSI_VIX: {
+        "name": "ADX+RSI+VIX 조합 전략",
+        "description": "ADX(추세), RSI(과매수/과매도), VIX(시장 공포) 융합 전략",
+        "adx_threshold": 15,     # 20 -> 15 (완화)
+        "rsi_buy": 40,           # 35 -> 40 (완화)
+        "rsi_sell": 60,          # 65 -> 60 (완화)
+        "vix_buy": 20,           # 25 -> 20 (완화)
+        "vix_sell": 12,          # 15 -> 12 (완화)
+        "risk_per_trade": 0.015,
+        "score_weight": 1.0,
+        "macro_weight": 1.2,
+        "macro_penalty": 0.7,
+        "signal_threshold": 3    # 기본 7 -> 3으로 낮춤
+    },
 }
 
 # ====================

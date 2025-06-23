@@ -78,10 +78,8 @@ def parse_arguments():
                        help='실행 모드 (기본값: single)')
     
     # 새로운 전략 관련 인수들
-    parser.add_argument('--strategy', 
-                       choices=['CONSERVATIVE', 'BALANCED', 'AGGRESSIVE', 'MOMENTUM', 
-                               'TREND_FOLLOWING', 'CONTRARIAN', 'SCALPING', 'SWING'],
-                       help='사용할 전략 (strategy 모드에서 필수)')
+    parser.add_argument('--strategy', type=str, default=None,
+                        help='전략 타입 (conservative, balanced, aggressive, momentum, trend_following, contrarian, vix_fear_greed, adx_rsi_vix)')
     
     parser.add_argument('--strategy-mix',
                        choices=['balanced_mix', 'conservative_mix', 'aggressive_mix'],
@@ -89,7 +87,9 @@ def parse_arguments():
     
     parser.add_argument('--compare-strategies', nargs='+',
                        choices=['CONSERVATIVE', 'BALANCED', 'AGGRESSIVE', 'MOMENTUM', 
-                               'TREND_FOLLOWING', 'CONTRARIAN', 'SCALPING', 'SWING'],
+                                'TREND_FOLLOWING', 'CONTRARIAN', 'SCALPING', 'SWING',
+                                'MEAN_REVERSION', 'TREND_PULLBACK', 'VOLATILITY_BREAKOUT',
+                                'QUALITY_TREND', 'MULTI_TIMEFRAME', 'VIX_FEAR_GREED'],
                        help='비교할 전략들 (지정하지 않으면 모든 전략 비교)')
     
     parser.add_argument('--use-legacy', action='store_true',
@@ -134,7 +134,12 @@ def run_strategy_backtest(service: BacktestingService, args):
     
     start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
     end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
-    strategy_type = StrategyType[args.strategy]
+    if args.strategy:
+        try:
+            strategy_type = StrategyType[args.strategy.upper()]
+        except KeyError:
+            print(f"[오류] 지원하지 않는 전략: {args.strategy}")
+            return
     
     result = service.run_specific_strategy_backtest(
         tickers=args.tickers,

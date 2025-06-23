@@ -387,11 +387,25 @@ class BacktestingEngine:
                 )
                 
                 # StrategyResult를 레거시 형태로 변환
+                if not strategy_result.has_signal:
+                    return None
+                    
+                # 매수/매도 신호 결정
+                signal_type = None
+                if strategy_result.buy_score > strategy_result.sell_score:
+                    signal_type = 'BUY'
+                    score = strategy_result.buy_score
+                elif strategy_result.sell_score > strategy_result.buy_score:
+                    signal_type = 'SELL'
+                    score = strategy_result.sell_score
+                else:
+                    return None
+                
                 return {
-                    'score': strategy_result.total_score,
-                    'type': 'BUY' if strategy_result.has_signal else None,
+                    'score': score,
+                    'type': signal_type,
                     'details': strategy_result.signals_detected,
-                    'stop_loss_price': None,  # 필요시 구현
+                    'stop_loss_price': strategy_result.stop_loss_price,
                     'strategy_name': strategy_result.strategy_name,
                     'strategy_result': strategy_result  # 추가 정보 보존
                 }
