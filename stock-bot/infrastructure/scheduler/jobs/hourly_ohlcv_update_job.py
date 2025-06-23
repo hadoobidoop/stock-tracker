@@ -5,6 +5,8 @@ import time
 
 from infrastructure.logging import get_logger
 from infrastructure.db.repository.sql_stock_repository import SQLStockRepository
+from infrastructure.db.repository.sql_technical_indicator_repository import SQLTechnicalIndicatorRepository
+from domain.analysis.utils import calculate_all_indicators
 from domain.stock.config.settings import OHLCV_COLLECTION
 
 logger = get_logger(__name__)
@@ -17,6 +19,7 @@ def hourly_ohlcv_update_job():
     logger.info("JOB START: Hourly OHLCV data update from Yahoo Finance...")
 
     repository = SQLStockRepository()
+    technical_indicator_repo = SQLTechnicalIndicatorRepository()
     
     # 분석 대상 주식 수 확인
     total_stocks = repository.count_stocks_for_analysis()
@@ -104,11 +107,28 @@ def hourly_ohlcv_update_job():
                 logger.info(f"Page {page}/{total_pages}: Successfully saved/updated {total_records} hourly OHLCV records.")
             else:
                 logger.error(f"Page {page}/{total_pages}: Failed to save hourly OHLCV data.")
-                
+            
             # 최신 시점의 지표만 저장
             for ticker, df in validated_data.items():
-                latest_indicators = df.iloc[-1:].copy()  # 마지막 행만
-                repository.save_indicators(latest_indicators, ticker, '1h')
+                try:
+                    # 기술적 지표 계산
+                    df_with_indicators = calculate_all_indicators(df)
+                    
+                    # OHLCV 컬럼을 제외한 지표 컬럼만 선택
+                    excluded_columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+                    indicator_columns = [col for col in df_with_indicators.columns 
+                                       if col not in excluded_columns]
+                    
+                    # 최신 시점의 지표만 저장
+                    if indicator_columns:
+                        latest_indicators = df_with_indicators[indicator_columns].iloc[-1:].copy()
+                        technical_indicator_repo.save_indicators(latest_indicators, ticker, '1h')
+                        logger.info(f"Successfully saved {len(indicator_columns)} technical indicators for {ticker}")
+                    else:
+                        logger.warning(f"No indicator columns found for {ticker}")
+                        
+                except Exception as indicator_error:
+                    logger.error(f"Failed to calculate/save indicators for {ticker}: {indicator_error}")
                 
         except Exception as e:
             logger.error(f"An unexpected error occurred on page {page}: {e}", exc_info=True)
