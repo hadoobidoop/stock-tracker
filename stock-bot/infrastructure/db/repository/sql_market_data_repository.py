@@ -20,7 +20,8 @@ class SQLMarketDataRepository:
     def save_market_data(self, indicator_type: MarketIndicatorType, data_date: date, 
                         value: float, additional_data: str = None) -> bool:
         """
-        시장 데이터를 저장합니다. 동일한 날짜와 지표 타입이 있으면 업데이트합니다.
+        시장 데이터를 저장합니다. 
+        동일한 데이터가 이미 존재하면 중복 저장하지 않고, 값이 다른 경우에만 업데이트합니다.
         
         Args:
             indicator_type: 지표 타입
@@ -29,7 +30,7 @@ class SQLMarketDataRepository:
             additional_data: 추가 메타데이터 (JSON 문자열)
             
         Returns:
-            bool: 저장 성공 여부
+            bool: 저장/업데이트 성공 여부
         """
         try:
             with get_db() as session:
@@ -42,11 +43,23 @@ class SQLMarketDataRepository:
                 ).first()
 
                 if existing:
-                    # 업데이트
+                    # 동일한 데이터인지 확인 (값과 메타데이터 비교)
+                    if self._is_data_identical(existing, value, additional_data):
+                        logger.debug(f"Identical data found for {indicator_type.value} on {data_date}: {value} - Skipping save")
+                        return True  # 동일한 데이터이므로 저장하지 않고 성공 반환
+                    
+                    # 데이터가 다르면 업데이트
+                    old_value = existing.value
                     existing.value = value
                     existing.additional_data = additional_data
                     existing.updated_at = datetime.utcnow()
-                    logger.info(f"Updated {indicator_type.value} for date {data_date}: {value}")
+                    
+                    logger.info(f"Updated {indicator_type.value} for date {data_date}: {old_value} → {value}")
+                    
+                    # 중요한 변경사항인 경우 추가 로깅
+                    if self._is_significant_change(old_value, value, indicator_type):
+                        logger.warning(f"Significant change detected for {indicator_type.value} on {data_date}: "
+                                     f"{old_value:.2f} → {value:.2f} ({((value-old_value)/old_value*100):+.1f}%)")
                 else:
                     # 새로 저장
                     market_data = MarketData(
@@ -64,6 +77,78 @@ class SQLMarketDataRepository:
         except Exception as e:
             logger.error(f"Error saving market data: {e}", exc_info=True)
             return False
+
+    def _is_data_identical(self, existing: MarketData, new_value: float, new_additional_data: str = None) -> bool:
+        """
+        기존 데이터와 새로운 데이터가 동일한지 확인합니다.
+        
+        Args:
+            existing: 기존 데이터베이스 레코드
+            new_value: 새로운 값
+            new_additional_data: 새로운 추가 데이터
+            
+        Returns:
+            bool: 데이터가 동일한지 여부
+        """
+        # 값 비교 (소수점 6자리까지 비교)
+        value_tolerance = 1e-6
+        if abs(existing.value - new_value) > value_tolerance:
+            return False
+        
+        # 추가 데이터 비교
+        existing_additional = existing.additional_data or ""
+        new_additional = new_additional_data or ""
+        
+        if existing_additional != new_additional:
+            # JSON 데이터인 경우 파싱해서 비교
+            if existing_additional.startswith('{') and new_additional.startswith('{'):
+                try:
+                    import json
+                    existing_json = json.loads(existing_additional)
+                    new_json = json.loads(new_additional)
+                    
+                    # 중요한 필드만 비교 (timestamp 등 제외)
+                    important_fields = ['data_source', 'calculation_method', 'market_cap_billions', 'gdp_billions']
+                    
+                    for field in important_fields:
+                        if existing_json.get(field) != new_json.get(field):
+                            return False
+                    
+                    return True
+                except (json.JSONDecodeError, KeyError):
+                    # JSON 파싱 실패 시 문자열 직접 비교
+                    return existing_additional == new_additional
+            else:
+                return existing_additional == new_additional
+        
+        return True
+
+    def _is_significant_change(self, old_value: float, new_value: float, indicator_type: MarketIndicatorType) -> bool:
+        """
+        값의 변화가 유의미한 수준인지 확인합니다.
+        
+        Args:
+            old_value: 기존 값
+            new_value: 새로운 값
+            indicator_type: 지표 타입
+            
+        Returns:
+            bool: 유의미한 변화인지 여부
+        """
+        if old_value == 0:
+            return new_value != 0
+        
+        # 지표별 임계값 설정
+        thresholds = {
+            MarketIndicatorType.BUFFETT_INDICATOR: 5.0,    # 5% 이상 변화
+            MarketIndicatorType.VIX: 10.0,                 # 10% 이상 변화  
+            MarketIndicatorType.US_10Y_TREASURY_YIELD: 5.0  # 5% 이상 변화
+        }
+        
+        threshold = thresholds.get(indicator_type, 5.0)  # 기본 5%
+        change_percent = abs((new_value - old_value) / old_value * 100)
+        
+        return change_percent >= threshold
 
     def get_latest_market_data(self, indicator_type: MarketIndicatorType) -> Optional[MarketData]:
         """
@@ -83,6 +168,26 @@ class SQLMarketDataRepository:
         except Exception as e:
             logger.error(f"Error getting latest market data: {e}", exc_info=True)
             return None
+
+    def get_recent_market_data(self, indicator_type: MarketIndicatorType, limit: int = 10) -> List[MarketData]:
+        """
+        특정 지표의 최근 데이터를 가져옵니다.
+        
+        Args:
+            indicator_type: 지표 타입
+            limit: 가져올 데이터 개수
+            
+        Returns:
+            MarketData 리스트 (최신 순)
+        """
+        try:
+            with get_db() as session:
+                return session.query(MarketData).filter(
+                    MarketData.indicator_type == indicator_type
+                ).order_by(desc(MarketData.date)).limit(limit).all()
+        except Exception as e:
+            logger.error(f"Error getting recent market data: {e}", exc_info=True)
+            return []
 
     def get_market_data_by_date_range(self, indicator_type: MarketIndicatorType, 
                                      start_date: date, end_date: date) -> List[MarketData]:

@@ -18,6 +18,7 @@ class SQLTradingSignalRepository(TradingSignalRepository):
         try:
             with get_db() as db:
                 signal_model = TradingSignalModel(
+                    signal_id=signal.signal_id,
                     ticker=signal.ticker,
                     signal_type=signal.signal_type,
                     signal_score=signal.signal_score,
@@ -49,6 +50,7 @@ class SQLTradingSignalRepository(TradingSignalRepository):
                 signal_models = []
                 for signal in signals:
                     signal_model = TradingSignalModel(
+                        signal_id=signal.signal_id,
                         ticker=signal.ticker,
                         signal_type=signal.signal_type,
                         signal_score=signal.signal_score,
@@ -146,6 +148,7 @@ class SQLTradingSignalRepository(TradingSignalRepository):
                 logger.warning(f"Failed to parse evidence for signal {db_signal.signal_id}: {e}")
         
         return TradingSignal(
+            signal_id=db_signal.signal_id,
             ticker=db_signal.ticker,
             signal_type=db_signal.signal_type,
             signal_score=db_signal.signal_score,
