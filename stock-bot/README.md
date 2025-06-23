@@ -9,16 +9,103 @@
 - **전략 조합**: 여러 전략을 조합하여 앙상블 방식으로 분석
 - **자동 전략 선택**: 시장 상황에 따라 최적 전략 자동 선택
 - **지표 프리컴퓨팅**: 모든 기술적 지표를 미리 계산하여 성능 최적화
+- **복합 감지기 설정**: 여러 감지기를 조합하여 더 강력한 신호 생성
 
-### 8가지 전략 타입
-1. **CONSERVATIVE** - 보수적 투자 전략
-2. **BALANCED** - 균형잡힌 기본 전략
-3. **AGGRESSIVE** - 공격적 고수익 추구 전략
-4. **MOMENTUM** - 모멘텀 기반 전략
-5. **TREND_FOLLOWING** - 추세 추종 전략
-6. **CONTRARIAN** - 역투자 전략
-7. **SCALPING** - 단기 스캘핑 전략
-8. **SWING** - 스윙 트레이딩 전략
+### 복합 감지기 시스템
+1. **MACD_Volume_Confirm**: MACD + 거래량 신호 조합
+2. **RSI_Stoch_Confirm**: RSI + 스토캐스틱 신호 조합
+3. **Any_Momentum**: RSI 또는 스토캐스틱 신호
+4. **Multi_Confirm**: SMA + MACD 신호 조합
+
+## 📊 투자 전략별 상세 설명
+
+### 1. CONSERVATIVE (보수적 전략)
+- **목표**: 안정적이고 신뢰도 높은 수익 추구
+- **특징**: 
+  - 높은 신호 임계값 (12.0) - 매우 강한 신호만 수용
+  - 낮은 리스크 (1%) - 안전한 포지션 크기
+  - 복합 신호 중심 - MACD + 거래량 확인 필수
+  - 시장 추세 일치 신호만 수용
+- **적합한 투자자**: 안정성을 중시하는 장기 투자자
+- **보유 기간**: 최대 3일 (72시간)
+- **최대 포지션**: 3개
+
+### 2. BALANCED (균형잡힌 전략)
+- **목표**: 안정성과 수익성의 균형
+- **특징**:
+  - 중간 신호 임계값 (8.0) - 적당한 강도의 신호 수용
+  - 중간 리스크 (2%) - 표준적인 포지션 크기
+  - 다양한 지표 균형 사용 - SMA, MACD, RSI, 거래량, ADX
+  - 복합 신호와 단일 신호 모두 활용
+- **적합한 투자자**: 대부분의 일반 투자자
+- **보유 기간**: 최대 2일 (48시간)
+- **최대 포지션**: 5개
+
+### 3. AGGRESSIVE (공격적 전략)
+- **목표**: 많은 거래 기회를 통한 높은 수익 추구
+- **특징**:
+  - 낮은 신호 임계값 (5.0) - 약한 신호도 수용
+  - 높은 리스크 (3%) - 큰 포지션 크기
+  - 모든 지표 활용 - 개별 신호도 적극 활용
+  - OR 조건 복합 신호 - Any_Momentum 사용
+- **적합한 투자자**: 높은 위험을 감수할 수 있는 적극적 투자자
+- **보유 기간**: 최대 1일 (24시간)
+- **최대 포지션**: 8개
+
+### 4. MOMENTUM (모멘텀 전략)
+- **목표**: 가격 모멘텀을 활용한 단기 수익
+- **특징**:
+  - RSI, 스토캐스틱 지표 중심 (높은 가중치)
+  - 모멘텀 확인 필터 적용
+  - RSI + 스토캐스틱 복합 신호 중시
+  - 중간 리스크 (2.5%)
+- **적합한 투자자**: 모멘텀 투자를 선호하는 단기 투자자
+- **보유 기간**: 1.5일 (36시간)
+- **최대 포지션**: 4개
+
+### 5. TREND_FOLLOWING (추세추종 전략)
+- **목표**: 명확한 추세를 따라가는 안정적 수익
+- **특징**:
+  - SMA, MACD, ADX 등 추세 지표 중심
+  - 추세 일치 및 강도 확인 필수
+  - MACD + 거래량 복합 신호 중시
+  - 중간 리스크 (2%)
+- **적합한 투자자**: 추세 투자를 선호하는 투자자
+- **보유 기간**: 2.5일 (60시간) - 긴 보유
+- **최대 포지션**: 4개
+
+### 6. CONTRARIAN (역투자 전략)
+- **목표**: 과매수/과매도 구간에서 반전 수익
+- **특징**:
+  - RSI, 스토캐스틱 등 오실레이터 중심
+  - 역추세 신호 탐지
+  - 시장 심리 반대 포지션
+  - 중간 리스크 (2%)
+- **적합한 투자자**: 역발상 투자를 선호하는 경험 있는 투자자
+- **보유 기간**: 2일 (48시간)
+- **최대 포지션**: 3개
+
+### 7. SCALPING (스캘핑 전략)
+- **목표**: 초단기 매매를 통한 작은 수익 반복
+- **특징**:
+  - 매우 낮은 신호 임계값 (4.0)
+  - 거래량 지표 중시 (높은 가중치)
+  - 빠른 진입/청산
+  - 낮은 리스크 (1.5%)
+- **적합한 투자자**: 활발한 단기 매매를 선호하는 투자자
+- **보유 기간**: 0.5일 (12시간) - 매우 짧음
+- **최대 포지션**: 6개
+
+### 8. SWING (스윙 전략)
+- **목표**: 중기 가격 변동을 통한 수익
+- **특징**:
+  - 복합 신호 중심 - Multi_Confirm 사용
+  - SMA + MACD 조합 신호
+  - 중간 리스크 (2%)
+  - 적당한 보유 기간
+- **적합한 투자자**: 중기 투자를 선호하는 투자자
+- **보유 기간**: 2일 (48시간)
+- **최대 포지션**: 4개
 
 ### 전략 조합 모드
 - **SINGLE**: 단일 전략 사용
@@ -31,39 +118,39 @@
 ### 기본 실행
 ```bash
 # 기본 balanced 전략으로 실행
-python main.py
+python run_backtest.py --mode strategy --strategy BALANCED --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
 
 # 특정 전략으로 실행
-python main.py --strategy conservative
-python main.py --strategy aggressive
-python main.py --strategy momentum
+python run_backtest.py --mode strategy --strategy CONSERVATIVE --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
+python run_backtest.py --mode strategy --strategy AGGRESSIVE --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
+python run_backtest.py --mode strategy --strategy MOMENTUM --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
 ```
 
 ### 전략 조합 사용
 ```bash
 # 균형잡힌 조합 전략
-python main.py --strategy-mix balanced_mix
+python run_backtest.py --mode strategy-mix --strategy-mix balanced_mix --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
 
 # 보수적 조합 전략
-python main.py --strategy-mix conservative_mix
+python run_backtest.py --mode strategy-mix --strategy-mix conservative_mix --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
 
 # 공격적 조합 전략
-python main.py --strategy-mix aggressive_mix
+python run_backtest.py --mode strategy-mix --strategy-mix aggressive_mix --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
 ```
 
 ### 자동 전략 선택
 ```bash
 # 시장 상황에 따른 자동 전략 선택
-python main.py --auto-strategy
+python run_backtest.py --mode auto-strategy --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
 ```
 
-### 전략 설정 관리
+### 전략 비교
 ```bash
-# 사용 가능한 전략 목록 보기
-python main.py --list-strategies
+# 모든 전략 비교
+python run_backtest.py --mode strategy-comparison --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
 
-# 전략 설정 파일에서 로드
-python main.py --load-strategies ./strategy_configs/my_config.json
+# 특정 전략들만 비교
+python run_backtest.py --mode strategy-comparison --compare-strategies CONSERVATIVE BALANCED AGGRESSIVE --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
 ```
 
 ## 🎮 전략 데모 실행
@@ -83,6 +170,28 @@ python strategy_demo.py
 - 성능 모니터링
 
 ## 🔧 고급 사용법
+
+### 복합 감지기 설정
+
+```python
+from domain.analysis.config.strategy_settings import StrategyType, CompositeDetectorConfig
+
+# 복합 감지기 설정 예시
+composite_config = {
+    'MACD_Volume_Confirm': {
+        'sub_detectors': ['MACDSignalDetector', 'VolumeSignalDetector']
+    },
+    'RSI_Stoch_Confirm': {
+        'sub_detectors': ['RSISignalDetector', 'StochSignalDetector']
+    },
+    'Multi_Confirm': {
+        'sub_detectors': ['SMASignalDetector', 'MACDSignalDetector']
+    }
+}
+
+# 전략에 복합 감지기 적용
+service.configure_composite_detectors(composite_config)
+```
 
 ### 프로그래밍 방식 사용
 
@@ -143,6 +252,95 @@ service.save_strategy_configs("./my_strategies.json")
 service.load_strategy_configs("./my_strategies.json")
 ```
 
+## 🤖 배치 잡 시스템
+
+시스템은 4개의 주요 배치 잡을 통해 자동으로 운영됩니다:
+
+### 1. 실시간 신호 감지 잡 (realtime_signal_detection_job.py)
+- **실행 주기**: 시장 시간 중 매시간 (9시-16시)
+- **주요 기능**:
+  - 새로운 전략 시스템 통합 (EnhancedSignalDetectionService)
+  - 다중 시간대 분석 (일봉 + 시간봉)
+  - 지표 프리컴퓨팅 및 캐싱
+  - 피보나치 레벨 계산
+  - 시장 추세 분석
+  - 실시간 매수/매도 신호 생성
+- **데이터 처리**:
+  - 일봉 데이터: 피보나치, 장기 추세 분석
+  - 시간봉 데이터: 실시간 신호 감지
+  - 기술적 지표: SMA, MACD, RSI, 스토캐스틱, ADX, 거래량
+- **특징**:
+  - 글로벌 캐시 시스템으로 성능 최적화
+  - 레거시 시스템과 호환성 유지
+  - 복합 감지기 지원
+
+### 2. 시간별 OHLCV 업데이트 잡 (hourly_ohlcv_update_job.py)
+- **실행 주기**: 매시간
+- **주요 기능**:
+  - Yahoo Finance에서 최신 시간봉 데이터 수집
+  - 누락된 데이터 보완
+  - 데이터 품질 검증
+  - 실시간 가격 정보 업데이트
+- **처리 범위**: 최근 7일간의 시간봉 데이터
+
+### 3. 일별 OHLCV 업데이트 잡 (daily_ohlcv_update_job.py)
+- **실행 주기**: 매일 오후 5시 (장 마감 후)
+- **주요 기능**:
+  - 일봉 데이터 업데이트
+  - 장기 차트 데이터 관리
+  - 월말/분기말 데이터 정합성 검증
+- **처리 범위**: 최근 30일간의 일봉 데이터
+
+### 4. 종목 메타데이터 업데이트 잡 (update_stock_metadata_job.py)
+- **실행 주기**: 매일 오전 6시 (장 시작 전)
+- **주요 기능**:
+  - 종목 기본 정보 업데이트
+  - 상장/폐지 종목 관리
+  - 종목명, 섹터 정보 동기화
+  - 분석 대상 종목 목록 관리
+
+### 배치 잡 모니터링
+```python
+# 배치 잡 상태 확인
+from infrastructure.scheduler.scheduler_manager import SchedulerManager
+
+scheduler = SchedulerManager()
+job_status = scheduler.get_job_status()
+print(f"활성 잡 수: {job_status['active_jobs']}")
+print(f"다음 실행 예정: {job_status['next_execution']}")
+
+# 개별 잡 실행
+python test_realtime_job.py      # 실시간 신호 감지 테스트
+python test_hourly_ohlcv_job.py  # 시간별 데이터 업데이트 테스트
+python test_daily_ohlcv_job.py   # 일별 데이터 업데이트 테스트
+```
+
+### 배치 잡 설정
+```python
+# infrastructure/scheduler/settings.py
+SCHEDULER_SETTINGS = {
+    'realtime_signal_detection': {
+        'hour': '9-16',           # 시장 시간
+        'minute': '0',            # 매시 정각
+        'timezone': 'US/Eastern'
+    },
+    'hourly_ohlcv_update': {
+        'minute': '5',            # 매시 5분
+        'timezone': 'US/Eastern'
+    },
+    'daily_ohlcv_update': {
+        'hour': '17',             # 오후 5시
+        'minute': '0',
+        'timezone': 'US/Eastern'
+    },
+    'stock_metadata_update': {
+        'hour': '6',              # 오전 6시
+        'minute': '0',
+        'timezone': 'US/Eastern'
+    }
+}
+```
+
 ## 🏗️ 아키텍처
 
 ### 핵심 컴포넌트
@@ -150,6 +348,8 @@ service.load_strategy_configs("./my_strategies.json")
 - **BaseStrategy**: 전략 추상화 기반 클래스
 - **StrategyFactory**: 전략 인스턴스 생성
 - **EnhancedSignalDetectionService**: 통합 신호 감지 서비스
+- **CompositeDetectorManager**: 복합 감지기 관리 및 설정
+- **SchedulerManager**: 배치 잡 스케줄링 및 관리
 
 ### 호환성
 - 기존 `DetectorFactory` 및 `SignalDetectionService`와 완전 호환
@@ -162,69 +362,71 @@ service.load_strategy_configs("./my_strategies.json")
 - **병렬 처리**: 여러 전략을 동시에 실행 가능
 - **메모리 효율성**: 필요한 데이터만 메모리에 보관
 - **선택적 지표 계산**: 전략에 필요한 지표만 계산
+- **글로벌 캐시**: 다중 시간대 데이터 캐싱으로 성능 향상
 
 ## 🔍 백테스팅
 
 새로운 다중 전략 백테스팅 시스템이 완전히 통합되어 있어 모든 전략들의 성능을 검증할 수 있습니다.
+자세한 내용은 `BACKTESTING_README.md` 파일을 참조하세요.
 
 ### 기본 백테스팅
 ```bash
 # 기본 백테스팅 (기존 호환성)
-python run_backtest.py --tickers AAPL MSFT --start-date 2023-01-01 --end-date 2024-01-01
+python run_backtest.py --mode single --tickers AAPL BITX --start-date 2024-01-01 --end-date 2025-01-01
 
 # 레거시 시스템 사용
-python run_backtest.py --mode single --use-legacy --tickers AAPL --start-date 2023-01-01 --end-date 2024-01-01
+python run_backtest.py --mode single --use-legacy --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
 ```
 
 ### 특정 전략 백테스팅
 ```bash
 # AGGRESSIVE 전략으로 백테스팅
-python run_backtest.py --mode strategy --strategy AGGRESSIVE --tickers AAPL MSFT --start-date 2023-01-01 --end-date 2024-01-01
+python run_backtest.py --mode strategy --strategy AGGRESSIVE --tickers GOOGL BITX --start-date 2024-01-01 --end-date 2025-01-01
 
 # CONSERVATIVE 전략으로 백테스팅
-python run_backtest.py --mode strategy --strategy CONSERVATIVE --tickers AAPL MSFT --start-date 2023-01-01 --end-date 2024-01-01
+python run_backtest.py --mode strategy --strategy CONSERVATIVE --tickers AAPL BITX --start-date 2024-01-01 --end-date 2025-01-01
 
 # MOMENTUM 전략으로 백테스팅
-python run_backtest.py --mode strategy --strategy MOMENTUM --tickers AAPL NVDA --start-date 2023-01-01 --end-date 2024-01-01
+python run_backtest.py --mode strategy --strategy MOMENTUM --tickers AAPL BITX --start-date 2024-01-01 --end-date 2025-01-01
 ```
 
 ### 전략 비교 백테스팅
 ```bash
 # 모든 주요 전략 비교
-python run_backtest.py --mode strategy-comparison --tickers AAPL MSFT --start-date 2023-01-01 --end-date 2024-01-01
+python run_backtest.py --mode strategy-comparison --tickers AAPL MSFT GOOGL BITX --start-date 2024-01-01 --end-date 2025-01-01
 
 # 특정 전략들만 비교
-python run_backtest.py --mode strategy-comparison --compare-strategies CONSERVATIVE BALANCED AGGRESSIVE --tickers AAPL --start-date 2023-01-01 --end-date 2024-01-01
+python run_backtest.py --mode strategy-comparison --compare-strategies CONSERVATIVE BALANCED AGGRESSIVE --tickers AAPL --start-date 2024-01-01 --end-date 2025-01-01
 ```
 
 ### 전략 조합 백테스팅
 ```bash
 # 균형잡힌 전략 조합
-python run_backtest.py --mode strategy-mix --strategy-mix balanced_mix --tickers AAPL --start-date 2023-01-01 --end-date 2024-01-01
+python run_backtest.py --mode strategy-mix --strategy-mix balanced_mix --tickers AAPL --start-date 2024-01-01 --end-date 2025-01-01
 
 # 보수적 전략 조합
-python run_backtest.py --mode strategy-mix --strategy-mix conservative_mix --tickers AAPL MSFT --start-date 2023-01-01 --end-date 2024-01-01
+python run_backtest.py --mode strategy-mix --strategy-mix conservative_mix --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
 
 # 공격적 전략 조합
-python run_backtest.py --mode strategy-mix --strategy-mix aggressive_mix --tickers NVDA TSLA --start-date 2023-01-01 --end-date 2024-01-01
+python run_backtest.py --mode strategy-mix --strategy-mix aggressive_mix --tickers NVDA TSLA --start-date 2024-01-01 --end-date 2025-01-01
 ```
 
 ### 자동 전략 선택 백테스팅
 ```bash
 # 시장 상황에 따른 자동 전략 선택
-python run_backtest.py --mode auto-strategy --tickers AAPL MSFT --start-date 2023-01-01 --end-date 2024-01-01
+python run_backtest.py --mode auto-strategy --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
 ```
 
 ### 고급 백테스팅 옵션
 ```bash
 # 매개변수 최적화
-python run_backtest.py --mode optimization --tickers AAPL --start-date 2023-01-01 --end-date 2024-01-01
+python run_backtest.py --mode optimization --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
 
 # 워크 포워드 분석
-python run_backtest.py --mode walk-forward --tickers AAPL MSFT --start-date 2023-01-01 --end-date 2024-01-01
+python run_backtest.py --mode walk-forward --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
 
-# 커스텀 설정
-python run_backtest.py --mode strategy --strategy AGGRESSIVE --tickers AAPL --start-date 2023-01-01 --end-date 2024-01-01 --initial-capital 50000 --commission-rate 0.002 --risk-per-trade 0.03
+# 커스텀 설정으로 백테스팅
+python run_backtest.py --mode strategy --strategy AGGRESSIVE --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01 --initial-capital 50000 --commission-rate 0.002 --risk-per-trade 0.03 --data-interval 1h
 ```
 
 ### 백테스팅 데모
@@ -256,6 +458,15 @@ SQLite 데이터베이스가 자동으로 생성됩니다.
 ### 환경 변수
 필요한 API 키나 설정을 환경 변수로 설정하세요.
 
+### 시스템 시작
+```bash
+# 전체 시스템 시작 (배치 잡 포함)
+python main.py
+
+# 배치 잡만 시작
+python -m infrastructure.scheduler.scheduler_manager
+```
+
 ---
 
 ## 🤝 기여하기
@@ -265,6 +476,12 @@ SQLite 데이터베이스가 자동으로 생성됩니다.
 1. `domain/analysis/strategy/strategy_implementations.py`에 새 전략 클래스 추가
 2. `domain/analysis/config/strategy_settings.py`에 전략 설정 추가
 3. 테스트 및 검증
+
+새로운 배치 잡을 추가하려면:
+
+1. `infrastructure/scheduler/jobs/`에 새 잡 파일 추가
+2. `infrastructure/scheduler/scheduler_manager.py`에 스케줄 등록
+3. 테스트 스크립트 작성
 
 ---
 

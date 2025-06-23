@@ -118,37 +118,66 @@ class BaseStrategy(ABC):
         params = detector_config.parameters
         composite_name = params.get("name", "Unknown")
         require_all = params.get("require_all", True)
+        sub_detector_names = params.get("sub_detectors", [])
         
-        # 복합 감지기별 하위 감지기 정의
+        # 하위 감지기 동적 생성
         sub_detectors = []
         
-        if composite_name == "MACD_Volume_Confirm":
-            # MACD + 거래량 조합
-            from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDetector
-            from domain.analysis.detectors.volume.volume_detector import VolumeSignalDetector
+        if sub_detector_names:
+            # sub_detectors 파라미터에서 감지기 목록을 가져와 동적으로 생성
+            detector_mapping = {
+                "SMASignalDetector": "domain.analysis.detectors.trend_following.sma_detector.SMASignalDetector",
+                "MACDSignalDetector": "domain.analysis.detectors.trend_following.macd_detector.MACDSignalDetector",
+                "RSISignalDetector": "domain.analysis.detectors.momentum.rsi_detector.RSISignalDetector",
+                "StochSignalDetector": "domain.analysis.detectors.momentum.stoch_detector.StochSignalDetector",
+                "VolumeSignalDetector": "domain.analysis.detectors.volume.volume_detector.VolumeSignalDetector",
+                "ADXSignalDetector": "domain.analysis.detectors.trend_following.adx_detector.ADXSignalDetector"
+            }
             
-            sub_detectors = [
-                MACDSignalDetector(0),  # 가중치는 복합에서 설정
-                VolumeSignalDetector(0)
-            ]
-        elif composite_name == "RSI_Stoch_Confirm":
-            # RSI + 스토캐스틱 조합
-            from domain.analysis.detectors.momentum.rsi_detector import RSISignalDetector
-            from domain.analysis.detectors.momentum.stoch_detector import StochSignalDetector
-            
-            sub_detectors = [
-                RSISignalDetector(0),
-                StochSignalDetector(0)
-            ]
-        elif composite_name == "Any_Momentum":
-            # 모든 모멘텀 지표 조합
-            from domain.analysis.detectors.momentum.rsi_detector import RSISignalDetector
-            from domain.analysis.detectors.momentum.stoch_detector import StochSignalDetector
-            
-            sub_detectors = [
-                RSISignalDetector(0),
-                StochSignalDetector(0)
-            ]
+            for detector_name in sub_detector_names:
+                if detector_name in detector_mapping:
+                    try:
+                        # 동적으로 모듈과 클래스 import
+                        module_path = detector_mapping[detector_name]
+                        module_name, class_name = module_path.rsplit('.', 1)
+                        module = __import__(module_name, fromlist=[class_name])
+                        detector_class_obj = getattr(module, class_name)
+                        
+                        # 감지기 인스턴스 생성 (가중치는 복합에서 설정)
+                        sub_detectors.append(detector_class_obj(0))
+                    except Exception as e:
+                        logger.warning(f"감지기 '{detector_name}' 생성 실패: {e}")
+                else:
+                    logger.warning(f"알 수 없는 감지기 타입: {detector_name}")
+        else:
+            # 레거시 호환성을 위한 하드코딩된 설정 (기존 코드 유지)
+            if composite_name == "MACD_Volume_Confirm":
+                # MACD + 거래량 조합
+                from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDetector
+                from domain.analysis.detectors.volume.volume_detector import VolumeSignalDetector
+                
+                sub_detectors = [
+                    MACDSignalDetector(0),  # 가중치는 복합에서 설정
+                    VolumeSignalDetector(0)
+                ]
+            elif composite_name == "RSI_Stoch_Confirm":
+                # RSI + 스토캐스틱 조합
+                from domain.analysis.detectors.momentum.rsi_detector import RSISignalDetector
+                from domain.analysis.detectors.momentum.stoch_detector import StochSignalDetector
+                
+                sub_detectors = [
+                    RSISignalDetector(0),
+                    StochSignalDetector(0)
+                ]
+            elif composite_name == "Any_Momentum":
+                # 모든 모멘텀 지표 조합
+                from domain.analysis.detectors.momentum.rsi_detector import RSISignalDetector
+                from domain.analysis.detectors.momentum.stoch_detector import StochSignalDetector
+                
+                sub_detectors = [
+                    RSISignalDetector(0),
+                    StochSignalDetector(0)
+                ]
         
         if sub_detectors:
             return detector_class(

@@ -63,7 +63,8 @@ STRATEGY_CONFIGS = {
             # 복합 신호만 사용 (단일 신호는 제외)
             DetectorConfig("CompositeSignalDetector", weight=10.0, parameters={
                 "require_all": True,
-                "name": "MACD_Volume_Confirm"
+                "name": "MACD_Volume_Confirm",
+                "sub_detectors": ["MACDSignalDetector", "VolumeSignalDetector"]
             })
         ],
         market_filters={
@@ -89,11 +90,13 @@ STRATEGY_CONFIGS = {
             DetectorConfig("ADXSignalDetector", weight=4.0),
             DetectorConfig("CompositeSignalDetector", weight=7.0, parameters={
                 "require_all": True,
-                "name": "MACD_Volume_Confirm"
+                "name": "MACD_Volume_Confirm",
+                "sub_detectors": ["MACDSignalDetector", "VolumeSignalDetector"]
             }),
             DetectorConfig("CompositeSignalDetector", weight=6.0, parameters={
                 "require_all": False,
-                "name": "RSI_Stoch_Confirm"
+                "name": "RSI_Stoch_Confirm",
+                "sub_detectors": ["RSISignalDetector", "StochSignalDetector"]
             })
         ],
         market_filters={
@@ -120,7 +123,8 @@ STRATEGY_CONFIGS = {
             # 개별 신호도 활용
             DetectorConfig("CompositeSignalDetector", weight=5.0, parameters={
                 "require_all": False,  # OR 조건
-                "name": "Any_Momentum"
+                "name": "Any_Momentum",
+                "sub_detectors": ["RSISignalDetector", "StochSignalDetector"]
             })
         ],
         market_filters={
@@ -145,7 +149,8 @@ STRATEGY_CONFIGS = {
             DetectorConfig("VolumeSignalDetector", weight=3.0),
             DetectorConfig("CompositeSignalDetector", weight=8.0, parameters={
                 "require_all": True,
-                "name": "RSI_Stoch_Confirm"
+                "name": "RSI_Stoch_Confirm",
+                "sub_detectors": ["RSISignalDetector", "StochSignalDetector"]
             })
         ],
         market_filters={
@@ -169,7 +174,8 @@ STRATEGY_CONFIGS = {
             DetectorConfig("VolumeSignalDetector", weight=4.0),
             DetectorConfig("CompositeSignalDetector", weight=8.0, parameters={
                 "require_all": True,
-                "name": "MACD_Volume_Confirm"
+                "name": "MACD_Volume_Confirm",
+                "sub_detectors": ["MACDSignalDetector", "VolumeSignalDetector"]
             })
         ],
         market_filters={
@@ -218,7 +224,8 @@ STRATEGY_CONFIGS = {
             DetectorConfig("VolumeSignalDetector", weight=4.0),
             DetectorConfig("CompositeSignalDetector", weight=8.0, parameters={
                 "require_all": True,
-                "name": "Multi_Confirm"
+                "name": "Multi_Confirm",
+                "sub_detectors": ["SMASignalDetector", "MACDSignalDetector"]
             })
         ],
         market_filters={

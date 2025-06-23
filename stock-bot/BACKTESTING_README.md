@@ -18,6 +18,7 @@
 - 포지션 크기 자동 계산 (리스크 기반)
 - 최대 낙폭 모니터링
 - 수수료 고려
+- 동적 보유 기간 관리 (최대 보유 기간 제한 없음)
 
 ### 📈 성과 분석
 - 승률, 수익팩터, 샤프비율
@@ -28,60 +29,55 @@
 
 ## 사용 방법
 
-### 기본 백테스트 실행
+`run_backtest.py` 스크립트를 사용하여 다양한 모드로 백테스팅을 실행할 수 있습니다.
 
+### 특정 전략으로 백테스팅
 ```bash
-python run_backtest.py \
-  --tickers AAPL MSFT NVDA \
-  --start-date 2023-01-01 \
-  --end-date 2024-01-01 \
-  --initial-capital 100000 \
-  --mode single
+python run_backtest.py --mode strategy --strategy AGGRESSIVE --tickers AAPL MSFT NVDA --start-date 2024-01-01 --end-date 2025-01-01
+```
+
+### 여러 전략 비교 분석
+```bash
+python run_backtest.py --mode strategy-comparison --tickers AAPL MSFT NVDA --start-date 2024-01-01 --end-date 2025-01-01
+```
+
+### 전략 조합(믹스)으로 백테스팅
+```bash
+python run_backtest.py --mode strategy-mix --strategy-mix balanced_mix --tickers AAPL MSFT NVDA --start-date 2024-01-01 --end-date 2025-01-01
+```
+
+### 자동 전략 선택 백테스팅
+```bash
+python run_backtest.py --mode auto-strategy --tickers AAPL MSFT NVDA --start-date 2024-01-01 --end-date 2025-01-01
 ```
 
 ### 매개변수 최적화
-
 ```bash
-python run_backtest.py \
-  --tickers AAPL MSFT NVDA \
-  --start-date 2023-01-01 \
-  --end-date 2024-01-01 \
-  --mode optimization
+python run_backtest.py --mode optimization --tickers AAPL MSFT NVDA --start-date 2024-01-01 --end-date 2025-01-01
 ```
 
 ### 워크 포워드 분석
-
 ```bash
-python run_backtest.py \
-  --tickers AAPL MSFT NVDA \
-  --start-date 2023-01-01 \
-  --end-date 2024-01-01 \
-  --mode walk-forward
-```
-
-### 전략 비교
-
-```bash
-python run_backtest.py \
-  --tickers AAPL MSFT NVDA \
-  --start-date 2023-01-01 \
-  --end-date 2024-01-01 \
-  --mode comparison
+python run_backtest.py --mode walk-forward --tickers AAPL MSFT NVDA --start-date 2024-01-01 --end-date 2025-01-01
 ```
 
 ## 명령행 옵션
 
 | 옵션 | 설명 | 기본값 |
-|------|------|--------|
-| `--tickers` | 백테스트할 종목 리스트 | 필수 |
-| `--start-date` | 시작 날짜 (YYYY-MM-DD) | 필수 |
-| `--end-date` | 종료 날짜 (YYYY-MM-DD) | 필수 |
+|---|---|---|
+| `--tickers` | 백테스트할 종목 리스트 (필수) | - |
+| `--start-date` | 시작 날짜 (YYYY-MM-DD, 필수) | - |
+| `--end-date` | 종료 날짜 (YYYY-MM-DD, 필수) | - |
 | `--initial-capital` | 초기 자본금 | 100000 |
 | `--commission-rate` | 수수료율 | 0.001 (0.1%) |
 | `--risk-per-trade` | 거래당 리스크 비율 | 0.02 (2%) |
-| `--data-interval` | 데이터 간격 | 1h |
-| `--output-dir` | 결과 저장 디렉토리 | ./backtest_results |
-| `--mode` | 실행 모드 | single |
+| `--data-interval` | 데이터 간격 (`1h` 또는 `1d`) | `1h` |
+| `--output-dir` | 결과 저장 디렉토리 | `./backtest_results` |
+| `--mode` | 실행 모드. `single`, `strategy`, `strategy-mix`, `auto-strategy`, `strategy-comparison`, `optimization`, `walk-forward`, `comparison` 중 선택 | `single` |
+| `--strategy` | `strategy` 모드에서 사용할 전략 | - |
+| `--strategy-mix` | `strategy-mix` 모드에서 사용할 전략 조합 | - |
+| `--compare-strategies` | `strategy-comparison` 모드에서 비교할 전략 목록 (지정하지 않으면 전체 비교) | - |
+| `--use-legacy` | 레거시 신호 감지 시스템 사용 여부 | `False` |
 
 ## 백테스트 결과 예시
 
@@ -119,6 +115,8 @@ python run_backtest.py \
 ### 4. 복합 신호 전략
 - **MACD + 거래량**: 골든크로스와 거래량 급증 동시 발생
 - **RSI + 스토캐스틱**: 과매도 탈출과 스토캐스틱 매수 동시 발생
+- **Any_Momentum**: RSI 또는 스토캐스틱 신호 중 하나 발생
+- **Multi_Confirm**: SMA와 MACD 신호 동시 발생
 
 ### 5. 지지/저항 전략
 - **피보나치 레벨**: 23.6%, 38.2%, 50%, 61.8% 되돌림 지점
@@ -137,6 +135,11 @@ python run_backtest.py \
 ### 포지션 크기 관리
 - 각 거래에서 포트폴리오의 2% 리스크
 - 손절가 기준 포지션 크기 자동 계산
+
+### 보유 기간 관리
+- 동적 보유 기간: 신호 유효성에 따라 결정
+- 최대 보유 기간 제한 없음
+- 청산 조건: 반대 신호 발생 또는 손절/익절 도달
 
 ## 출력 파일
 
@@ -188,6 +191,14 @@ python run_backtest.py \
 2. `SignalDetector` 추상 클래스 상속
 3. `detect_signals` 메서드 구현
 4. `DetectorFactory`에 새로운 detector 등록
+
+### 복합 감지기 추가
+
+1. `domain/analysis/detectors/composite/` 하위에 새로운 복합 감지기 구현
+2. `CompositeDetector` 추상 클래스 상속
+3. `detect_signals` 메서드 구현
+4. `strategy_settings.py`에 복합 감지기 설정 추가
+5. 하위 감지기 목록 설정
 
 ### 새로운 성과 지표 추가
 

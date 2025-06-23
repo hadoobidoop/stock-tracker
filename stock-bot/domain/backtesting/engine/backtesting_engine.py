@@ -84,15 +84,9 @@ class BacktestingEngine:
         """향상된 신호 감지 서비스 초기화"""
         if self.enhanced_service:
             try:
-                # 백테스팅에서는 모든 전략을 초기화 (전략 비교와 조합을 위해)
-                all_strategies = [
-                    StrategyType.CONSERVATIVE,
-                    StrategyType.BALANCED,
-                    StrategyType.AGGRESSIVE,
-                    StrategyType.MOMENTUM,
-                    StrategyType.TREND_FOLLOWING,
-                    StrategyType.CONTRARIAN
-                ]
+                # STRATEGY_CONFIGS에 정의된 모든 전략을 초기화
+                all_strategies = list(STRATEGY_CONFIGS.keys())
+                
                 success = self.enhanced_service.initialize(all_strategies)
                 if success:
                     self.enhanced_service.switch_strategy(self.strategy_type)
