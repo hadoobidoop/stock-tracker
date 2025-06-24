@@ -748,8 +748,8 @@ class MarketDataService:
             # Put/Call 비율 업데이트 (CBOE 웹 스크래핑)
             results['put_call_ratio'] = self.update_put_call_ratio()
             
-            # TODO: 추후 추가될 지표들
-            # results['fear_greed_index'] = self.update_fear_greed_index()
+            # 공포탐욕지수 업데이트 (CNN API)
+            results['fear_greed_index'] = self.update_fear_greed_index()
             
             success_count = sum(results.values())
             total_count = len(results)
@@ -841,6 +841,141 @@ class MarketDataService:
     def get_latest_put_call_ratio(self) -> Optional[float]:
         """최신 Put/Call 비율을 가져옵니다 (첫 번째 값)."""
         latest_data = self.repository.get_latest_market_data(MarketIndicatorType.PUT_CALL_RATIO)
+        return latest_data.value if latest_data else None
+
+    def update_fear_greed_index(self) -> bool:
+        """CNN 공포탐욕지수를 업데이트합니다."""
+        try:
+            logger.info("Starting Fear & Greed Index update...")
+            
+            # 오늘 날짜 기준으로 최근 5일간 시도
+            today = datetime.now().date()
+            
+            for days_back in range(5):
+                target_date = today - timedelta(days=days_back)
+                date_str = target_date.strftime('%Y-%m-%d')
+                
+                # CNN API URL (시작 날짜를 지정하면 오늘까지의 데이터를 가져옴)
+                api_url = f"https://production.dataviz.cnn.io/index/fearandgreed/graphdata/{date_str}"
+                
+                logger.info(f"Fetching Fear & Greed Index from CNN API: {date_str}")
+                
+                # User-Agent 헤더 추가 (API 차단 방지)
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    'Accept': 'application/json, text/plain, */*',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1',
+                }
+                
+                try:
+                    response = requests.get(api_url, headers=headers, timeout=30)
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        
+                        # 공포탐욕지수 데이터 파싱
+                        if 'fear_and_greed_historical' in data and 'data' in data['fear_and_greed_historical']:
+                            historical_data = data['fear_and_greed_historical']['data']
+                            
+                            if historical_data:
+                                # 가장 최근 데이터 사용
+                                latest_data = historical_data[-1]
+                                
+                                # Unix timestamp (milliseconds)를 datetime으로 변환
+                                timestamp_ms = int(latest_data['x'])
+                                data_date = datetime.fromtimestamp(timestamp_ms / 1000).date()
+                                fear_greed_value = int(latest_data['y'])
+                                
+                                # 유효한 범위 확인 (0-100)
+                                if 0 <= fear_greed_value <= 100:
+                                    additional_data = json.dumps({
+                                        "data_source": f"CNN Fear & Greed API ({api_url})",
+                                        "data_date": data_date.strftime('%Y-%m-%d'),
+                                        "api_response_status": "200",
+                                        "note": "Official CNN Fear & Greed Index data",
+                                        "timestamp_ms": timestamp_ms,
+                                        "total_data_points": len(historical_data)
+                                    })
+                                    
+                                    success = self.repository.save_market_data(
+                                        indicator_type=MarketIndicatorType.FEAR_GREED_INDEX,
+                                        data_date=data_date,
+                                        value=float(fear_greed_value),
+                                        additional_data=additional_data
+                                    )
+                                    
+                                    if success:
+                                        logger.info(f"Saved CNN Fear & Greed Index for {data_date}: {fear_greed_value}")
+                                        return True
+                                    else:
+                                        logger.error(f"Failed to save Fear & Greed Index for {data_date}")
+                                else:
+                                    logger.warning(f"Invalid Fear & Greed Index value: {fear_greed_value} (must be 0-100)")
+                            else:
+                                logger.warning(f"No historical data found in CNN API response for {date_str}")
+                        else:
+                            logger.warning(f"Unexpected CNN API response structure for {date_str}")
+                    
+                    elif response.status_code == 403:
+                        logger.warning(f"CNN API returned status 403 for {date_str}")
+                        continue
+                    
+                    elif response.status_code == 404:
+                        logger.warning(f"CNN API returned status 404 for {date_str}")
+                        continue
+                    
+                    else:
+                        logger.warning(f"CNN API returned status {response.status_code} for {date_str}")
+                        continue
+                
+                except requests.exceptions.RequestException as e:
+                    logger.warning(f"Request failed for CNN Fear & Greed API ({date_str}): {e}")
+                    continue
+            
+            # 모든 날짜에서 실패한 경우 - VIX 기반 추정치 사용
+            logger.warning("Failed to get Fear & Greed Index from CNN API, using VIX-based estimation")
+            
+            try:
+                vix_value = self.get_latest_vix()
+                if vix_value:
+                    # VIX 기반 공포탐욕지수 추정 (0-100 범위)
+                    # VIX가 낮을수록 탐욕(높은 값), 높을수록 공포(낮은 값)
+                    estimated_fg = max(0, min(100, 100 - (vix_value - 10) * 3))
+                    
+                    additional_data = json.dumps({
+                        "data_source": "VIX-based estimation",
+                        "note": "Estimated Fear & Greed Index based on VIX",
+                        "vix_value": vix_value,
+                        "estimation_formula": "100 - (VIX - 10) * 3"
+                    })
+                    
+                    success = self.repository.save_market_data(
+                        indicator_type=MarketIndicatorType.FEAR_GREED_INDEX,
+                        data_date=today,
+                        value=estimated_fg,
+                        additional_data=additional_data
+                    )
+                    
+                    if success:
+                        logger.info(f"Saved estimated Fear & Greed Index for {today}: {estimated_fg:.1f}")
+                        return True
+                        
+            except Exception as e:
+                logger.error(f"Failed to create VIX-based Fear & Greed estimate: {e}")
+            
+            logger.error("Failed to update Fear & Greed Index from all sources")
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error updating Fear & Greed Index: {e}", exc_info=True)
+            return False
+
+    def get_latest_fear_greed_index(self) -> Optional[float]:
+        """최신 공포탐욕지수를 가져옵니다."""
+        latest_data = self.repository.get_latest_market_data(MarketIndicatorType.FEAR_GREED_INDEX)
         return latest_data.value if latest_data else None
 
     def get_all_put_call_ratios(self, limit: int = 1) -> Dict[str, Dict]:

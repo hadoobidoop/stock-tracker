@@ -46,6 +46,7 @@ def market_data_update_job():
         latest_sp500 = service.get_latest_sp500_index()
         latest_treasury = service.get_latest_treasury_yield()
         latest_put_call = service.get_latest_put_call_ratio()
+        latest_fear_greed = service.get_latest_fear_greed_index()
         
         if latest_buffett:
             logger.info(f"Latest Buffett Indicator: {latest_buffett:.2f}%")
@@ -61,6 +62,8 @@ def market_data_update_job():
             logger.info(f"Latest 10Y Treasury: {latest_treasury:.2f}%")
         if latest_put_call:
             logger.info(f"Latest Put/Call Ratio: {latest_put_call:.3f}")
+        if latest_fear_greed:
+            logger.info(f"Latest Fear & Greed Index: {latest_fear_greed:.1f}")
             
         logger.info("JOB END: Market data update completed successfully.")
         
