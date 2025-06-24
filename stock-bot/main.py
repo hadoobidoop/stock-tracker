@@ -23,8 +23,8 @@ def parse_arguments():
     
     parser.add_argument('--strategy', 
                        choices=[st.value for st in StrategyType], 
-                       default=StrategyType.BALANCED.value,
-                       help='기본 사용할 전략 (기본값: balanced)')
+                       default=StrategyType.MOMENTUM.value,
+                       help='기본 사용할 전략 (기본값: momentum)')
     
     parser.add_argument('--strategy-mix', 
                        choices=['balanced_mix', 'conservative_mix', 'aggressive_mix'],

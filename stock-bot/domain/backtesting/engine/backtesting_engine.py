@@ -57,7 +57,7 @@ class BacktestingEngine:
         # 새로운 전략 시스템
         if use_enhanced_signals:
             self.enhanced_service = EnhancedSignalDetectionService()
-            self.strategy_type = strategy_type or StrategyType.BALANCED
+            self.strategy_type = strategy_type or StrategyType.MOMENTUM
             self._initialize_enhanced_service()
         else:
             self.enhanced_service = None
@@ -126,7 +126,7 @@ class BacktestingEngine:
             'risk_per_trade': self.risk_per_trade,
             'signal_threshold': SIGNAL_THRESHOLD,
             'use_enhanced_signals': self.use_enhanced_signals,
-            'strategy_type': self.strategy_type.value if self.strategy_type else None
+            'strategy_type': self.strategy_type.value if hasattr(self, 'strategy_type') and self.strategy_type else None
         }
 
         result = BacktestResult(

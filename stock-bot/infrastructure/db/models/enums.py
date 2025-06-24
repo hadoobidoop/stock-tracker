@@ -23,5 +23,7 @@ class MarketIndicatorType(str, enum.Enum):
     FEAR_GREED_INDEX = "FEAR_GREED_INDEX"  # Fear & Greed Index
     US_10Y_TREASURY_YIELD = "US_10Y_TREASURY_YIELD"  # 10년 국채 수익률
     DXY = "DXY"  # 달러 지수
-    GOLD_PRICE = "GOLD_PRICE"  # 금 가격
+    GOLD_PRICE = "GOLD_PRICE"  # 금 가격 (GC=F)
+    CRUDE_OIL_PRICE = "CRUDE_OIL_PRICE"  # 원유 가격 (CL=F)
+    SP500_INDEX = "SP500_INDEX"  # S&P 500 지수 (^GSPC)
     # 추후 추가될 지표들을 위한 여백 

@@ -213,7 +213,8 @@ class BacktestResult:
         if self.portfolio_values:
             df = pd.DataFrame(self.portfolio_values)
             df['timestamp'] = pd.to_datetime(df['timestamp'])
-            df['month'] = df['timestamp'].dt.to_period('M')
+            # 타임존 정보를 제거한 후 period로 변환하여 경고 방지
+            df['month'] = df['timestamp'].dt.tz_localize(None).dt.to_period('M')
             
             monthly_returns = df.groupby('month').agg({
                 'portfolio_value': ['first', 'last']

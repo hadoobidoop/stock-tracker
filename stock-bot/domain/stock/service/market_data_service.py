@@ -24,30 +24,51 @@ class MarketDataService:
     def __init__(self):
         self.repository = SQLMarketDataRepository()
         # API 호출 제한 방지를 위한 설정
-        self.yahoo_request_delay = 1.0  # Yahoo API 호출 간 최소 지연 시간 (초)
+        self.yahoo_request_delay = 30.0  # Yahoo API 호출 간 지연 시간 (초) - 단건 호출 시
+        self.yahoo_batch_delay = 2.0  # 배치 작업 시 지연 시간 (초)
         self.yahoo_retry_count = 3  # Yahoo API 재시도 횟수
         self.fred_preferred = True  # FRED를 우선 사용
+        self.is_batch_mode = False  # 배치 모드 여부
 
-    def _delay_for_yahoo_api(self):
-        """Yahoo API 호출 제한을 피하기 위한 지연"""
-        # 0.8 ~ 1.2초 사이의 랜덤한 지연
-        delay = self.yahoo_request_delay + random.uniform(-0.2, 0.2)
+    def _delay_for_yahoo_api(self, is_batch: bool = None):
+        """
+        Yahoo API 호출 제한을 피하기 위한 지연
+        
+        Args:
+            is_batch: 배치 모드인지 여부. None이면 self.is_batch_mode 사용
+        """
+        if is_batch is None:
+            is_batch = self.is_batch_mode
+            
+        if is_batch:
+            # 배치 모드: 짧은 지연 (2-3초)
+            delay = self.yahoo_batch_delay + random.uniform(-0.5, 1.0)
+            logger.debug(f"Yahoo API batch delay: {delay:.1f}s")
+        else:
+            # 단건 모드: 긴 지연 (30초)
+            delay = self.yahoo_request_delay + random.uniform(-2.0, 2.0)
+            logger.info(f"Yahoo API single request delay: {delay:.1f}s")
+            
         time.sleep(delay)
 
-    def _fetch_yahoo_data_with_retry(self, symbol: str, period: str = "5d") -> Optional[Any]:
+    def _fetch_yahoo_data_with_retry(self, symbol: str, period: str = "5d", is_batch: bool = None) -> Optional[Any]:
         """
         Yahoo Finance에서 데이터를 가져오되 재시도 로직 포함
         
         Args:
             symbol: Yahoo Finance 심볼
             period: 데이터 기간 ("5d", "1mo", "3mo" 등)
+            is_batch: 배치 모드 여부. None이면 self.is_batch_mode 사용
             
         Returns:
             Yahoo Finance 데이터 또는 None
         """
+        if is_batch is None:
+            is_batch = self.is_batch_mode
+            
         for attempt in range(self.yahoo_retry_count):
             try:
-                self._delay_for_yahoo_api()
+                self._delay_for_yahoo_api(is_batch)
                 ticker = yf.Ticker(symbol)
                 data = ticker.history(period=period)
                 
@@ -368,63 +389,381 @@ class MarketDataService:
             logger.error(f"Error updating Treasury yield: {e}", exc_info=True)
             return False
 
-    def set_yahoo_settings(self, delay: float = 1.0, retry_count: int = 3, prefer_fred: bool = True):
+    def update_gold_price(self) -> bool:
+        """
+        Yahoo Finance에서 금 선물(GC=F) 가격을 가져와 저장합니다.
+        
+        Returns:
+            bool: 업데이트 성공 여부
+        """
+        logger.info("Starting Gold Price (GC=F) update...")
+        
+        try:
+            # Yahoo Finance GC=F 데이터 가져오기
+            gold_data = self._fetch_yahoo_data_with_retry("GC=F", period="5d")
+            
+            if gold_data is None or gold_data.empty:
+                logger.error("Failed to fetch Gold price data from Yahoo Finance")
+                return False
+            
+            # 최근 5일간의 데이터 처리
+            recent_data = gold_data.tail(5)
+            
+            for i, (date_idx, row) in enumerate(recent_data.iterrows()):
+                gold_date = date_idx.date()
+                gold_price = row['Close']
+                
+                additional_data = json.dumps({
+                    "data_source": "Yahoo Finance (GC=F)",
+                    "currency": "USD",
+                    "unit": "per troy ounce",
+                    "note": "Gold futures continuous contract"
+                })
+                
+                success = self.repository.save_market_data(
+                    indicator_type=MarketIndicatorType.GOLD_PRICE,
+                    data_date=gold_date,
+                    value=gold_price,
+                    additional_data=additional_data
+                )
+                
+                if success:
+                    logger.info(f"Saved Gold price for {gold_date}: ${gold_price:.2f}")
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Error updating Gold price: {e}", exc_info=True)
+            return False
+
+    def update_crude_oil_price(self) -> bool:
+        """
+        Yahoo Finance에서 원유 선물(CL=F) 가격을 가져와 저장합니다.
+        
+        Returns:
+            bool: 업데이트 성공 여부
+        """
+        logger.info("Starting Crude Oil Price (CL=F) update...")
+        
+        try:
+            # Yahoo Finance CL=F 데이터 가져오기
+            oil_data = self._fetch_yahoo_data_with_retry("CL=F", period="5d")
+            
+            if oil_data is None or oil_data.empty:
+                logger.error("Failed to fetch Crude Oil price data from Yahoo Finance")
+                return False
+            
+            # 최근 5일간의 데이터 처리
+            recent_data = oil_data.tail(5)
+            
+            for i, (date_idx, row) in enumerate(recent_data.iterrows()):
+                oil_date = date_idx.date()
+                oil_price = row['Close']
+                
+                additional_data = json.dumps({
+                    "data_source": "Yahoo Finance (CL=F)",
+                    "currency": "USD",
+                    "unit": "per barrel",
+                    "note": "WTI Crude Oil futures continuous contract"
+                })
+                
+                success = self.repository.save_market_data(
+                    indicator_type=MarketIndicatorType.CRUDE_OIL_PRICE,
+                    data_date=oil_date,
+                    value=oil_price,
+                    additional_data=additional_data
+                )
+                
+                if success:
+                    logger.info(f"Saved Crude Oil price for {oil_date}: ${oil_price:.2f}")
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Error updating Crude Oil price: {e}", exc_info=True)
+            return False
+
+    def update_sp500_index(self) -> bool:
+        """
+        Yahoo Finance에서 S&P 500 지수(^GSPC)를 가져와 저장합니다.
+        
+        Returns:
+            bool: 업데이트 성공 여부
+        """
+        logger.info("Starting S&P 500 Index (^GSPC) update...")
+        
+        try:
+            # Yahoo Finance ^GSPC 데이터 가져오기
+            sp500_data = self._fetch_yahoo_data_with_retry("^GSPC", period="5d")
+            
+            if sp500_data is None or sp500_data.empty:
+                logger.error("Failed to fetch S&P 500 data from Yahoo Finance")
+                return False
+            
+            # 최근 5일간의 데이터 처리
+            recent_data = sp500_data.tail(5)
+            
+            for i, (date_idx, row) in enumerate(recent_data.iterrows()):
+                sp500_date = date_idx.date()
+                sp500_value = row['Close']
+                
+                additional_data = json.dumps({
+                    "data_source": "Yahoo Finance (^GSPC)",
+                    "note": "Standard & Poor's 500 Index",
+                    "market": "US Stock Market"
+                })
+                
+                success = self.repository.save_market_data(
+                    indicator_type=MarketIndicatorType.SP500_INDEX,
+                    data_date=sp500_date,
+                    value=sp500_value,
+                    additional_data=additional_data
+                )
+                
+                if success:
+                    logger.info(f"Saved S&P 500 for {sp500_date}: {sp500_value:.2f}")
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Error updating S&P 500 index: {e}", exc_info=True)
+            return False
+
+    def update_put_call_ratio(self) -> bool:
+        """
+        CBOE JSON API에서 Put/Call 비율을 가져와 저장합니다.
+        
+        Returns:
+            bool: 업데이트 성공 여부
+        """
+        logger.info("Starting Put/Call Ratio update...")
+        
+        try:
+            import requests
+            from datetime import datetime, timedelta
+            
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'application/json, text/plain, */*',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Referer': 'https://www.cboe.com/',
+                'Origin': 'https://www.cboe.com',
+                'Connection': 'keep-alive',
+            }
+            
+            # 최근 며칠간의 데이터 시도 (오늘부터 역순으로)
+            dates_to_try = []
+            for i in range(5):  # 최근 5일
+                target_date = date.today() - timedelta(days=i)
+                dates_to_try.append(target_date)
+            
+            for target_date in dates_to_try:
+                try:
+                    # CBOE JSON API URL 생성
+                    date_str = target_date.strftime('%Y-%m-%d')
+                    api_url = f"https://cdn.cboe.com/data/us/options/market_statistics/daily/{date_str}_daily_options"
+                    
+                    logger.info(f"Fetching Put/Call data from CBOE API: {date_str}")
+                    response = requests.get(api_url, headers=headers, timeout=10)
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        
+                        # Put/Call 비율 데이터 파싱
+                        if 'ratios' in data:
+                            all_ratios = {}  # 모든 비율을 저장할 딕셔너리
+                            total_put_call_ratio = None
+                            
+                            # 먼저 모든 비율을 수집
+                            for ratio_item in data['ratios']:
+                                ratio_name = ratio_item.get('name', '')
+                                ratio_value = ratio_item.get('value')
+                                
+                                try:
+                                    ratio_float = float(ratio_value)
+                                    
+                                    if 0.0 < ratio_float <= 10.0:  # 유효한 범위 확인
+                                        all_ratios[ratio_name] = ratio_float
+                                        
+                                        # TOTAL PUT/CALL RATIO를 primary value로 설정
+                                        if ratio_name == 'TOTAL PUT/CALL RATIO':
+                                            total_put_call_ratio = ratio_float
+                                
+                                except (ValueError, TypeError) as e:
+                                    logger.warning(f"Invalid ratio value for {ratio_name}: {ratio_value}")
+                            
+                            # TOTAL PUT/CALL RATIO가 있으면 저장
+                            if total_put_call_ratio is not None and all_ratios:
+                                # additional_data에는 모든 비율과 메타데이터 저장
+                                additional_data = json.dumps({
+                                    "data_source": f"CBOE JSON API ({api_url})",
+                                    "data_date": date_str,
+                                    "api_response_status": "200",
+                                    "note": "Official CBOE Put/Call ratios data",
+                                    "total_ratios_count": len(all_ratios),
+                                    "all_ratios": all_ratios,
+                                    "primary_ratio": "TOTAL PUT/CALL RATIO"
+                                })
+                                
+                                success = self.repository.save_market_data(
+                                    indicator_type=MarketIndicatorType.PUT_CALL_RATIO,
+                                    data_date=target_date,
+                                    value=total_put_call_ratio,
+                                    additional_data=additional_data
+                                )
+                                
+                                if success:
+                                    logger.info(f"Saved CBOE TOTAL PUT/CALL RATIO for {date_str}: {total_put_call_ratio:.3f}")
+                                    logger.info(f"Stored {len(all_ratios)} total Put/Call ratios in additional_data")
+                                    logger.info(f"All ratios: {list(all_ratios.keys())}")
+                                    return True
+                                else:
+                                    logger.error(f"Failed to save Put/Call ratios for {date_str}")
+                            else:
+                                logger.warning(f"TOTAL PUT/CALL RATIO not found in CBOE data for {date_str}")
+                        
+                        else:
+                            logger.warning(f"No 'ratios' data found in CBOE API response for {date_str}")
+                    
+                    elif response.status_code == 404:
+                        logger.info(f"No CBOE data available for {date_str} (404)")
+                        continue
+                    
+                    else:
+                        logger.warning(f"CBOE API returned status {response.status_code} for {date_str}")
+                        continue
+                
+                except requests.RequestException as e:
+                    logger.warning(f"Request failed for CBOE API {date_str}: {e}")
+                    continue
+                except json.JSONDecodeError as e:
+                    logger.warning(f"Invalid JSON response from CBOE API {date_str}: {e}")
+                    continue
+            
+            # API가 모두 실패했을 경우 대체 방법
+            logger.warning("CBOE API failed for all recent dates, using VIX-based estimation")
+            
+            latest_vix = self.get_latest_vix()
+            if latest_vix:
+                # VIX 기반 추정 공식 (실제 데이터와 비교하여 조정됨)
+                estimated_pc_ratio = 0.6 + (latest_vix - 20) * 0.015
+                estimated_pc_ratio = max(0.4, min(1.5, estimated_pc_ratio))
+                
+                additional_data = json.dumps({
+                    "data_source": "VIX-based estimation (CBOE API fallback)",
+                    "vix_value": latest_vix,
+                    "estimation_formula": "0.6 + (VIX - 20) * 0.015",
+                    "note": "Estimated Put/Call ratio when CBOE API unavailable"
+                })
+                
+                success = self.repository.save_market_data(
+                    indicator_type=MarketIndicatorType.PUT_CALL_RATIO,
+                    data_date=date.today(),
+                    value=estimated_pc_ratio,
+                    additional_data=additional_data
+                )
+                
+                if success:
+                    logger.info(f"Saved estimated Put/Call Ratio: {estimated_pc_ratio:.3f} (VIX-based)")
+                    return True
+            
+            return False
+
+        except Exception as e:
+            logger.error(f"Error updating Put/Call ratio: {e}", exc_info=True)
+            return False
+
+    def set_yahoo_settings(self, single_delay: float = 30.0, batch_delay: float = 2.0, 
+                          retry_count: int = 3, prefer_fred: bool = True):
         """
         Yahoo Finance API 설정을 조정합니다.
         
         Args:
-            delay: Yahoo API 호출 간 지연 시간 (초)
+            single_delay: 단건 호출 시 Yahoo API 호출 간 지연 시간 (초)
+            batch_delay: 배치 호출 시 Yahoo API 호출 간 지연 시간 (초)
             retry_count: 재시도 횟수
             prefer_fred: FRED를 우선 사용할지 여부
         """
-        self.yahoo_request_delay = delay
+        self.yahoo_request_delay = single_delay
+        self.yahoo_batch_delay = batch_delay
         self.yahoo_retry_count = retry_count
         self.fred_preferred = prefer_fred
-        logger.info(f"Yahoo settings updated: delay={delay}s, retry={retry_count}, prefer_fred={prefer_fred}")
+        logger.info(f"Yahoo settings updated: single_delay={single_delay}s, batch_delay={batch_delay}s, "
+                   f"retry={retry_count}, prefer_fred={prefer_fred}")
+
+    def set_batch_mode(self, is_batch: bool):
+        """
+        배치 모드를 설정합니다.
+        
+        Args:
+            is_batch: 배치 모드 여부
+        """
+        self.is_batch_mode = is_batch
+        logger.info(f"Batch mode set to: {is_batch}")
 
     def update_all_indicators(self) -> Dict[str, bool]:
         """
         모든 지표를 업데이트합니다.
-        Yahoo API 호출 제한을 고려하여 지연을 둡니다.
+        배치 모드로 실행되어 Yahoo API 호출 간 지연을 줄입니다.
         
         Returns:
             Dict[str, bool]: 각 지표별 업데이트 성공 여부
         """
-        logger.info("Starting update of all market indicators...")
+        logger.info("Starting update of all market indicators (batch mode)...")
         
-        results = {}
+        # 배치 모드 활성화
+        original_batch_mode = self.is_batch_mode
+        self.is_batch_mode = True
         
-        # 버핏 지수 업데이트 (Fed Z.1 우선, Yahoo 백업)
-        results['buffett_indicator'] = self.update_buffett_indicator()
-        
-        # API 호출 제한 방지를 위한 지연
-        if not self.fred_preferred:  # Yahoo 모드일 때만 지연
-            logger.info("Delaying between indicator updates to respect API limits...")
-            time.sleep(2.0)
-        
-        # VIX 업데이트 (FRED 우선, Yahoo 백업)
-        results['vix'] = self.update_vix()
-        
-        # 추가 지연 (Yahoo 모드)
-        if not self.fred_preferred:
-            time.sleep(1.0)
-        
-        # 10년 국채 수익률 업데이트 (FRED만 사용)
-        results['treasury_yield'] = self.update_treasury_yield()
-        
-        # TODO: 추후 추가될 지표들
-        # results['put_call_ratio'] = self.update_put_call_ratio()
-        # results['fear_greed_index'] = self.update_fear_greed_index()
-        
-        success_count = sum(results.values())
-        total_count = len(results)
-        
-        # API 사용 통계 로깅
-        yahoo_used = any('yahoo' in str(self.repository.get_latest_market_data(MarketIndicatorType.BUFFETT_INDICATOR)) for _ in [0])
-        logger.info(f"Market indicators update completed: {success_count}/{total_count} successful")
-        logger.info(f"Data sources used: FRED={self.fred_preferred}, Yahoo_backup={'potentially' if not self.fred_preferred else 'if_needed'}")
-        
-        return results
+        try:
+            results = {}
+            
+            # 버핏 지수 업데이트 (Fed Z.1 우선, Yahoo 백업)
+            results['buffett_indicator'] = self.update_buffett_indicator()
+            
+            # API 호출 제한 방지를 위한 지연
+            if not self.fred_preferred:  # Yahoo 모드일 때만 지연
+                logger.info("Delaying between indicator updates to respect API limits...")
+                time.sleep(2.0)
+            
+            # VIX 업데이트 (FRED 우선, Yahoo 백업)
+            results['vix'] = self.update_vix()
+            
+            # 추가 지연 (Yahoo 모드)
+            if not self.fred_preferred:
+                time.sleep(1.0)
+            
+            # 10년 국채 수익률 업데이트 (FRED만 사용)
+            results['treasury_yield'] = self.update_treasury_yield()
+            
+            # 금 가격 업데이트 (Yahoo Finance) - 배치 모드 지연
+            results['gold_price'] = self.update_gold_price()
+            
+            # 원유 가격 업데이트 (Yahoo Finance) - 배치 모드 지연
+            results['crude_oil_price'] = self.update_crude_oil_price()
+            
+            # S&P 500 지수 업데이트 (Yahoo Finance) - 배치 모드 지연
+            results['sp500_index'] = self.update_sp500_index()
+            
+            # Put/Call 비율 업데이트 (CBOE 웹 스크래핑)
+            results['put_call_ratio'] = self.update_put_call_ratio()
+            
+            # TODO: 추후 추가될 지표들
+            # results['fear_greed_index'] = self.update_fear_greed_index()
+            
+            success_count = sum(results.values())
+            total_count = len(results)
+            
+            # API 사용 통계 로깅
+            yahoo_used = any('yahoo' in str(self.repository.get_latest_market_data(MarketIndicatorType.BUFFETT_INDICATOR)) for _ in [0])
+            logger.info(f"Market indicators update completed: {success_count}/{total_count} successful")
+            logger.info(f"Data sources used: FRED={self.fred_preferred}, Yahoo_backup={'potentially' if not self.fred_preferred else 'if_needed'}")
+            
+            return results
+            
+        finally:
+            # 배치 모드 복원
+            self.is_batch_mode = original_batch_mode
 
     def get_data_source_stats(self) -> Dict[str, int]:
         """
@@ -478,6 +817,79 @@ class MarketDataService:
         """최신 VIX를 가져옵니다."""
         latest_data = self.repository.get_latest_market_data(MarketIndicatorType.VIX)
         return latest_data.value if latest_data else None
+
+    def get_latest_gold_price(self) -> Optional[float]:
+        """최신 금 가격을 가져옵니다."""
+        latest_data = self.repository.get_latest_market_data(MarketIndicatorType.GOLD_PRICE)
+        return latest_data.value if latest_data else None
+
+    def get_latest_crude_oil_price(self) -> Optional[float]:
+        """최신 원유 가격을 가져옵니다."""
+        latest_data = self.repository.get_latest_market_data(MarketIndicatorType.CRUDE_OIL_PRICE)
+        return latest_data.value if latest_data else None
+
+    def get_latest_sp500_index(self) -> Optional[float]:
+        """최신 S&P 500 지수를 가져옵니다."""
+        latest_data = self.repository.get_latest_market_data(MarketIndicatorType.SP500_INDEX)
+        return latest_data.value if latest_data else None
+
+    def get_latest_treasury_yield(self) -> Optional[float]:
+        """최신 10년 국채 수익률을 가져옵니다."""
+        latest_data = self.repository.get_latest_market_data(MarketIndicatorType.US_10Y_TREASURY_YIELD)
+        return latest_data.value if latest_data else None
+
+    def get_latest_put_call_ratio(self) -> Optional[float]:
+        """최신 Put/Call 비율을 가져옵니다 (첫 번째 값)."""
+        latest_data = self.repository.get_latest_market_data(MarketIndicatorType.PUT_CALL_RATIO)
+        return latest_data.value if latest_data else None
+
+    def get_all_put_call_ratios(self, limit: int = 1) -> Dict[str, Dict]:
+        """
+        모든 Put/Call 비율들을 조회합니다.
+        
+        Args:
+            limit: 조회할 최근 데이터 개수
+            
+        Returns:
+            Dict[str, Dict]: 날짜별 모든 Put/Call 비율 데이터
+        """
+        try:
+            recent_data = self.repository.get_recent_market_data(MarketIndicatorType.PUT_CALL_RATIO, limit=limit)
+            result = {}
+            
+            for data in recent_data:
+                date_str = data.date.strftime('%Y-%m-%d')
+                
+                # 기본 정보 설정
+                result[date_str] = {
+                    'total_put_call_ratio': data.value,  # value 필드에 저장된 TOTAL PUT/CALL RATIO
+                    'data_source': 'Unknown',
+                    'all_ratios': {},
+                    'ratios_count': 0
+                }
+                
+                # additional_data에서 모든 비율 정보 추출
+                if data.additional_data:
+                    try:
+                        additional_info = json.loads(data.additional_data)
+                        
+                        result[date_str]['data_source'] = additional_info.get('data_source', 'Unknown')
+                        result[date_str]['ratios_count'] = additional_info.get('total_ratios_count', 0)
+                        result[date_str]['primary_ratio'] = additional_info.get('primary_ratio', 'TOTAL PUT/CALL RATIO')
+                        
+                        # 모든 비율 정보
+                        all_ratios = additional_info.get('all_ratios', {})
+                        if all_ratios:
+                            result[date_str]['all_ratios'] = all_ratios
+                            
+                    except json.JSONDecodeError:
+                        logger.warning(f"Failed to parse additional_data for {date_str}")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error getting all Put/Call ratios: {e}", exc_info=True)
+            return {}
 
 
 if __name__ == '__main__':

@@ -107,6 +107,23 @@
 - **보유 기간**: 2일 (48시간)
 - **최대 포지션**: 4개
 
+### 9. MACRO_DRIVEN (거시지표 기반 전략) 🆕
+- **목표**: VIX와 버핏지수 등 거시경제 지표를 활용한 시장 타이밍
+- **특징**:
+  - VIX(공포지수) 기반 시장 심리 분석
+  - 버핏지수 기반 시장 밸류에이션 평가
+  - 기술적 분석과 거시지표의 스마트 결합
+  - 동적 리스크 조정 (VIX 레벨에 따라)
+  - 고평가 시장에서 자동 리스크 감소
+- **적합한 투자자**: 거시경제를 고려한 투자를 선호하는 투자자
+- **보유 기간**: 3일 (72시간)
+- **최대 포지션**: 4개
+- **핵심 기능**:
+  - VIX < 15: 자만 상태, 매수 신호 약화
+  - VIX > 30: 공포 상태, 매수 신호 강화
+  - 버핏지수 > 120%: 고평가, 매수 신호 30% 감소
+  - 버핏지수 < 80%: 저평가, 매수 신호 20% 증가
+
 ### 전략 조합 모드
 - **SINGLE**: 단일 전략 사용
 - **WEIGHTED**: 가중 평균 조합
@@ -589,31 +606,46 @@ SCHEDULER_SETTINGS = {
 ### 기본 백테스팅
 ```bash
 # 기본 백테스팅 (기존 호환성)
-python run_backtest.py --mode single --tickers AAPL BITX --start-date 2024-01-01 --end-date 2025-01-01
+python run_backtest.py --mode single --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
 
-# 레거시 시스템 사용
+# 레거시 신호 감지 시스템 사용 (검증된 안정적 백테스팅)
 python run_backtest.py --mode single --use-legacy --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
+
+# 레거시 전략 비교 (보수적/기본/공격적 설정 비교)
+python run_backtest.py --mode comparison --use-legacy --tickers AAPL --start-date 2024-01-01 --end-date 2025-01-01
 ```
 
 ### 특정 전략 백테스팅
 ```bash
 # AGGRESSIVE 전략으로 백테스팅
-python run_backtest.py --mode strategy --strategy AGGRESSIVE --tickers GOOGL BITX --start-date 2024-01-01 --end-date 2025-01-01
+python run_backtest.py --mode strategy --strategy AGGRESSIVE --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
 
 # CONSERVATIVE 전략으로 백테스팅
-python run_backtest.py --mode strategy --strategy CONSERVATIVE --tickers AAPL BITX --start-date 2024-01-01 --end-date 2025-01-01
+python run_backtest.py --mode strategy --strategy CONSERVATIVE --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
 
 # MOMENTUM 전략으로 백테스팅
-python run_backtest.py --mode strategy --strategy MOMENTUM --tickers AAPL BITX --start-date 2024-01-01 --end-date 2025-01-01
+python run_backtest.py --mode strategy --strategy MOMENTUM --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
+
+# 🆕 거시지표 기반 전략으로 백테스팅
+python run_backtest.py --mode strategy --strategy MACRO_DRIVEN --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
+```
+
+### 거시지표 전략 전용 분석 🆕
+```bash
+# VIX와 버핏지수 기반 거시지표 전략 종합 분석
+python run_backtest.py --mode macro-analysis --tickers AAPL MSFT GOOGL --start-date 2024-01-01 --end-date 2025-01-01
+
+# 거시지표 전략만 단독 테스트
+python run_backtest.py --mode strategy --strategy MACRO_DRIVEN --tickers AAPL --start-date 2024-01-01 --end-date 2025-01-01
 ```
 
 ### 전략 비교 백테스팅
 ```bash
-# 모든 주요 전략 비교
-python run_backtest.py --mode strategy-comparison --tickers AAPL MSFT GOOGL BITX --start-date 2024-01-01 --end-date 2025-01-01
+# 모든 주요 전략 비교 (거시지표 전략 포함)
+python run_backtest.py --mode strategy-comparison --tickers AAPL MSFT GOOGL --start-date 2024-01-01 --end-date 2025-01-01
 
-# 특정 전략들만 비교
-python run_backtest.py --mode strategy-comparison --compare-strategies CONSERVATIVE BALANCED AGGRESSIVE --tickers AAPL --start-date 2024-01-01 --end-date 2025-01-01
+# 특정 전략들만 비교 (거시지표 전략 포함)
+python run_backtest.py --mode strategy-comparison --compare-strategies CONSERVATIVE BALANCED AGGRESSIVE MACRO_DRIVEN --tickers AAPL --start-date 2024-01-01 --end-date 2025-01-01
 ```
 
 ### 전략 조합 백테스팅

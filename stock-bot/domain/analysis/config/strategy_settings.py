@@ -22,6 +22,7 @@ class StrategyType(Enum):
     VOLATILITY_BREAKOUT = "volatility_breakout"   # 변동성 돌파 전략
     QUALITY_TREND = "quality_trend"               # 고신뢰도 복합 추세 전략
     MULTI_TIMEFRAME = "multi_timeframe"           # 다중 시간대 확인 전략
+    MACRO_DRIVEN = "macro_driven"                 # 거시지표 기반 전략 (VIX, 버핏지수 등)
 
 @dataclass
 class DetectorConfig:
@@ -79,7 +80,7 @@ STRATEGY_CONFIGS = {
         },
         position_management={
             "max_positions": 3,
-            "position_timeout_hours": 72  # 3일
+            "position_timeout_hours": 336  # 14일
         }
     ),
     
@@ -110,7 +111,7 @@ STRATEGY_CONFIGS = {
         },
         position_management={
             "max_positions": 5,
-            "position_timeout_hours": 48  # 2일
+            "position_timeout_hours": 336  # 14일
         }
     ),
     
@@ -139,7 +140,7 @@ STRATEGY_CONFIGS = {
         },
         position_management={
             "max_positions": 8,
-            "position_timeout_hours": 24  # 1일
+            "position_timeout_hours": 336  # 14일
         }
     ),
     
@@ -164,7 +165,7 @@ STRATEGY_CONFIGS = {
         },
         position_management={
             "max_positions": 4,
-            "position_timeout_hours": 36
+            "position_timeout_hours": 336  # 14일
         }
     ),
     
@@ -342,6 +343,32 @@ STRATEGY_CONFIGS = {
         ],
         market_filters={"multi_timeframe_confirmation": True}, # 핵심 필터
         position_management={"max_positions": 3, "position_timeout_hours": 96}
+    ),
+
+    StrategyType.MACRO_DRIVEN: StrategyConfig(
+        name="거시지표 기반 전략",
+        description="VIX와 버핏지수 등 거시경제 지표를 기술적 분석과 결합한 전략",
+        signal_threshold=7.0,  # 기존 9.0에서 7.0으로 낮춤
+        risk_per_trade=0.015,
+        detectors=[
+            DetectorConfig("MACDSignalDetector", weight=4.0),
+            DetectorConfig("RSISignalDetector", weight=3.0),
+            DetectorConfig("StochSignalDetector", weight=3.0),
+            DetectorConfig("VolumeSignalDetector", weight=2.0),
+        ],
+        market_filters={
+            "macro_sentiment_filter": True,
+            "macro_signal_threshold": 3.0,  # 기존 6.0에서 3.0으로 낮춤
+            "vix_analysis_enabled": True,
+            "buffett_analysis_enabled": True,
+            "dynamic_risk_adjustment": True
+        },
+        position_management={
+            "max_positions": 4, 
+            "position_timeout_hours": 120,
+            "stop_loss_percent": 0.05,
+            "take_profit_percent": 0.12
+        }
     )
 }
 

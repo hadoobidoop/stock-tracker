@@ -38,6 +38,9 @@ from infrastructure.logging import get_logger
 from domain.backtesting.service.backtesting_service import BacktestingService
 from domain.analysis.config.strategy_settings import StrategyType
 
+# 거시지표 분석 기능 추가
+from domain.analysis.utils.market_indicators import get_market_indicator_analysis
+
 logger = get_logger(__name__)
 
 
@@ -74,7 +77,7 @@ def parse_arguments():
     
     parser.add_argument('--mode', default='single',
                        choices=['single', 'strategy', 'strategy-mix', 'auto-strategy', 
-                               'strategy-comparison', 'optimization', 'walk-forward', 'comparison'],
+                               'strategy-comparison', 'optimization', 'walk-forward', 'comparison', 'macro-analysis'],
                        help='실행 모드 (기본값: single)')
     
     # 새로운 전략 관련 인수들
@@ -82,7 +85,7 @@ def parse_arguments():
                        choices=['CONSERVATIVE', 'BALANCED', 'AGGRESSIVE', 'MOMENTUM', 
                                 'TREND_FOLLOWING', 'CONTRARIAN', 'SCALPING', 'SWING',
                                 'MEAN_REVERSION', 'TREND_PULLBACK', 'VOLATILITY_BREAKOUT',
-                                'QUALITY_TREND', 'MULTI_TIMEFRAME'],
+                                'QUALITY_TREND', 'MULTI_TIMEFRAME', 'MACRO_DRIVEN'],
                        help='사용할 전략 (strategy 모드에서 필수)')
     
     parser.add_argument('--strategy-mix',
@@ -93,7 +96,7 @@ def parse_arguments():
                        choices=['CONSERVATIVE', 'BALANCED', 'AGGRESSIVE', 'MOMENTUM', 
                                 'TREND_FOLLOWING', 'CONTRARIAN', 'SCALPING', 'SWING',
                                 'MEAN_REVERSION', 'TREND_PULLBACK', 'VOLATILITY_BREAKOUT',
-                                'QUALITY_TREND', 'MULTI_TIMEFRAME'],
+                                'QUALITY_TREND', 'MULTI_TIMEFRAME', 'MACRO_DRIVEN'],
                        help='비교할 전략들 (지정하지 않으면 모든 전략 비교)')
     
     parser.add_argument('--use-legacy', action='store_true',
@@ -523,6 +526,92 @@ def run_legacy_strategy_comparison(service: BacktestingService, args):
     return comparison_result
 
 
+def run_macro_analysis(service: BacktestingService, args):
+    """거시지표 기반 전략 전용 분석 및 백테스트"""
+    logger.info("=== 거시지표 기반 전략 분석 ===")
+    
+    start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
+    end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
+    
+    # 현재 거시지표 상태 확인
+    try:
+        current_macro = get_market_indicator_analysis()
+        vix_info = current_macro.get('vix_analysis', {})
+        buffett_info = current_macro.get('buffett_analysis', {})
+        
+        print("\n" + "="*60)
+        print("현재 거시지표 상태")
+        print("="*60)
+        print(f"VIX: {vix_info.get('current_vix', 'N/A')} ({vix_info.get('fear_level', 'UNKNOWN')})")
+        print(f"버핏지수: {buffett_info.get('current_value', 'N/A')} ({buffett_info.get('level', 'UNKNOWN')})")
+        print(f"시장심리: {current_macro.get('market_sentiment', 'UNKNOWN')}")
+        print(f"복합신호: {current_macro.get('combined_signal', 'UNKNOWN')}")
+        print("="*60)
+    except Exception as e:
+        logger.warning(f"거시지표 상태 확인 실패: {e}")
+    
+    # 거시지표 전략 단독 백테스트
+    logger.info("거시지표 전략 백테스트 실행 중...")
+    macro_result = service.run_specific_strategy_backtest(
+        tickers=args.tickers,
+        start_date=start_date,
+        end_date=end_date,
+        strategy_type=StrategyType.MACRO_DRIVEN,
+        initial_capital=args.initial_capital,
+        commission_rate=args.commission_rate,
+        risk_per_trade=args.risk_per_trade,
+        data_interval=args.data_interval
+    )
+    
+    # 기본 전략들과 비교
+    logger.info("기존 전략들과 성능 비교 중...")
+    comparison_strategies = [
+        StrategyType.MACRO_DRIVEN,
+        StrategyType.BALANCED,
+        StrategyType.CONSERVATIVE,
+        StrategyType.MOMENTUM,
+        StrategyType.TREND_FOLLOWING
+    ]
+    
+    comparison_result = service.compare_all_strategies(
+        tickers=args.tickers,
+        start_date=start_date,
+        end_date=end_date,
+        initial_capital=args.initial_capital,
+        commission_rate=args.commission_rate,
+        risk_per_trade=args.risk_per_trade,
+        data_interval=args.data_interval,
+        strategies=comparison_strategies
+    )
+    
+    # 거시지표 전략 하이라이트 결과 출력
+    strategy_results = comparison_result.get('strategy_analysis', {})
+    macro_strategy_result = strategy_results.get('macro_driven')
+    
+    if macro_strategy_result:
+        other_results = {k: v for k, v in strategy_results.items() if k != 'macro_driven'}
+        avg_return = sum(r['total_return_percent'] for r in other_results.values()) / len(other_results) if other_results else 0
+        avg_sharpe = sum(r['sharpe_ratio'] for r in other_results.values()) / len(other_results) if other_results else 0
+        
+        print(f"\n🎯 거시지표 전략 성과 하이라이트:")
+        print(f"  수익률: {macro_strategy_result['total_return_percent']:.2f}% (평균 대비 {macro_strategy_result['total_return_percent'] - avg_return:+.2f}%)")
+        print(f"  샤프 비율: {macro_strategy_result['sharpe_ratio']:.2f} (평균 대비 {macro_strategy_result['sharpe_ratio'] - avg_sharpe:+.2f})")
+        print(f"  최대 낙폭: {macro_strategy_result['max_drawdown_percent']:.2f}%")
+        print(f"  승률: {macro_strategy_result['win_rate']:.1%}")
+        
+        # 다른 전략 대비 우위 분석
+        better_than = len([r for r in other_results.values() if macro_strategy_result['sharpe_ratio'] > r['sharpe_ratio']])
+        print(f"  능가한 전략: {better_than}/{len(other_results)}개")
+    
+    # 전체 비교 결과 출력
+    print_strategy_comparison_results(comparison_result)
+    
+    # 결과 저장
+    save_strategy_comparison_results(comparison_result, args)
+    
+    return comparison_result
+
+
 def main():
     """메인 함수"""
     args = parse_arguments()
@@ -549,6 +638,8 @@ def main():
             run_walk_forward_analysis(service, args)
         elif args.mode == 'comparison':
             run_legacy_strategy_comparison(service, args)
+        elif args.mode == 'macro-analysis':
+            run_macro_analysis(service, args)
         
         logger.info("백테스트가 성공적으로 완료되었습니다.")
         
