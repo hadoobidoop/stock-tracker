@@ -69,8 +69,6 @@ class StrategyManager:
                 StrategyType.VOLATILITY_BREAKOUT,
                 StrategyType.QUALITY_TREND,
                 StrategyType.MULTI_TIMEFRAME,
-                StrategyType.VIX_FEAR_GREED,  # 이미 추가된 경우 중복 방지
-                StrategyType.ADX_RSI_VIX,      # << 여기 추가
             ]
         
         logger.info(f"전략 초기화 시작: {len(strategy_types)}개 전략")
@@ -78,14 +76,11 @@ class StrategyManager:
         success_count = 0
         for strategy_type in strategy_types:
             try:
-                config = STRATEGY_CONFIGS.get(strategy_type) or STRATEGY_CONFIGS.get(strategy_type.value)
+                config = STRATEGY_CONFIGS.get(strategy_type)
                 if not config:
                     logger.warning(f"전략 설정을 찾을 수 없음: {strategy_type}")
                     continue
-                # dict -> StrategyConfig 변환 (커스텀 전략은 dict 그대로)
-                if isinstance(config, dict) and strategy_type not in [StrategyType.ADX_RSI_VIX, StrategyType.VIX_FEAR_GREED]:
-                    from domain.analysis.config.strategy_settings import StrategyConfig
-                    config = StrategyConfig(**config)
+                
                 strategy = StrategyFactory.create_strategy(strategy_type, config)
                 
                 if strategy.initialize():
@@ -396,13 +391,12 @@ class StrategyManager:
             # 새 전략 로드
             for strategy_type_str, config_dict in configs.items():
                 strategy_type = StrategyType(strategy_type_str)
-                if strategy_type in [StrategyType.ADX_RSI_VIX, StrategyType.VIX_FEAR_GREED]:
-                    strategy = StrategyFactory.create_strategy(strategy_type, config_dict)
-                else:
-                    from domain.analysis.config.strategy_settings import StrategyConfig
-                    config = StrategyConfig(**config_dict)
+                # config_dict를 StrategyConfig 객체로 변환하는 로직 필요
+                # 여기서는 간단히 기본 설정 사용
+                config = STRATEGY_CONFIGS.get(strategy_type)
+                if config:
                     strategy = StrategyFactory.create_strategy(strategy_type, config)
-                self.active_strategies[strategy_type] = strategy
+                    self.active_strategies[strategy_type] = strategy
             
             logger.info(f"전략 설정 로드 완료: {len(self.active_strategies)}개 전략")
             return True

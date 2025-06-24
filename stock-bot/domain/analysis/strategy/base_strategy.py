@@ -226,14 +226,8 @@ class BaseStrategy(ABC):
                 self.score_history.pop(0)
             self.average_score = sum(self.score_history) / len(self.score_history)
             
-            # 신호 임계값 - dict와 StrategyConfig 호환
-            if isinstance(self.config, dict):
-                signal_threshold = self.config.get('signal_threshold', 7)
-            else:
-                signal_threshold = getattr(self.config, 'signal_threshold', 7)
-            
             # 신호 여부 판단
-            has_signal = adjusted_score >= signal_threshold
+            has_signal = adjusted_score >= self.config.signal_threshold
             
             if has_signal:
                 self.signals_generated += 1
@@ -284,11 +278,8 @@ class BaseStrategy(ABC):
         elif market_trend == TrendType.BEARISH and long_term_trend == TrendType.BEARISH:
             adjusted_score *= 0.8  # 하락 추세에서 20% 감소
 
-        # 전략별 필터 적용 - dict와 StrategyConfig 호환
-        if isinstance(self.config, dict):
-            market_filters = self.config.get('market_filters', {})
-        else:
-            market_filters = getattr(self.config, 'market_filters', {}) or {}
+        # 전략별 필터 적용
+        market_filters = self.config.market_filters or {}
         
         # 추세 일치 필터
         if market_filters.get('trend_alignment', False):
@@ -343,36 +334,22 @@ class BaseStrategy(ABC):
     
     def get_name(self) -> str:
         """전략 이름 반환"""
-        if isinstance(self.config, dict):
-            return self.config.get('name', f"Strategy_{self.strategy_type.value}")
-        else:
-            return self.config.name
+        return self.config.name
     
     def get_description(self) -> str:
         """전략 설명 반환"""
-        if isinstance(self.config, dict):
-            return self.config.get('description', f"Strategy for {self.strategy_type.value}")
-        else:
-            return self.config.description
+        return self.config.description
     
     def get_performance_metrics(self) -> Dict[str, Any]:
         """전략 성능 지표 반환"""
-        # 신호 임계값과 리스크 - dict와 StrategyConfig 호환
-        if isinstance(self.config, dict):
-            signal_threshold = self.config.get('signal_threshold', 7)
-            risk_per_trade = self.config.get('risk_per_trade', 0.02)
-        else:
-            signal_threshold = getattr(self.config, 'signal_threshold', 7)
-            risk_per_trade = getattr(self.config, 'risk_per_trade', 0.02)
-        
         return {
             'signals_generated': self.signals_generated,
             'average_score': self.average_score,
             'last_analysis_time': self.last_analysis_time,
             'score_history_length': len(self.score_history),
             'is_initialized': self.is_initialized,
-            'signal_threshold': signal_threshold,
-            'risk_per_trade': risk_per_trade
+            'signal_threshold': self.config.signal_threshold,
+            'risk_per_trade': self.config.risk_per_trade
         }
     
     def reset_performance_metrics(self):

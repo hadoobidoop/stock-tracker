@@ -147,7 +147,7 @@ python run_backtest.py --mode auto-strategy --tickers AAPL MSFT --start-date 202
 ### 전략 비교
 ```bash
 # 모든 전략 비교
-python run_backtest.py --mode strategy-comparison --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01
+python run_backtest.py --mode strategy-comparison --tickers AAPL --start-date 2024-01-01 --end-date 2025-01-01
 
 # 특정 전략들만 비교
 python run_backtest.py --mode strategy-comparison --compare-strategies CONSERVATIVE BALANCED AGGRESSIVE --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01

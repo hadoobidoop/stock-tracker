@@ -1,0 +1,121 @@
+{
+  "strategy_analysis": {
+    "conservative": {
+      "total_return_percent": 4.1081661022863845,
+      "annualized_return_percent": 4.099577483516548,
+      "max_drawdown_percent": 11.318286478136397,
+      "sharpe_ratio": 0.11203100791431327,
+      "win_rate": 0.36065573770491804,
+      "total_trades": 61,
+      "profit_factor": 1.0304467933932888,
+      "final_capital": 104108.16610228638
+    },
+    "balanced": {
+      "total_return_percent": -16.33299449542747,
+      "annualized_return_percent": -16.30241522133391,
+      "max_drawdown_percent": 18.36796000031536,
+      "sharpe_ratio": 0.11516337551985457,
+      "win_rate": 0.3037974683544304,
+      "total_trades": 79,
+      "profit_factor": 1.0520671037300118,
+      "final_capital": 83667.00550457253
+    },
+    "aggressive": {
+      "total_return_percent": -17.526652371141697,
+      "annualized_return_percent": -17.49407995289074,
+      "max_drawdown_percent": 19.303026754107098,
+      "sharpe_ratio": 0.08791062465606854,
+      "win_rate": 0.3048780487804878,
+      "total_trades": 82,
+      "profit_factor": 0.661903377467726,
+      "final_capital": 82473.3476288583
+    },
+    "momentum": {
+      "total_return_percent": -19.02128925185636,
+      "annualized_return_percent": -18.986271018715417,
+      "max_drawdown_percent": 17.328272152723756,
+      "sharpe_ratio": 0.0677406714723331,
+      "win_rate": 0.3939393939393939,
+      "total_trades": 66,
+      "profit_factor": 1.5478494277780013,
+      "final_capital": 80978.71074814364
+    },
+    "trend_following": {
+      "total_return_percent": -17.205970629141987,
+      "annualized_return_percent": -17.1739302273629,
+      "max_drawdown_percent": 17.73570383559955,
+      "sharpe_ratio": 0.0990306939419895,
+      "win_rate": 0.3888888888888889,
+      "total_trades": 72,
+      "profit_factor": 1.4123841876338952,
+      "final_capital": 82794.02937085801
+    },
+    "contrarian": {
+      "total_return_percent": -19.14854618828504,
+      "annualized_return_percent": -19.113322305316196,
+      "max_drawdown_percent": 16.140952611931127,
+      "sharpe_ratio": 0.057652381357282546,
+      "win_rate": 0.3448275862068966,
+      "total_trades": 58,
+      "profit_factor": 0.7783862426591006,
+      "final_capital": 80851.45381171496
+    }
+  },
+  "comparison_summary": {
+    "best_strategy": "balanced",
+    "strategies_tested": 6,
+    "comparison_period": "2024-01-01 to 2025-01-01",
+    "ranking_by_sharpe": [
+      [
+        "balanced",
+        0.11516337551985457
+      ],
+      [
+        "conservative",
+        0.11203100791431327
+      ],
+      [
+        "trend_following",
+        0.0990306939419895
+      ],
+      [
+        "aggressive",
+        0.08791062465606854
+      ],
+      [
+        "momentum",
+        0.0677406714723331
+      ],
+      [
+        "contrarian",
+        0.057652381357282546
+      ]
+    ],
+    "ranking_by_return": [
+      [
+        "conservative",
+        4.1081661022863845
+      ],
+      [
+        "balanced",
+        -16.33299449542747
+      ],
+      [
+        "trend_following",
+        -17.205970629141987
+      ],
+      [
+        "aggressive",
+        -17.526652371141697
+      ],
+      [
+        "momentum",
+        -19.02128925185636
+      ],
+      [
+        "contrarian",
+        -19.14854618828504
+      ]
+    ]
+  }
+}

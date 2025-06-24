@@ -22,8 +22,6 @@ class StrategyType(Enum):
     VOLATILITY_BREAKOUT = "volatility_breakout"   # 변동성 돌파 전략
     QUALITY_TREND = "quality_trend"               # 고신뢰도 복합 추세 전략
     MULTI_TIMEFRAME = "multi_timeframe"           # 다중 시간대 확인 전략
-    VIX_FEAR_GREED = "vix_fear_greed"  # 새로운 VIX 기반 전략
-    ADX_RSI_VIX = "adx_rsi_vix"  # 추가
 
 @dataclass
 class DetectorConfig:
@@ -344,46 +342,7 @@ STRATEGY_CONFIGS = {
         ],
         market_filters={"multi_timeframe_confirmation": True}, # 핵심 필터
         position_management={"max_positions": 3, "position_timeout_hours": 96}
-    ),
-
-    StrategyType.VIX_FEAR_GREED: {
-        "name": "VIX Fear & Greed 전략",
-        "description": "VIX 기반 시장 심리를 반영하는 전략",
-        "signal_threshold": 8.0,
-        "risk_per_trade": 0.015,
-        "detectors": [
-            {"detector_class": "SMASignalDetector", "enabled": True, "weight": 1.0},
-            {"detector_class": "MACDSignalDetector", "enabled": True, "weight": 1.5},
-            {"detector_class": "RSISignalDetector", "enabled": True, "weight": 1.2},
-            {"detector_class": "VolumeSignalDetector", "enabled": True, "weight": 0.8},
-        ],
-        "market_filters": {
-            "trend_alignment": True,
-            "volume_filter": True,
-            "market_sentiment_filter": True,
-        },
-        "position_management": {
-            "stop_loss_atr_multiplier": 2.5,
-            "take_profit_ratio": 2.0,
-            "position_sizing": "market_volatility",
-            "max_risk_per_trade": 0.015,
-        }
-    },
-
-    StrategyType.ADX_RSI_VIX: {
-        "name": "ADX+RSI+VIX 조합 전략",
-        "description": "ADX(추세), RSI(과매수/과매도), VIX(시장 공포) 융합 전략",
-        "adx_threshold": 15,     # 20 -> 15 (완화)
-        "rsi_buy": 40,           # 35 -> 40 (완화)
-        "rsi_sell": 60,          # 65 -> 60 (완화)
-        "vix_buy": 20,           # 25 -> 20 (완화)
-        "vix_sell": 12,          # 15 -> 12 (완화)
-        "risk_per_trade": 0.015,
-        "score_weight": 1.0,
-        "macro_weight": 1.2,
-        "macro_penalty": 0.7,
-        "signal_threshold": 3    # 기본 7 -> 3으로 낮춤
-    },
+    )
 }
 
 # ====================
