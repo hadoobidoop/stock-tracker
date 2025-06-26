@@ -7,16 +7,13 @@ from infrastructure.logging import get_logger
 from infrastructure.db.models.enums import TrendType
 
 # 기존 호환성을 위한 import
-from domain.analysis.service.signal_detection_service import DetectorFactory
-
-# 새로운 전략 시스템 import
-from domain.analysis.service.signal_detection_service import EnhancedSignalDetectionService
-from domain.analysis.config.strategy_settings import StrategyType, STRATEGY_CONFIGS
+from domain.analysis.service.signal_detection_service import SignalDetectionService
+from domain.analysis.config.static_strategies import StrategyType, STRATEGY_CONFIGS
 from domain.analysis.strategy.base_strategy import StrategyResult
 
 from domain.analysis.utils import calculate_all_indicators, calculate_fibonacci_levels
 from domain.stock.service.stock_analysis_service import StockAnalysisService
-from domain.analysis.config.analysis_settings import (
+from domain.analysis.config.signals import (
     SIGNAL_THRESHOLD,
     REALTIME_SIGNAL_DETECTION
 )
@@ -38,7 +35,7 @@ class BacktestingEngine:
     2. 전략 조합으로 백테스팅  
     3. 전략 비교 백테스팅
     4. 자동 전략 선택 백테스팅
-    5. 기존 레거시 방식 지원
+    5. 기존 Static Strategy Mix 방식 지원
     """
 
     def __init__(self,
@@ -56,15 +53,18 @@ class BacktestingEngine:
 
         # 새로운 전략 시스템
         if use_enhanced_signals:
-            self.enhanced_service = EnhancedSignalDetectionService()
-            self.strategy_type = strategy_type or StrategyType.MOMENTUM
-            self._initialize_enhanced_service()
+            self.signal_service = SignalDetectionService()
+            self.strategy_type = strategy_type or StrategyType.BALANCED
+            self._initialize_signal_service()
         else:
-            self.enhanced_service = None
+            self.signal_service = None
 
-        # 기존 호환성을 위한 레거시 시스템
-        self.detector_factory = DetectorFactory()
-        self.orchestrator = self.detector_factory.create_default_orchestrator()
+        # Static Strategy Mix 시스템 초기화 (폴백용)
+        from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
+        self.orchestrator = SignalDetectionOrchestrator()
+        
+        if not use_enhanced_signals:
+            logger.warning("Static Strategy Mix 시스템은 지원되지 않습니다. enhanced_signals=True를 사용하세요.")
 
         self.daily_data_cache = {
             "last_updated": None,
@@ -78,24 +78,24 @@ class BacktestingEngine:
         if use_enhanced_signals:
             logger.info(f"Using enhanced strategy system with strategy: {self.strategy_type}")
         else:
-            logger.info("Using legacy detector system")
+            logger.info("Using Static Strategy Mix detector system")
 
-    def _initialize_enhanced_service(self):
-        """향상된 신호 감지 서비스 초기화"""
-        if self.enhanced_service:
+    def _initialize_signal_service(self):
+        """신호 감지 서비스 초기화"""
+        if self.signal_service:
             try:
                 # STRATEGY_CONFIGS에 정의된 모든 전략을 초기화
                 all_strategies = list(STRATEGY_CONFIGS.keys())
                 
-                success = self.enhanced_service.initialize(all_strategies)
+                success = self.signal_service.initialize(all_strategies)
                 if success:
-                    self.enhanced_service.switch_strategy(self.strategy_type)
-                    logger.info(f"Enhanced signal detection service initialized with all strategies, current: {self.strategy_type}")
+                    self.signal_service.switch_strategy(self.strategy_type)
+                    logger.info(f"신호 감지 서비스 초기화 완료 - 전략: {self.strategy_type}")
                 else:
-                    logger.warning("Failed to initialize enhanced service, falling back to legacy")
+                    logger.warning("신호 감지 서비스 초기화 실패")
                     self.use_enhanced_signals = False
             except Exception as e:
-                logger.error(f"Error initializing enhanced service: {e}")
+                logger.error(f"신호 감지 서비스 초기화 오류: {e}")
                 self.use_enhanced_signals = False
 
     def run_backtest(self,
@@ -110,7 +110,7 @@ class BacktestingEngine:
         if end_date.tzinfo is None:
             end_date = end_date.replace(tzinfo=timezone.utc)
             
-        strategy_name = self.strategy_type.value if self.use_enhanced_signals else "Legacy"
+        strategy_name = self.strategy_type.value if self.use_enhanced_signals else "Static_Strategy_Mix"
         logger.info(f"Starting backtest for {len(tickers)} tickers from {start_date} to {end_date} using {strategy_name}")
 
         portfolio = Portfolio(
@@ -157,8 +157,8 @@ class BacktestingEngine:
         original_strategy = self.strategy_type
         self.strategy_type = strategy_type
         
-        if self.use_enhanced_signals and self.enhanced_service:
-            self.enhanced_service.switch_strategy(strategy_type)
+        if self.use_enhanced_signals and self.signal_service:
+            self.signal_service.switch_strategy(strategy_type)
         
         try:
             result = self.run_backtest(tickers, start_date, end_date, data_interval)
@@ -167,8 +167,8 @@ class BacktestingEngine:
         finally:
             # 원래 전략으로 복구
             self.strategy_type = original_strategy
-            if self.use_enhanced_signals and self.enhanced_service:
-                self.enhanced_service.switch_strategy(original_strategy)
+            if self.use_enhanced_signals and self.signal_service:
+                self.signal_service.switch_strategy(original_strategy)
 
     def run_strategy_mix_backtest(self,
                                 tickers: List[str],
@@ -177,11 +177,11 @@ class BacktestingEngine:
                                 mix_name: str,
                                 data_interval: str = '1h') -> BacktestResult:
         """전략 조합으로 백테스트 실행"""
-        if not self.use_enhanced_signals or not self.enhanced_service:
-            raise ValueError("전략 조합 백테스트는 향상된 신호 감지 서비스가 필요합니다.")
+        if not self.use_enhanced_signals or not self.signal_service:
+            raise ValueError("전략 조합 백테스트는 신호 감지 서비스가 필요합니다.")
         
         # 전략 조합 설정
-        success = self.enhanced_service.set_strategy_mix(mix_name)
+        success = self.signal_service.set_strategy_mix(mix_name)
         if not success:
             raise ValueError(f"전략 조합 '{mix_name}'을 설정할 수 없습니다.")
         
@@ -191,7 +191,7 @@ class BacktestingEngine:
             return result
         finally:
             # 단일 전략으로 복구
-            self.enhanced_service.switch_strategy(self.strategy_type)
+            self.signal_service.switch_strategy(self.strategy_type)
 
     def run_auto_strategy_backtest(self,
                                  tickers: List[str],
@@ -199,11 +199,11 @@ class BacktestingEngine:
                                  end_date: datetime,
                                  data_interval: str = '1h') -> BacktestResult:
         """자동 전략 선택으로 백테스트 실행"""
-        if not self.use_enhanced_signals or not self.enhanced_service:
-            raise ValueError("자동 전략 선택 백테스트는 향상된 신호 감지 서비스가 필요합니다.")
+        if not self.use_enhanced_signals or not self.signal_service:
+            raise ValueError("자동 전략 선택 백테스트는 신호 감지 서비스가 필요합니다.")
         
         # 자동 전략 선택 활성화
-        self.enhanced_service.enable_auto_strategy_selection(True)
+        self.signal_service.enable_auto_strategy_selection(True)
         
         try:
             result = self.run_backtest(tickers, start_date, end_date, data_interval)
@@ -211,7 +211,7 @@ class BacktestingEngine:
             return result
         finally:
             # 자동 선택 비활성화
-            self.enhanced_service.enable_auto_strategy_selection(False)
+            self.signal_service.enable_auto_strategy_selection(False)
 
     def compare_strategies(self,
                           tickers: List[str],
@@ -357,7 +357,7 @@ class BacktestingEngine:
                 daily_extras = self.daily_data_cache["daily_extras"].get(ticker, {})
                 long_term_trend = self.daily_data_cache["long_term_trends"].get(ticker, TrendType.NEUTRAL)
 
-                # 신호 감지 - 새로운 전략 시스템 또는 레거시 시스템 사용
+                # 신호 감지 - 새로운 전략 시스템 또는 Static Strategy Mix 시스템 사용
                 signal_result = self._detect_signals(
                     df_with_indicators, ticker, market_trend, long_term_trend, daily_extras
                 )
@@ -377,16 +377,16 @@ class BacktestingEngine:
                        market_trend: TrendType,
                        long_term_trend: TrendType,
                        daily_extras: Dict) -> Optional[Dict]:
-        """신호 감지 - 새로운 전략 시스템 또는 레거시 시스템 사용"""
+        """신호 감지 - 새로운 전략 시스템 또는 Static Strategy Mix 시스템 사용"""
         
-        if self.use_enhanced_signals and self.enhanced_service and self.enhanced_service.is_initialized:
+        if self.use_enhanced_signals and self.signal_service and self.signal_service.is_initialized:
             try:
-                # 새로운 전략 시스템 사용
-                strategy_result: StrategyResult = self.enhanced_service.analyze_with_current_strategy(
+                # 신호 감지 서비스 사용
+                strategy_result: StrategyResult = self.signal_service.analyze_with_current_strategy(
                     df_with_indicators, ticker, market_trend, long_term_trend, daily_extras
                 )
                 
-                # StrategyResult를 레거시 형태로 변환
+                # StrategyResult를 Static Strategy Mix 형태로 변환
                 if not strategy_result.has_signal:
                     return None
                     
@@ -411,10 +411,10 @@ class BacktestingEngine:
                 }
                 
             except Exception as e:
-                logger.warning(f"Enhanced signal detection failed for {ticker}: {e}, falling back to legacy")
-                # 폴백: 레거시 시스템 사용
+                logger.warning(f"Enhanced signal detection failed for {ticker}: {e}, falling back to static mix")
+                # 폴백: Static Strategy Mix 시스템 사용
         
-        # 레거시 시스템 사용
+        # Static Strategy Mix 시스템 사용
         return self.orchestrator.detect_signals(
             df_with_indicators, ticker, market_trend, long_term_trend, daily_extras
         )
@@ -432,7 +432,7 @@ class BacktestingEngine:
             strategy_result: StrategyResult = signal_result['strategy_result']
             return strategy_result.has_signal
         
-        # 레거시 시스템의 경우
+        # Static Strategy Mix 시스템의 경우
         return score >= SIGNAL_THRESHOLD and signal_type is not None
 
     def _update_daily_cache(self,

@@ -8,7 +8,7 @@ from infrastructure.db.models.enums import TrendType
 from domain.stock.repository.stock_repository import StockRepository
 from domain.stock.models.stock_metadata import StockMetadata
 from domain.stock.config.settings import STOCK_SYMBOLS
-from domain.analysis.config.analysis_settings import REALTIME_SIGNAL_DETECTION
+from domain.analysis.config.signals import REALTIME_SIGNAL_DETECTION
 
 logger = get_logger(__name__)
 

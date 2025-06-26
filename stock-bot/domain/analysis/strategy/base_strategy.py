@@ -6,7 +6,7 @@ from datetime import datetime
 import importlib
 
 from infrastructure.db.models.enums import TrendType
-from domain.analysis.config.strategy_settings import StrategyConfig, StrategyType, DetectorConfig
+from domain.analysis.config.static_strategies import StrategyConfig, StrategyType, DetectorConfig
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.models.trading_signal import TradingSignal, SignalType
 from infrastructure.logging import get_logger
@@ -157,7 +157,7 @@ class BaseStrategy(ABC):
                 else:
                     logger.warning(f"알 수 없는 감지기 타입: {detector_name}")
         else:
-            # 레거시 호환성을 위한 하드코딩된 설정 (기존 코드 유지)
+            # Static Strategy Mix 호환성을 위한 하드코딩된 설정 (기존 코드 유지)
             if composite_name == "MACD_Volume_Confirm":
                 # MACD + 거래량 조합
                 from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDetector

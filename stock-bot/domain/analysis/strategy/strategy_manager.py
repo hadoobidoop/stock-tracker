@@ -4,7 +4,7 @@
 이 모듈은 사용자가 원하는 "갈아끼우며 사용할 수 있는" 전략 시스템을 제공합니다.
 """
 
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any, Tuple, Union
 import pandas as pd
 from datetime import datetime
 import json
@@ -12,13 +12,37 @@ from pathlib import Path
 from dataclasses import asdict
 
 from infrastructure.db.models.enums import TrendType
-from domain.analysis.config.strategy_settings import (
-    StrategyType, StrategyConfig, STRATEGY_CONFIGS, 
-    StrategyMixMode, StrategyMixConfig, STRATEGY_MIXES,
-    MARKET_CONDITION_STRATEGIES
+from domain.analysis.config.static_strategies import (
+    StrategyType, StrategyConfig, STRATEGY_CONFIGS, get_static_strategy_types
 )
+# Static Strategy Mix 관련은 legacy_config_backup에서 임시로 참조
+try:
+    from legacy_config_backup.strategy_settings import (
+        StrategyMixMode, StrategyMixConfig, STRATEGY_MIXES,
+        MARKET_CONDITION_STRATEGIES
+    )
+except ImportError:
+    # 조합 기능 비활성화를 위한 더미 클래스들
+    from enum import Enum
+    from dataclasses import dataclass
+    from typing import Dict
+    
+    class StrategyMixMode(Enum):
+        WEIGHTED = "weighted"
+    
+    @dataclass
+    class StrategyMixConfig:
+        mode: StrategyMixMode
+        strategies: Dict
+        threshold_adjustment: float = 1.0
+    
+    STRATEGY_MIXES = {}
+    MARKET_CONDITION_STRATEGIES = {}
+
 from .base_strategy import BaseStrategy, StrategyResult
 from .strategy_implementations import StrategyFactory
+from .dynamic_strategy import DynamicCompositeStrategy
+from domain.analysis.config.dynamic_strategies import get_all_strategies
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
@@ -38,7 +62,9 @@ class StrategyManager:
     
     def __init__(self):
         self.active_strategies: Dict[StrategyType, BaseStrategy] = {}
+        self.dynamic_strategies: Dict[str, DynamicCompositeStrategy] = {}
         self.current_strategy: Optional[BaseStrategy] = None
+        self.current_dynamic_strategy: Optional[DynamicCompositeStrategy] = None
         self.current_mix_config: Optional[StrategyMixConfig] = None
         self.performance_history: List[Dict] = []
         
@@ -49,102 +75,152 @@ class StrategyManager:
         # 설정
         self.auto_strategy_selection = False
         self.market_condition_detection = True
+        self.enable_dynamic_strategies = True
         
-    def initialize_strategies(self, strategy_types: List[StrategyType] = None) -> bool:
+    def initialize_strategies(self, strategy_types: Optional[List[StrategyType]] = None) -> bool:
         """전략들을 초기화합니다."""
         if strategy_types is None:
-            # 기본적으로 모든 전략 로드
+            # 기본적으로 주요 정적 전략들만 로드
             strategy_types = [
                 StrategyType.CONSERVATIVE,
                 StrategyType.BALANCED,
-                StrategyType.AGGRESSIVE,
-                StrategyType.MOMENTUM,
-                StrategyType.TREND_FOLLOWING,
-                StrategyType.CONTRARIAN,
-                StrategyType.SCALPING,
-                StrategyType.SWING,
-                # 새로 추가된 전략 포함
-                StrategyType.MEAN_REVERSION,
-                StrategyType.TREND_PULLBACK,
-                StrategyType.VOLATILITY_BREAKOUT,
-                StrategyType.QUALITY_TREND,
-                StrategyType.MULTI_TIMEFRAME,
+                StrategyType.AGGRESSIVE
             ]
         
-        logger.info(f"전략 초기화 시작: {len(strategy_types)}개 전략")
+        logger.info(f"전략 초기화 시작: {len(strategy_types)}개 정적 전략")
         
-        success_count = 0
-        for strategy_type in strategy_types:
-            try:
-                config = STRATEGY_CONFIGS.get(strategy_type)
-                if not config:
-                    logger.warning(f"전략 설정을 찾을 수 없음: {strategy_type}")
-                    continue
-                
-                strategy = StrategyFactory.create_strategy(strategy_type, config)
-                
-                if strategy.initialize():
-                    self.active_strategies[strategy_type] = strategy
-                    success_count += 1
-                    logger.info(f"전략 초기화 성공: {strategy.get_name()}")
-                else:
-                    logger.error(f"전략 초기화 실패: {strategy.get_name()}")
-                
-            except Exception as e:
-                logger.error(f"전략 초기화 실패 {strategy_type}: {e}")
-                continue
+        # 정적 전략 초기화
+        static_success_count = self._initialize_static_strategies(strategy_types)
+        
+        # 동적 전략 초기화
+        dynamic_success_count = 0
+        if self.enable_dynamic_strategies:
+            dynamic_success_count = self._initialize_dynamic_strategies()
         
         # 기본 전략 설정
+        self._set_default_strategies()
+        
+        total_success = static_success_count + dynamic_success_count
+        logger.info(f"전략 초기화 완료: {static_success_count}/{len(strategy_types)} 정적 전략, {dynamic_success_count} 동적 전략")
+        
+        return total_success > 0
+    
+    def _initialize_static_strategies(self, strategy_types: List[StrategyType]) -> int:
+        """정적 전략들을 초기화"""
+        success_count = 0
+        
+        for strategy_type in strategy_types:
+            try:
+                strategy = StrategyFactory.create_static_strategy(strategy_type)
+                
+                if strategy and strategy.initialize():
+                    self.active_strategies[strategy_type] = strategy
+                    success_count += 1
+                    logger.info(f"정적 전략 초기화 성공: {strategy.get_name()}")
+                else:
+                    logger.error(f"정적 전략 초기화 실패: {strategy_type.value}")
+                
+            except Exception as e:
+                logger.error(f"정적 전략 초기화 실패 {strategy_type}: {e}")
+                continue
+        
+        return success_count
+    
+    def _initialize_dynamic_strategies(self) -> int:
+        """동적 전략들을 초기화"""
+        try:
+            dynamic_strategy_definitions = get_all_strategies()
+            success_count = 0
+            
+            for strategy_name in dynamic_strategy_definitions.keys():
+                try:
+                    strategy = StrategyFactory.create_dynamic_strategy(strategy_name)
+                    
+                    if strategy and strategy.initialize():
+                        self.dynamic_strategies[strategy_name] = strategy
+                        success_count += 1
+                        logger.info(f"동적 전략 초기화 성공: {strategy_name}")
+                    else:
+                        logger.error(f"동적 전략 초기화 실패: {strategy_name}")
+                        
+                except Exception as e:
+                    logger.error(f"동적 전략 초기화 실패 {strategy_name}: {e}")
+                    continue
+            
+            return success_count
+            
+        except Exception as e:
+            logger.error(f"동적 전략 초기화 전체 실패: {e}")
+            return 0
+    
+    def _set_default_strategies(self):
+        """기본 전략 설정"""
+        # 기본 정적 전략 설정
         if StrategyType.BALANCED in self.active_strategies:
             self.current_strategy = self.active_strategies[StrategyType.BALANCED]
         elif self.active_strategies:
             self.current_strategy = list(self.active_strategies.values())[0]
         
-        logger.info(f"전략 초기화 완료: {success_count}/{len(strategy_types)} 성공")
-        if self.current_strategy:
-            logger.info(f"기본 전략 설정: {self.current_strategy.get_name()}")
+        # 기본 동적 전략 설정
+        if "dynamic_weight_strategy" in self.dynamic_strategies:
+            self.current_dynamic_strategy = self.dynamic_strategies["dynamic_weight_strategy"]
+        elif self.dynamic_strategies:
+            self.current_dynamic_strategy = list(self.dynamic_strategies.values())[0]
         
-        return success_count > 0
+        if self.current_strategy:
+            logger.info(f"기본 정적 전략 설정: {self.current_strategy.get_name()}")
+        if self.current_dynamic_strategy:
+            logger.info(f"기본 동적 전략 설정: {self.current_dynamic_strategy.strategy_name}")
     
-    def switch_strategy(self, strategy_type: StrategyType) -> bool:
-        """전략을 교체합니다."""
-        if strategy_type not in self.active_strategies:
-            logger.warning(f"활성화되지 않은 전략: {strategy_type}")
+    def add_strategy(self, strategy_type: Union[StrategyType, str], strategy: Optional[BaseStrategy] = None) -> bool:
+        """전략 추가"""
+        if strategy is None:
+            # 전략 타입에 따라 자동 생성
+            if isinstance(strategy_type, StrategyType):
+                strategy = StrategyFactory.create_static_strategy(strategy_type)
+            elif isinstance(strategy_type, str):
+                strategy = StrategyFactory.create_dynamic_strategy(strategy_type)
+            else:
+                logger.error(f"지원되지 않는 전략 타입: {strategy_type}")
+                return False
+        
+        if not strategy or not strategy.initialize():
+            logger.error(f"전략 초기화 실패: {strategy_type}")
             return False
         
-        old_strategy = self.current_strategy.get_name() if self.current_strategy else "None"
-        self.current_strategy = self.active_strategies[strategy_type]
-        self.current_mix_config = None  # 단일 전략 모드
+        # 전략 저장
+        if isinstance(strategy_type, StrategyType):
+            self.active_strategies[strategy_type] = strategy
+        else:
+            self.dynamic_strategies[strategy_type] = strategy
         
-        logger.info(f"전략 교체: {old_strategy} -> {self.current_strategy.get_name()}")
+        logger.info(f"전략 추가 성공: {strategy.get_name() if hasattr(strategy, 'get_name') else strategy_type}")
         return True
     
-    def set_strategy_mix(self, mix_name: str = None, custom_mix: StrategyMixConfig = None) -> bool:
-        """전략 조합을 설정합니다."""
-        mix_config = None
-        
-        if custom_mix:
-            mix_config = custom_mix
-        elif mix_name and mix_name in STRATEGY_MIXES:
-            mix_config = STRATEGY_MIXES[mix_name]
-        else:
-            logger.warning(f"알 수 없는 전략 조합: {mix_name}")
+    def switch_strategy(self, strategy_type: StrategyType) -> bool:
+        """정적 전략 교체"""
+        if strategy_type not in self.active_strategies:
+            logger.warning(f"전략이 로드되지 않음: {strategy_type}")
             return False
         
-        # 필요한 전략들이 활성화되어 있는지 확인
-        missing_strategies = []
-        for strategy_type in mix_config.strategies.keys():
-            if strategy_type not in self.active_strategies:
-                missing_strategies.append(strategy_type)
+        self.current_strategy = self.active_strategies[strategy_type]
+        self.current_dynamic_strategy = None  # 동적 전략 비활성화
+        self.current_mix_config = None  # 조합 모드 비활성화
         
-        if missing_strategies:
-            logger.warning(f"전략 조합에 필요한 전략이 비활성화됨: {missing_strategies}")
+        logger.info(f"전략 교체 완료: {self.current_strategy.get_name()}")
+        return True
+    
+    def switch_to_dynamic_strategy(self, strategy_name: str) -> bool:
+        """동적 전략으로 교체"""
+        if strategy_name not in self.dynamic_strategies:
+            logger.warning(f"동적 전략이 로드되지 않음: {strategy_name}")
             return False
         
-        self.current_mix_config = mix_config
-        self.current_strategy = None  # 조합 모드
+        self.current_dynamic_strategy = self.dynamic_strategies[strategy_name]
+        self.current_strategy = None  # 정적 전략 비활성화
+        self.current_mix_config = None  # 조합 모드 비활성화
         
-        logger.info(f"전략 조합 설정: {mix_name or 'custom'}")
+        logger.info(f"동적 전략 교체 완료: {strategy_name}")
         return True
     
     def analyze_with_current_strategy(self, 
@@ -159,41 +235,51 @@ class StrategyManager:
         if self.auto_strategy_selection:
             self._auto_select_strategy(market_trend, df_with_indicators)
         
-        # 단일 전략 모드
-        if self.current_strategy and not self.current_mix_config:
-            return self.current_strategy.analyze(
+        # 전략 실행 우선순위: 동적 -> 조합 -> 정적
+        if self.current_dynamic_strategy:
+            return self.current_dynamic_strategy.analyze(
                 df_with_indicators, ticker, market_trend, long_term_trend, daily_extra_indicators
             )
-        
-        # 전략 조합 모드
         elif self.current_mix_config:
             return self._analyze_with_strategy_mix(
                 df_with_indicators, ticker, market_trend, long_term_trend, daily_extra_indicators
             )
-        
+        elif self.current_strategy:
+            return self.current_strategy.analyze(
+                df_with_indicators, ticker, market_trend, long_term_trend, daily_extra_indicators
+            )
         else:
             raise RuntimeError("활성화된 전략이 없습니다.")
     
-    def analyze_with_all_strategies(self, 
-                                  df_with_indicators: pd.DataFrame,
-                                  ticker: str,
-                                  market_trend: TrendType = TrendType.NEUTRAL,
-                                  long_term_trend: TrendType = TrendType.NEUTRAL,
-                                  daily_extra_indicators: Dict = None) -> Dict[StrategyType, StrategyResult]:
-        """모든 활성화된 전략으로 분석합니다."""
-        results = {}
+    def get_available_strategies(self) -> List[Dict[str, Any]]:
+        """사용 가능한 전략 목록을 반환합니다."""
+        strategies = []
         
+        # 정적 전략
         for strategy_type, strategy in self.active_strategies.items():
-            try:
-                result = strategy.analyze(
-                    df_with_indicators, ticker, market_trend, long_term_trend, daily_extra_indicators
-                )
-                results[strategy_type] = result
-            except Exception as e:
-                logger.error(f"전략 분석 실패 {strategy.get_name()}: {e}")
-                continue
+            strategies.append({
+                "type": strategy_type.value,
+                "name": strategy.get_name(),
+                "description": strategy.config.description,
+                "threshold": strategy.config.signal_threshold,
+                "risk_per_trade": strategy.config.risk_per_trade,
+                "is_current": strategy == self.current_strategy,
+                "strategy_class": "static"
+            })
         
-        return results
+        # 동적 전략
+        for strategy_name, strategy in self.dynamic_strategies.items():
+            strategies.append({
+                "type": "DYNAMIC",
+                "name": strategy_name,
+                "description": strategy.strategy_config.get("description", "Dynamic strategy"),
+                "threshold": strategy.strategy_config.get("signal_threshold", 0),
+                "risk_per_trade": strategy.strategy_config.get("risk_per_trade", 0),
+                "is_current": strategy == self.current_dynamic_strategy,
+                "strategy_class": "dynamic"
+            })
+            
+        return strategies
     
     def _analyze_with_strategy_mix(self, 
                                  df_with_indicators: pd.DataFrame,
@@ -434,18 +520,55 @@ class StrategyManager:
         self.auto_strategy_selection = enable
         logger.info(f"자동 전략 선택: {'활성화' if enable else '비활성화'}")
     
-    def get_available_strategies(self) -> List[Dict[str, Any]]:
-        """사용 가능한 전략 목록을 반환합니다."""
-        strategies = []
+    def get_dynamic_strategy_info(self, strategy_name: str = None) -> Dict[str, Any]:
+        """동적 전략 정보를 반환합니다."""
+        if strategy_name:
+            strategy = self.dynamic_strategies.get(strategy_name)
+            if not strategy:
+                return {"error": f"Dynamic strategy not found: {strategy_name}"}
+        else:
+            strategy = self.current_dynamic_strategy
+            if not strategy:
+                return {"error": "No current dynamic strategy"}
         
-        for strategy_type, strategy in self.active_strategies.items():
-            strategies.append({
-                "type": strategy_type.value,
-                "name": strategy.get_name(),
-                "description": strategy.config.description,
-                "threshold": strategy.config.signal_threshold,
-                "risk_per_trade": strategy.config.risk_per_trade,
-                "is_current": strategy == self.current_strategy
-            })
+        info = {
+            "strategy_name": strategy.strategy_name,
+            "description": strategy.strategy_config.get("description", ""),
+            "signal_threshold": strategy.strategy_config.get("signal_threshold", 0),
+            "risk_per_trade": strategy.strategy_config.get("risk_per_trade", 0),
+            "detectors": strategy.strategy_config.get("detectors", {}),
+            "modifiers": strategy.strategy_config.get("modifiers", []),
+            "modifier_count": len(strategy.modifier_engine.modifiers) if strategy.modifier_engine else 0,
+            "is_current": strategy == self.current_dynamic_strategy
+        }
         
-        return strategies 
+        # 마지막 분석 결과가 있으면 추가
+        if strategy.last_context:
+            info["last_analysis"] = strategy.get_context_summary()
+            
+        return info
+    
+    def get_dynamic_strategy_detailed_log(self, strategy_name: str = None) -> List[Dict[str, Any]]:
+        """동적 전략의 상세 분석 로그를 반환합니다."""
+        if strategy_name:
+            strategy = self.dynamic_strategies.get(strategy_name)
+        else:
+            strategy = self.current_dynamic_strategy
+            
+        if not strategy:
+            return []
+            
+        return strategy.get_detailed_log()
+    
+    def list_dynamic_strategies(self) -> List[str]:
+        """사용 가능한 동적 전략 목록을 반환합니다."""
+        return list(self.dynamic_strategies.keys())
+    
+    def enable_dynamic_strategies(self, enable: bool = True):
+        """동적 전략 시스템 활성화/비활성화"""
+        self.enable_dynamic_strategies = enable
+        logger.info(f"동적 전략 시스템: {'활성화' if enable else '비활성화'}")
+        
+        if enable and not self.dynamic_strategies:
+            # 동적 전략이 없으면 초기화 시도
+            self._initialize_dynamic_strategies() 

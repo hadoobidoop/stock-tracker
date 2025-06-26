@@ -5,8 +5,10 @@ from infrastructure.scheduler.jobs import update_stock_metadata_job
 from infrastructure.scheduler.scheduler_manager import setup_scheduler, start_scheduler
 
 # --- 새로운 전략 시스템 추가 ---
-from domain.analysis.service.signal_detection_service import EnhancedSignalDetectionService
-from domain.analysis.config.strategy_settings import StrategyType, STRATEGY_CONFIGS
+from domain.analysis.service.signal_detection_service import SignalDetectionService
+from domain.analysis.config.static_strategies import StrategyType, STRATEGY_CONFIGS
+from domain.analysis.utils.strategy_selector import strategy_selector, list_all_strategies
+from common.config.settings import StrategyMode
 import argparse
 import sys
 
@@ -15,20 +17,28 @@ setup_logging()
 logger = get_logger(__name__)
 
 # 전역 전략 서비스 인스턴스 (스케줄러 작업에서 사용)
-strategy_service: EnhancedSignalDetectionService = None
+strategy_service: SignalDetectionService = None
 
 def parse_arguments():
     """명령행 인수 파싱"""
     parser = argparse.ArgumentParser(description='Stock Analyzer Bot with Strategy Selection')
     
+    # 동적으로 사용 가능한 전략 목록 가져오기
+    try:
+        from common.config.settings import get_available_static_strategies
+        available_strategies = [st.lower() for st in get_available_static_strategies()]
+    except ImportError:
+        # 폴백: 기본 전략들
+        available_strategies = ['conservative', 'balanced', 'aggressive']
+    
     parser.add_argument('--strategy', 
-                       choices=[st.value for st in StrategyType], 
-                       default=StrategyType.MOMENTUM.value,
+                       choices=available_strategies,
+                       default='momentum',
                        help='기본 사용할 전략 (기본값: momentum)')
     
     parser.add_argument('--strategy-mix', 
                        choices=['balanced_mix', 'conservative_mix', 'aggressive_mix'],
-                       help='전략 조합 사용 (단일 전략 대신 조합 사용)')
+                       help='Static Strategy Mix 사용 (단일 전략 대신 조합 사용)')
     
     parser.add_argument('--auto-strategy', 
                        action='store_true',
@@ -46,21 +56,44 @@ def parse_arguments():
 
 def list_available_strategies():
     """사용 가능한 전략 목록 출력"""
-    print("\n🎯 사용 가능한 전략 목록:")
-    print("="*60)
+    print("\n🎯 전체 사용 가능한 전략 목록:")
+    print("="*80)
     
-    for strategy_type, config in STRATEGY_CONFIGS.items():
-        print(f"\n전략 타입: {strategy_type.value}")
-        print(f"이름: {config.name}")
-        print(f"설명: {config.description}")
-        print(f"임계값: {config.signal_threshold}")
-        print(f"리스크: {config.risk_per_trade * 100:.1f}%")
-        print("-" * 40)
+    strategies = list_all_strategies()
     
-    print("\n🔀 사용 가능한 전략 조합:")
-    print("- balanced_mix: 균형잡힌 조합 (balanced + momentum + trend_following)")
-    print("- conservative_mix: 보수적 조합 (conservative + trend_following + swing)")
-    print("- aggressive_mix: 공격적 조합 (aggressive + momentum + scalping)")
+    # 정적 전략
+    print("\n📊 정적 전략 (Static Strategies):")
+    print("-" * 60)
+    for strategy in strategies["static_strategies"]:
+        print(f"• {strategy['name']}: {strategy['display_name']}")
+        print(f"  📝 {strategy['description']}")
+        print(f"  ⚡ 임계값: {strategy['signal_threshold']}, 💰 리스크: {strategy['risk_per_trade']*100:.1f}%")
+        print()
+    
+    # 동적 전략
+    print("\n🧠 동적 전략 (Dynamic Strategies):")
+    print("-" * 60)
+    for strategy in strategies["dynamic_strategies"]:
+        print(f"• {strategy['name']}: {strategy['display_name']}")
+        print(f"  📝 {strategy['description']}")
+        print(f"  ⚡ 임계값: {strategy['signal_threshold']}, 💰 리스크: {strategy['risk_per_trade']*100:.1f}%")
+        print(f"  🔧 모디파이어: {strategy['modifiers_count']}개")
+        print()
+    
+    # Static Strategy Mix
+    print("\n🔀 Static Strategy Mix:")
+    print("-" * 60)
+    for strategy in strategies["static_mix"]:
+        print(f"• {strategy['name']}: {strategy['display_name']}")
+        print(f"  📝 {strategy['description']}")
+        print()
+    
+    # 환경변수 설정 안내
+    print("\n⚙️ 환경변수로 기본 전략 설정:")
+    print("export STRATEGY_MODE=dynamic          # 기본 모드: static, dynamic, static_mix")
+    print("export STATIC_STRATEGY=BALANCED       # 정적 전략 기본값")
+    print("export DYNAMIC_STRATEGY=dynamic_weight_strategy  # 동적 전략 기본값") 
+    print("export STRATEGY_MIX=balanced_mix      # Static Strategy Mix 기본값")
 
 def initialize_strategy_system(args) -> bool:
     """전략 시스템 초기화"""
@@ -70,7 +103,7 @@ def initialize_strategy_system(args) -> bool:
     
     try:
         # 전략 서비스 생성
-        strategy_service = EnhancedSignalDetectionService()
+        strategy_service = SignalDetectionService()
         
         # 파일에서 전략 설정 로드 (우선순위)
         if args.load_strategies:
@@ -87,13 +120,13 @@ def initialize_strategy_system(args) -> bool:
                 logger.error("전략 시스템 초기화 실패")
                 return False
         
-        # 전략 조합 설정 (우선순위)
+        # Static Strategy Mix 설정 (우선순위)
         if args.strategy_mix:
-            logger.info(f"전략 조합 설정: {args.strategy_mix}")
+            logger.info(f"Static Strategy Mix 설정: {args.strategy_mix}")
             if strategy_service.set_strategy_mix(args.strategy_mix):
-                logger.info(f"전략 조합 '{args.strategy_mix}' 설정 완료")
+                logger.info(f"Static Strategy Mix '{args.strategy_mix}' 설정 완료")
             else:
-                logger.error(f"전략 조합 '{args.strategy_mix}' 설정 실패")
+                logger.error(f"Static Strategy Mix '{args.strategy_mix}' 설정 실패")
                 return False
                 
         # 단일 전략 설정
@@ -125,7 +158,7 @@ def initialize_strategy_system(args) -> bool:
         logger.error(f"전략 시스템 초기화 실패: {e}")
         return False
 
-def get_strategy_service() -> EnhancedSignalDetectionService:
+def get_strategy_service() -> SignalDetectionService:
     """전역 전략 서비스 인스턴스 반환 (스케줄러 작업에서 사용)"""
     return strategy_service
 

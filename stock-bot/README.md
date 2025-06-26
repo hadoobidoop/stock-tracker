@@ -2,11 +2,34 @@
 
 주식 기술적 분석 및 자동 신호 감지를 위한 고급 전략 시스템
 
-## 🎯 새로운 전략 시스템 특징
+## 🎯 통합 전략 시스템 특징
+
+### 3가지 전략 모드 [Stock Bot 프로젝트에는 3가지 전략 시스템이 있습니다: 1) Static Strategy (정적 전략) - 고정된 규칙으로 거래 (CONSERVATIVE, BALANCED, AGGRESSIVE), 2) Dynamic Strategy (동적 전략) - 시장 상황에 따라 가중치가 실시간 변경되는 지능형 전략 (VIX, Fear&Greed 지수 기반), 3) Static Strategy Mix (정적 전략 조합) - 여러 정적 전략을 동시에 실행하여 투표/앙상블 방식으로 결정 (balanced_mix, conservative_mix, aggressive_mix). "레거시"는 "Static Strategy Mix"로 용어 변경됨.][[memory:729585415608458330]]
+
+1. **정적 전략 (Static Strategy)**: 고정된 규칙으로 거래
+   - 14가지 전략 지원 (CONSERVATIVE, BALANCED, AGGRESSIVE + 11가지 확장 전략)
+   - 각 전략마다 고유한 리스크 프로파일과 지표 조합
+   - 예측 가능하고 안정적인 성능
+
+2. **동적 전략 (Dynamic Strategy)**: 시장 상황에 따라 가중치가 실시간 변경
+   - VIX, Fear&Greed 지수 등 거시 지표 기반
+   - 10개의 스마트 모디파이어로 전략 자동 조정
+   - 시장 변동성에 따른 적응형 리스크 관리
+
+3. **Static Strategy Mix**: 여러 정적 전략을 동시에 실행하여 투표/앙상블 방식으로 결정
+   - balanced_mix, conservative_mix, aggressive_mix 제공
+   - 앙상블 학습 기법으로 단일 전략 한계 극복
+   - 다중 전략 합의를 통한 신뢰성 높은 신호
+
+### 전략 선택 시스템
+- **환경변수 기반 설정**: 런타임에 전략 모드와 전략 선택 가능
+- **자동 폴백**: 동적 전략 실패 시 정적 전략으로 자동 전환
+- **Hot-swapping**: 실행 중 전략 변경 지원
+- **설정 유연성**: 백테스팅과 실시간 작업에서 각각 다른 전략 사용 가능
 
 ### Multi-Strategy Support
 - **동적 전략 교체**: 런타임에 전략을 바꿀 수 있는 "Hot-swapping" 지원
-- **전략 조합**: 여러 전략을 조합하여 앙상블 방식으로 분석
+- **Static Strategy Mix**: 여러 정적 전략을 조합하여 앙상블 방식으로 분석
 - **자동 전략 선택**: 시장 상황에 따라 최적 전략 자동 선택
 - **지표 프리컴퓨팅**: 모든 기술적 지표를 미리 계산하여 성능 최적화
 - **복합 감지기 설정**: 여러 감지기를 조합하여 더 강력한 신호 생성
@@ -107,7 +130,62 @@
 - **보유 기간**: 2일 (48시간)
 - **최대 포지션**: 4개
 
-### 9. MACRO_DRIVEN (거시지표 기반 전략) 🆕
+### 9. MEAN_REVERSION (평균 회귀 전략) 🆕
+- **목표**: 과매수/과매도 후 평균으로 회귀하는 경향 활용
+- **특징**:
+  - 볼린저 밴드 기반 평균 회귀 신호
+  - RSI, 스토캐스틱으로 과매수/과매도 확인
+  - 횡보장에서 효과적
+  - 낮은 리스크 (1.5%)
+- **적합한 투자자**: 레인지 바운드 시장에서 투자하는 투자자
+- **보유 기간**: 1일 (24시간)
+- **최대 포지션**: 4개
+
+### 10. TREND_PULLBACK (추세 추종 눌림목 전략) 🆕
+- **목표**: 상승 추세 중 일시적 하락(눌림목) 시 매수
+- **특징**:
+  - 장기 추세 확인 후 단기 눌림목 포착
+  - SMA, ADX로 추세 강도 확인
+  - RSI로 눌림목 타이밍 포착
+  - 중간 리스크 (2%)
+- **적합한 투자자**: 추세 지속을 믿는 중기 투자자
+- **보유 기간**: 3일 (72시간)
+- **최대 포지션**: 4개
+
+### 11. VOLATILITY_BREAKOUT (변동성 돌파 전략) 🆕
+- **목표**: 변동성 응축 후 폭발하는 시점 포착
+- **특징**:
+  - 볼린저 밴드 돌파 신호
+  - ADX로 추세 강도 확인
+  - 거래량 증가 확인 필수
+  - 높은 리스크 (2.5%)
+- **적합한 투자자**: 변동성 증가를 활용하려는 투자자
+- **보유 기간**: 2일 (48시간)
+- **최대 포지션**: 3개
+
+### 12. QUALITY_TREND (고신뢰도 복합 추세 전략) 🆕
+- **목표**: 여러 추세 지표가 모두 동의할 때만 진입
+- **특징**:
+  - SMA + MACD + ADX 모든 지표 합의 필요
+  - 매우 높은 신호 임계값 (10.0)
+  - 추세 일치와 강도 모두 확인
+  - 매우 낮은 리스크 (1%)
+- **적합한 투자자**: 확실한 기회만 잡으려는 보수적 투자자
+- **보유 기간**: 5일 (120시간)
+- **최대 포지션**: 2개
+
+### 13. MULTI_TIMEFRAME (다중 시간대 확인 전략) 🆕
+- **목표**: 장기 추세(일봉)와 단기(시간봉) 진입 신호 함께 확인
+- **특징**:
+  - 다중 시간대 분석
+  - MACD, 스토캐스틱, RSI 조합
+  - 시간대별 추세 일치 확인
+  - 중간 리스크 (2%)
+- **적합한 투자자**: 정교한 타이밍을 중시하는 투자자
+- **보유 기간**: 4일 (96시간)
+- **최대 포지션**: 3개
+
+### 14. MACRO_DRIVEN (거시지표 기반 전략) 🆕
 - **목표**: VIX와 버핏지수 등 거시경제 지표를 활용한 시장 타이밍
 - **특징**:
   - VIX(공포지수) 기반 시장 심리 분석
@@ -124,11 +202,60 @@
   - 버핏지수 > 120%: 고평가, 매수 신호 30% 감소
   - 버핏지수 < 80%: 저평가, 매수 신호 20% 증가
 
-### 전략 조합 모드
+### Static Strategy Mix 모드
 - **SINGLE**: 단일 전략 사용
 - **WEIGHTED**: 가중 평균 조합
 - **VOTING**: 투표 방식 조합
 - **ENSEMBLE**: 앙상블 방식 조합
+
+## ⚙️ 전략 설정 및 선택
+
+### 환경변수로 기본 전략 설정
+
+시스템 기본 전략을 환경변수로 설정할 수 있습니다:
+
+```bash
+# 기본 전략 모드 설정 (디폴트: dynamic)
+export STRATEGY_MODE=dynamic          # static, dynamic, static_mix 중 선택
+
+# 정적 전략 기본값 설정
+export STATIC_STRATEGY=BALANCED       # 정적 전략 사용 시 기본값
+
+# 동적 전략 기본값 설정  
+export DYNAMIC_STRATEGY=dynamic_weight_strategy  # 동적 전략 사용 시 기본값
+
+# Static Strategy Mix 기본값 설정
+export STRATEGY_MIX=balanced_mix      # Static Strategy Mix 사용 시 기본값
+
+# 폴백 전략 활성화/비활성화
+export STRATEGY_FALLBACK=true         # 동적 전략 실패 시 정적 전략으로 폴백
+```
+
+### 사용 가능한 전략 확인
+
+```bash
+# 모든 전략 목록 확인
+python main.py --list-strategies
+```
+
+출력 예시:
+```
+📊 정적 전략 (Static Strategies):
+• conservative: 보수적 전략 (임계값: 12.0, 리스크: 1.0%)
+• balanced: 균형잡힌 전략 (임계값: 8.0, 리스크: 2.0%)
+• aggressive: 공격적 전략 (임계값: 5.0, 리스크: 3.0%)
+• momentum: 모멘텀 전략 (임계값: 6.0, 리스크: 2.5%)
+... (11가지 확장 전략)
+
+🧠 동적 전략 (Dynamic Strategies):
+• dynamic_weight_strategy: Dynamic Weight Strategy
+  (임계값: 8.0, 리스크: 2.0%, 모디파이어: 10개)
+• conservative_dynamic_strategy: Conservative Dynamic Strategy
+• aggressive_dynamic_strategy: Aggressive Dynamic Strategy
+
+🔀 Static Strategy Mix:
+• balanced_mix, conservative_mix, aggressive_mix
+```
 
 ## 🚀 사용법
 
@@ -213,11 +340,11 @@ service.configure_composite_detectors(composite_config)
 ### 프로그래밍 방식 사용
 
 ```python
-from domain.analysis.service.signal_detection_service import EnhancedSignalDetectionService
+from domain.analysis.service.signal_detection_service import SignalDetectionService
 from domain.analysis.config.strategy_settings import StrategyType
 
 # 서비스 초기화
-service = EnhancedSignalDetectionService()
+service = SignalDetectionService()
 service.initialize()
 
 # 특정 전략으로 분석
@@ -457,7 +584,7 @@ Yahoo ^W5000:    214.8% (실시간 추정)
 ### 1. 실시간 신호 감지 잡 (realtime_signal_detection_job.py)
 - **실행 주기**: 시장 시간 중 매시간 (9시-16시)
 - **주요 기능**:
-  - 새로운 전략 시스템 통합 (EnhancedSignalDetectionService)
+  - 동적 전략 시스템 통합 (SignalDetectionService)
   - 다중 시간대 분석 (일봉 + 시간봉)
   - 지표 프리컴퓨팅 및 캐싱
   - 피보나치 레벨 계산
@@ -565,7 +692,7 @@ SCHEDULER_SETTINGS = {
 - **StrategyManager**: 전략 관리 및 교체
 - **BaseStrategy**: 전략 추상화 기반 클래스
 - **StrategyFactory**: 전략 인스턴스 생성
-- **EnhancedSignalDetectionService**: 통합 신호 감지 서비스
+- **SignalDetectionService**: 통합 신호 감지 서비스
 - **CompositeDetectorManager**: 복합 감지기 관리 및 설정
 - **SchedulerManager**: 배치 잡 스케줄링 및 관리
 - **MarketDataService**: 시장 데이터 수집 및 관리 🆕

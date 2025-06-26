@@ -9,7 +9,7 @@ from domain.stock.repository.stock_repository import StockRepository
 from infrastructure.db.repository.sql_stock_repository import SQLStockRepository
 
 # 새로운 전략 시스템 import
-from domain.analysis.config.strategy_settings import StrategyType, STRATEGY_CONFIGS
+from domain.analysis.config.static_strategies import StrategyType, STRATEGY_CONFIGS
 
 from ..engine.backtesting_engine import BacktestingEngine
 from ..models.backtest_result import BacktestResult

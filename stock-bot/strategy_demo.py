@@ -20,7 +20,7 @@ project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 from infrastructure.logging import setup_logging, get_logger
-from domain.analysis.service.signal_detection_service import EnhancedSignalDetectionService
+from domain.analysis.service.signal_detection_service import SignalDetectionService
 from domain.analysis.config.strategy_settings import StrategyType
 from infrastructure.db.models.enums import TrendType
 
@@ -62,7 +62,7 @@ def demo_strategy_switching():
     print("="*60)
     
     # 서비스 초기화
-    service = EnhancedSignalDetectionService()
+    service = SignalDetectionService()
     
     # 특정 전략들만 로드 (빠른 데모를 위해)
     strategy_types = [
@@ -107,7 +107,7 @@ def demo_strategy_mix():
     print("🎯 전략 조합 데모")
     print("="*60)
     
-    service = EnhancedSignalDetectionService()
+    service = SignalDetectionService()
     
     if not service.initialize():
         print("❌ 서비스 초기화 실패")
@@ -141,7 +141,7 @@ def demo_all_strategies_analysis():
     print("📊 모든 전략 동시 분석 데모")
     print("="*60)
     
-    service = EnhancedSignalDetectionService()
+    service = SignalDetectionService()
     
     if not service.initialize():
         print("❌ 서비스 초기화 실패")
@@ -182,7 +182,7 @@ def demo_indicator_precomputing():
     print("⚡ 지표 프리컴퓨팅 데모")
     print("="*60)
     
-    service = EnhancedSignalDetectionService()
+    service = SignalDetectionService()
     
     if not service.initialize([StrategyType.BALANCED]):
         print("❌ 서비스 초기화 실패")
@@ -228,7 +228,7 @@ def demo_auto_strategy_selection():
     print("🤖 자동 전략 선택 데모")
     print("="*60)
     
-    service = EnhancedSignalDetectionService()
+    service = SignalDetectionService()
     
     if not service.initialize():
         print("❌ 서비스 초기화 실패")
@@ -271,7 +271,7 @@ def demo_performance_monitoring():
     print("📊 성능 모니터링 데모")
     print("="*60)
     
-    service = EnhancedSignalDetectionService()
+    service = SignalDetectionService()
     
     if not service.initialize():
         print("❌ 서비스 초기화 실패")
@@ -329,10 +329,10 @@ def main():
         print("="*60)
         
         print("\n💡 사용법 요약:")
-        print("1. service = EnhancedSignalDetectionService()")
+        print("1. service = SignalDetectionService()")
         print("2. service.initialize()  # 모든 전략 로드")
         print("3. service.switch_strategy(StrategyType.AGGRESSIVE)  # 전략 교체")
-        print("4. service.set_strategy_mix('balanced_mix')  # 전략 조합")
+        print("4. service.set_strategy_mix('balanced_mix')  # Static Strategy Mix")
         print("5. service.analyze_all_strategies(df, ticker)  # 모든 전략 분석")
         print("6. service.precompute_indicators_for_ticker(ticker, df)  # 지표 캐시")
         
