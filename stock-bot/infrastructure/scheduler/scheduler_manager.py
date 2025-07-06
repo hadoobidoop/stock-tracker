@@ -3,7 +3,13 @@ from apscheduler.triggers.cron import CronTrigger
 import pytz
 
 from infrastructure.logging import get_logger
-from infrastructure.scheduler.jobs import realtime_signal_detection_job, update_stock_metadata_job, daily_ohlcv_update_job, hourly_ohlcv_update_job
+from infrastructure.scheduler.jobs import (
+    realtime_signal_detection_job,
+    update_stock_metadata_job,
+    daily_ohlcv_update_job,
+    hourly_ohlcv_update_job,
+    market_data_update_job
+)
 from infrastructure.scheduler import settings
 
 logger = get_logger(__name__)
@@ -44,6 +50,14 @@ def setup_scheduler():
         trigger=CronTrigger(**settings.HOURLY_OHLCV_UPDATE_JOB['cron']),
         id=settings.HOURLY_OHLCV_UPDATE_JOB['id'],
         name=settings.HOURLY_OHLCV_UPDATE_JOB['name']
+    )
+
+    # 작업 5: 시장 데이터 업데이트
+    scheduler.add_job(
+        market_data_update_job,
+        trigger=CronTrigger(**settings.MARKET_DATA_UPDATE_JOB['cron']),
+        id=settings.MARKET_DATA_UPDATE_JOB['id'],
+        name=settings.MARKET_DATA_UPDATE_JOB['name']
     )
 
     return scheduler
