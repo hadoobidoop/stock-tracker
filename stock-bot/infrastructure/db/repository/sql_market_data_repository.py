@@ -14,8 +14,35 @@ from infrastructure.logging import get_logger
 logger = get_logger(__name__)
 
 
-class SQLMarketDataRepository:
+from domain.analysis.repository.analysis_repository import MarketDataRepository
+
+class SQLMarketDataRepository(MarketDataRepository):
     """시장 데이터 SQL 레포지토리"""
+
+    def get_all_market_data_in_range(self, start_date: date, end_date: date) -> Dict[date, Dict[str, Any]]:
+        """
+        지정된 기간 내의 모든 일별 시장 지표를 가져옵니다.
+        """
+        try:
+            with get_db() as session:
+                records = session.query(MarketData).filter(
+                    and_(
+                        MarketData.date >= start_date,
+                        MarketData.date <= end_date
+                    )
+                ).order_by(MarketData.date).all()
+
+                data_by_date = {}
+                for record in records:
+                    day = record.date
+                    if day not in data_by_date:
+                        data_by_date[day] = {}
+                    data_by_date[day][record.indicator_type.value.lower()] = record.value
+                
+                return data_by_date
+        except Exception as e:
+            logger.error(f"Error getting all market data in range: {e}", exc_info=True)
+            return {}
 
     def save_market_data(self, indicator_type: MarketIndicatorType, data_date: date, 
                         value: float, additional_data: str = None) -> bool:
@@ -214,6 +241,31 @@ class SQLMarketDataRepository:
         except Exception as e:
             logger.error(f"Error getting market data by date range: {e}", exc_info=True)
             return []
+
+    def get_market_data_by_date_with_forward_fill(self, indicator_type: MarketIndicatorType,
+                                                  target_date: date) -> Optional[MarketData]:
+        """
+        특정 날짜의 데이터를 가져오되, 데이터가 없으면 그 이전 가장 최신 데이터를 가져옵니다 (Forward Fill).
+        백테스팅 시점에 특정 날짜의 데이터가 없는 경우를 처리하기 위해 사용됩니다.
+
+        Args:
+            indicator_type: 지표 타입
+            target_date: 대상 날짜
+
+        Returns:
+            MarketData 또는 None
+        """
+        try:
+            with get_db() as session:
+                return session.query(MarketData).filter(
+                    and_(
+                        MarketData.indicator_type == indicator_type,
+                        MarketData.date <= target_date
+                    )
+                ).order_by(desc(MarketData.date)).first()
+        except Exception as e:
+            logger.error(f"Error getting market data with forward fill: {e}", exc_info=True)
+            return None
 
     def get_all_indicators_for_date(self, target_date: date) -> List[MarketData]:
         """

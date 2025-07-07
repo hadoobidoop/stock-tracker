@@ -90,9 +90,18 @@ def parse_arguments():
         
     except ImportError:
         # 폴백: 기본 전략들
-        available_static = ['CONSERVATIVE', 'BALANCED', 'AGGRESSIVE']
-        available_dynamic = ['dynamic_weight_strategy']
-        available_mix = ['balanced_mix', 'conservative_mix', 'aggressive_mix']
+        def get_available_static_strategies():
+            return ['CONSERVATIVE', 'BALANCED', 'AGGRESSIVE']
+        
+        def get_available_dynamic_strategies():
+            return ['dynamic_weight_strategy']
+            
+        def get_available_strategy_mix():
+            return ['balanced_mix', 'conservative_mix', 'aggressive_mix']
+
+        available_static = get_available_static_strategies()
+        available_dynamic = get_available_dynamic_strategies()
+        available_mix = get_available_strategy_mix()
     
     # 정적 전략 관련 인수들
     parser.add_argument('--strategy', 
@@ -286,8 +295,11 @@ def print_backtest_summary(result, title):
     
     # 전략 정보 출력
     strategy_info = result.backtest_settings
-    if strategy_info.get('strategy_type'):
-        print(f"사용 전략: {strategy_info['strategy_type']}")
+    if strategy_info.get('dynamic_strategy_name'):
+        print(f"사용 동적 전략: {strategy_info['dynamic_strategy_name']}")
+    elif strategy_info.get('strategy_type'):
+        print(f"사용 정적 전략: {strategy_info['strategy_type']}")
+    
     if strategy_info.get('strategy_mix'):
         print(f"전략 조합: {strategy_info['strategy_mix']}")
     if strategy_info.get('auto_strategy_selection'):
@@ -640,16 +652,15 @@ def run_dynamic_strategy_backtest(service: BacktestingService, args):
     end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
     
     # 동적 전략을 위한 특별한 백테스트 실행
-    # 임시로 기존 백테스트를 사용하고, 나중에 동적 전략 엔진 구현
-    result = service.run_strategy_backtest(
+    result = service.run_dynamic_strategy_backtest(
         tickers=args.tickers,
         start_date=start_date,
         end_date=end_date,
+        dynamic_strategy_name=args.dynamic_strategy,
         initial_capital=args.initial_capital,
         commission_rate=args.commission_rate,
         risk_per_trade=args.risk_per_trade,
-        data_interval=args.data_interval,
-        use_enhanced_signals=True
+        data_interval=args.data_interval
     )
     
     # 결과 출력
@@ -690,16 +701,16 @@ def run_dynamic_strategy_comparison(service: BacktestingService, args):
         logger.info(f"동적 전략 테스트 중: {strategy_name}")
         
         try:
-            # 임시로 기존 백테스트를 사용 (나중에 실제 동적 전략 엔진으로 교체)
-            result = service.run_strategy_backtest(
+            # 수정된 부분: 각 동적 전략의 이름을 전달하여 백테스트 실행
+            result = service.run_dynamic_strategy_backtest(
                 tickers=args.tickers,
                 start_date=start_date,
                 end_date=end_date,
+                dynamic_strategy_name=strategy_name,  # 이 부분이 핵심
                 initial_capital=args.initial_capital,
                 commission_rate=args.commission_rate,
                 risk_per_trade=args.risk_per_trade,
-                data_interval=args.data_interval,
-                use_enhanced_signals=True
+                data_interval=args.data_interval
             )
             
             results[strategy_name] = result

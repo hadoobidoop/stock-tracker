@@ -3,7 +3,6 @@ from typing import List, Optional, Dict, Tuple
 import pandas as pd
 
 from domain.stock.models.stock_metadata import StockMetadata
-from domain.stock.models.stock_ohlcv import StockOhlcv
 
 
 

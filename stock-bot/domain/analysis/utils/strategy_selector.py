@@ -4,7 +4,7 @@
 설정 기반으로 정적/동적/Static Strategy Mix 전략을 유연하게 선택하고 관리
 """
 
-from typing import Dict, Any, Optional, List, Union
+from typing import Dict, Any, Optional, List, Union, Callable
 from enum import Enum
 import os
 from functools import lru_cache
@@ -244,7 +244,7 @@ class StrategySelector:
         """이름으로 전략 조회 (타입 자동 감지)"""
         # 명시적 타입이 있으면 해당 타입에서만 검색
         if strategy_type:
-            type_getters = {
+            type_getters: Dict[str, Callable[[str], Optional[Dict[str, Any]]]] = {
                 "static": self.get_static_strategy_config,
                 "dynamic": self.get_dynamic_strategy_config,
                 "static_mix": self.get_strategy_mix_config
@@ -253,7 +253,12 @@ class StrategySelector:
             return getter(strategy_name) if getter else None
         
         # 타입이 없으면 모든 타입에서 검색
-        for search_method in [self.get_static_strategy_config, self.get_dynamic_strategy_config, self.get_strategy_mix_config]:
+        search_methods: List[Callable[[str], Optional[Dict[str, Any]]]] = [
+            self.get_static_strategy_config,
+            self.get_dynamic_strategy_config,
+            self.get_strategy_mix_config
+        ]
+        for search_method in search_methods:
             result = search_method(strategy_name)
             if result:
                 return result

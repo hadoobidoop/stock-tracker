@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 from typing import Dict, List, Optional, Tuple, Any
 import pandas as pd
 
@@ -35,7 +35,7 @@ class BacktestingEngine:
     2. 전략 조합으로 백테스팅  
     3. 전략 비교 백테스팅
     4. 자동 전략 선택 백테스팅
-    5. 기존 Static Strategy Mix 방식 지원
+    5. 동적 전략 백테스팅 지원
     """
 
     def __init__(self,
@@ -59,14 +59,7 @@ class BacktestingEngine:
         else:
             self.signal_service = None
 
-        # Static Strategy Mix 시스템 초기화 (폴백용)
-        from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
-        self.orchestrator = SignalDetectionOrchestrator()
-        
-        if not use_enhanced_signals:
-            logger.warning("Static Strategy Mix 시스템은 지원되지 않습니다. enhanced_signals=True를 사용하세요.")
-
-        self.daily_data_cache = {
+        self.daily_data_cache: Dict[str, Any] = {
             "last_updated": None,
             "market_trend": TrendType.NEUTRAL,
             "daily_extras": {},
@@ -77,16 +70,12 @@ class BacktestingEngine:
         logger.info(f"BacktestingEngine initialized with capital: ${initial_capital:,.2f}")
         if use_enhanced_signals:
             logger.info(f"Using enhanced strategy system with strategy: {self.strategy_type}")
-        else:
-            logger.info("Using Static Strategy Mix detector system")
 
     def _initialize_signal_service(self):
         """신호 감지 서비스 초기화"""
         if self.signal_service:
             try:
-                # STRATEGY_CONFIGS에 정의된 모든 전략을 초기화
                 all_strategies = list(STRATEGY_CONFIGS.keys())
-                
                 success = self.signal_service.initialize(all_strategies)
                 if success:
                     self.signal_service.switch_strategy(self.strategy_type)
@@ -102,9 +91,9 @@ class BacktestingEngine:
                      tickers: List[str],
                      start_date: datetime,
                      end_date: datetime,
-                     data_interval: str = '1h') -> BacktestResult:
+                     data_interval: str = '1h',
+                     daily_market_data: Optional[Dict[datetime, Dict]] = None) -> BacktestResult:
         """기본 백테스트 실행 (현재 설정된 전략 사용)"""
-        # 입력된 날짜에 타임존이 없으면 UTC로 설정
         if start_date.tzinfo is None:
             start_date = start_date.replace(tzinfo=timezone.utc)
         if end_date.tzinfo is None:
@@ -138,8 +127,7 @@ class BacktestingEngine:
             backtest_settings=backtest_settings
         )
 
-        # 백테스트 실행
-        success = self._execute_backtest_logic(tickers, start_date, end_date, data_interval, portfolio, result)
+        success = self._execute_backtest_logic(tickers, start_date, end_date, data_interval, portfolio, result, daily_market_data)
         
         if success:
             logger.info(f"Backtest completed using {strategy_name}. Final capital: ${result.final_capital:,.2f}")
@@ -151,9 +139,7 @@ class BacktestingEngine:
                             start_date: datetime,
                             end_date: datetime,
                             strategy_type: StrategyType,
-                            data_interval: str = '1h') -> BacktestResult:
-        """특정 전략으로 백테스트 실행"""
-        # 전략 변경
+                            data_interval: str = '1h') -> Optional[BacktestResult]:
         original_strategy = self.strategy_type
         self.strategy_type = strategy_type
         
@@ -162,55 +148,74 @@ class BacktestingEngine:
         
         try:
             result = self.run_backtest(tickers, start_date, end_date, data_interval)
-            result.backtest_settings['strategy_type'] = strategy_type.value
+            if result:
+                result.backtest_settings['strategy_type'] = strategy_type.value
             return result
         finally:
-            # 원래 전략으로 복구
             self.strategy_type = original_strategy
             if self.use_enhanced_signals and self.signal_service:
                 self.signal_service.switch_strategy(original_strategy)
+
+    def run_dynamic_strategy_backtest(self,
+                                    tickers: List[str],
+                                    start_date: datetime,
+                                    end_date: datetime,
+                                    dynamic_strategy_name: str,
+                                    data_interval: str = '1h',
+                                    daily_market_data: Optional[Dict[date, Dict]] = None) -> Optional[BacktestResult]:
+        """동적 전략으로 백테스트 실행"""
+        if not self.use_enhanced_signals or not self.signal_service:
+            raise ValueError("동적 전략 백테스트는 신호 감지 서비스가 필요합니다.")
+
+        success = self.signal_service.switch_to_dynamic_strategy(dynamic_strategy_name)
+        if not success:
+            raise ValueError(f"동적 전략 '{dynamic_strategy_name}'을 설정할 수 없습니다.")
+
+        try:
+            result = self.run_backtest(tickers, start_date, end_date, data_interval, daily_market_data)
+            if result:
+                result.backtest_settings['dynamic_strategy_name'] = dynamic_strategy_name
+            return result
+        finally:
+            self.signal_service.switch_strategy(self.strategy_type) # 기본 정적 전략으로 복구
 
     def run_strategy_mix_backtest(self,
                                 tickers: List[str],
                                 start_date: datetime,
                                 end_date: datetime,
                                 mix_name: str,
-                                data_interval: str = '1h') -> BacktestResult:
-        """전략 조합으로 백테스트 실행"""
+                                data_interval: str = '1h') -> Optional[BacktestResult]:
         if not self.use_enhanced_signals or not self.signal_service:
             raise ValueError("전략 조합 백테스트는 신호 감지 서비스가 필요합니다.")
         
-        # 전략 조합 설정
         success = self.signal_service.set_strategy_mix(mix_name)
         if not success:
             raise ValueError(f"전략 조합 '{mix_name}'을 설정할 수 없습니다.")
         
         try:
             result = self.run_backtest(tickers, start_date, end_date, data_interval)
-            result.backtest_settings['strategy_mix'] = mix_name
+            if result:
+                result.backtest_settings['strategy_mix'] = mix_name
             return result
         finally:
-            # 단일 전략으로 복구
             self.signal_service.switch_strategy(self.strategy_type)
 
     def run_auto_strategy_backtest(self,
                                  tickers: List[str],
                                  start_date: datetime,
                                  end_date: datetime,
-                                 data_interval: str = '1h') -> BacktestResult:
-        """자동 전략 선택으로 백테스트 실행"""
+                                 data_interval: str = '1h') -> Optional[BacktestResult]:
         if not self.use_enhanced_signals or not self.signal_service:
             raise ValueError("자동 전략 선택 백테스트는 신호 감지 서비스가 필요합니다.")
         
-        # 자동 전략 선택 활성화
         self.signal_service.enable_auto_strategy_selection(True)
         
         try:
             result = self.run_backtest(tickers, start_date, end_date, data_interval)
-            result.backtest_settings['auto_strategy_selection'] = True
+            if result:
+                result.backtest_settings['auto_strategy_selection'] = True
             return result
         finally:
-            # 자동 선택 비활성화
             self.signal_service.enable_auto_strategy_selection(False)
 
     def compare_strategies(self,
@@ -219,28 +224,22 @@ class BacktestingEngine:
                           end_date: datetime,
                           strategies: List[StrategyType],
                           data_interval: str = '1h') -> Dict[str, BacktestResult]:
-        """여러 전략으로 동시에 백테스트하여 비교"""
         logger.info(f"Comparing {len(strategies)} strategies")
-        
         results = {}
-        
         for strategy_type in strategies:
             logger.info(f"Running backtest with {strategy_type.value} strategy")
-            
             try:
                 result = self.run_strategy_backtest(
                     tickers, start_date, end_date, strategy_type, data_interval
                 )
-                results[strategy_type.value] = result
-                
-                logger.info(f"{strategy_type.value} strategy completed - "
-                          f"Return: {result.total_return_percent:.2f}%, "
-                          f"Win Rate: {result.win_rate:.1%}")
-                
+                if result:
+                    results[strategy_type.value] = result
+                    logger.info(f"{strategy_type.value} strategy completed - "
+                              f"Return: {result.total_return_percent:.2f}%, "
+                              f"Win Rate: {result.win_rate:.1%}")
             except Exception as e:
                 logger.error(f"Error running backtest with {strategy_type.value}: {e}")
                 continue
-        
         return results
 
     def _execute_backtest_logic(self,
@@ -249,16 +248,13 @@ class BacktestingEngine:
                               end_date: datetime,
                               data_interval: str,
                               portfolio: Portfolio,
-                              result: BacktestResult) -> bool:
-        """백테스트 로직 실행"""
+                              result: BacktestResult,
+                              daily_market_data: Optional[Dict[date, Dict]] = None) -> bool:
         extended_start = start_date - timedelta(days=REALTIME_SIGNAL_DETECTION["FIB_LOOKBACK_DAYS"])
 
         try:
             logger.info("Fetching historical data for all tickers and market index...")
-
-            # 시장 지수 티커를 포함하여 모든 데이터를 한번에 조회
             tickers_to_fetch = tickers + [MARKET_INDEX_TICKER]
-
             all_fetched_data = self.stock_analysis_service.stock_repository.fetch_and_cache_ohlcv(
                 tickers_to_fetch,
                 (end_date - extended_start).days,
@@ -275,7 +271,7 @@ class BacktestingEngine:
                 logger.error(f"Market index data ({MARKET_INDEX_TICKER}) could not be loaded.")
                 return False
 
-            self._execute_backtest_by_timeframe(all_data, market_index_data, portfolio, result, start_date, end_date)
+            self._execute_backtest_by_timeframe(all_data, market_index_data, portfolio, result, start_date, end_date, daily_market_data)
 
             self._finalize_backtest_result(portfolio, result, all_data)
 
@@ -287,11 +283,12 @@ class BacktestingEngine:
 
     def _execute_backtest_by_timeframe(self,
                                        all_data: Dict[str, pd.DataFrame],
-                                       market_index_data: pd.DataFrame, # [수정] 시장 지수 데이터 추가
+                                       market_index_data: pd.DataFrame,
                                        portfolio: Portfolio,
                                        result: BacktestResult,
                                        start_date: datetime,
-                                       end_date: datetime) -> None:
+                                       end_date: datetime,
+                                       daily_market_data: Optional[Dict[date, Dict]] = None) -> None:
         all_timestamps = set()
         for data in all_data.values():
             all_timestamps.update(data.index)
@@ -310,10 +307,9 @@ class BacktestingEngine:
                     if current_time in data.index:
                         current_prices[ticker] = data.loc[current_time, 'Close']
 
-                closed_positions = portfolio.check_stop_loss_take_profit(current_prices, current_time)
+                portfolio.check_stop_loss_take_profit(current_prices, current_time)
 
-                # [수정] market_index_data를 인자로 전달
-                self._process_signals_and_trades(all_data, market_index_data, portfolio, current_time, current_prices)
+                self._process_signals_and_trades(all_data, market_index_data, portfolio, current_time, current_prices, daily_market_data)
 
                 portfolio_value = portfolio.get_portfolio_value(current_prices)
                 result.portfolio_values.append({
@@ -334,9 +330,9 @@ class BacktestingEngine:
                                     market_index_data: pd.DataFrame,
                                     portfolio: Portfolio,
                                     current_time: datetime,
-                                    current_prices: Dict[str, float]) -> None:
+                                    current_prices: Dict[str, float],
+                                    daily_market_data: Optional[Dict[date, Dict]] = None) -> None:
 
-        # market_index_data를 인자로 전달하여 Look-Ahead Bias 방지
         self._update_daily_cache(all_data, market_index_data, current_time)
 
         market_trend = self.daily_data_cache["market_trend"]
@@ -354,10 +350,14 @@ class BacktestingEngine:
                 if df_with_indicators.empty:
                     continue
 
+                # 동적 전략을 위한 시장 데이터 추출
+                current_date = current_time.date()
                 daily_extras = self.daily_data_cache["daily_extras"].get(ticker, {})
+                if daily_market_data and current_date in daily_market_data:
+                    daily_extras.update(daily_market_data[current_date])
+                
                 long_term_trend = self.daily_data_cache["long_term_trends"].get(ticker, TrendType.NEUTRAL)
 
-                # 신호 감지 - 새로운 전략 시스템 또는 Static Strategy Mix 시스템 사용
                 signal_result = self._detect_signals(
                     df_with_indicators, ticker, market_trend, long_term_trend, daily_extras
                 )
@@ -377,21 +377,16 @@ class BacktestingEngine:
                        market_trend: TrendType,
                        long_term_trend: TrendType,
                        daily_extras: Dict) -> Optional[Dict]:
-        """신호 감지 - 새로운 전략 시스템 또는 Static Strategy Mix 시스템 사용"""
         
         if self.use_enhanced_signals and self.signal_service and self.signal_service.is_initialized:
             try:
-                # 신호 감지 서비스 사용
                 strategy_result: StrategyResult = self.signal_service.analyze_with_current_strategy(
                     df_with_indicators, ticker, market_trend, long_term_trend, daily_extras
                 )
                 
-                # StrategyResult를 Static Strategy Mix 형태로 변환
                 if not strategy_result.has_signal:
                     return None
                     
-                # 매수/매도 신호 결정
-                signal_type = None
                 if strategy_result.buy_score > strategy_result.sell_score:
                     signal_type = 'BUY'
                     score = strategy_result.buy_score
@@ -407,44 +402,33 @@ class BacktestingEngine:
                     'details': strategy_result.signals_detected,
                     'stop_loss_price': strategy_result.stop_loss_price,
                     'strategy_name': strategy_result.strategy_name,
-                    'strategy_result': strategy_result  # 추가 정보 보존
+                    'strategy_result': strategy_result
                 }
                 
             except Exception as e:
                 logger.warning(f"Enhanced signal detection failed for {ticker}: {e}, falling back to static mix")
-                # 폴백: Static Strategy Mix 시스템 사용
         
-        # Static Strategy Mix 시스템 사용
-        return self.orchestrator.detect_signals(
-            df_with_indicators, ticker, market_trend, long_term_trend, daily_extras
-        )
+        return None # Fallback to nothing in this new implementation
 
     def _is_valid_signal(self, signal_result: Dict) -> bool:
-        """신호 유효성 검사"""
         if not signal_result:
             return False
         
-        score = signal_result.get('score', 0)
-        signal_type = signal_result.get('type')
-        
-        # 새로운 전략 시스템의 경우
         if 'strategy_result' in signal_result:
             strategy_result: StrategyResult = signal_result['strategy_result']
             return strategy_result.has_signal
         
-        # Static Strategy Mix 시스템의 경우
-        return score >= SIGNAL_THRESHOLD and signal_type is not None
+        return False
 
     def _update_daily_cache(self,
                             all_data: Dict[str, pd.DataFrame],
-                            market_index_data: pd.DataFrame, # [수정] 시장 지수 데이터 추가
+                            market_index_data: pd.DataFrame,
                             current_time: datetime) -> None:
         current_date = current_time.date()
 
         if self.daily_data_cache["last_updated"] != current_date:
             logger.debug(f"Updating daily cache for {current_date}")
 
-            # [수정] 미리 받아온 시장 데이터에서 현재 시점까지 잘라서 추세 분석
             market_data_so_far = market_index_data.loc[:current_time]
             self.daily_data_cache["market_trend"] = self.stock_analysis_service.get_market_trend(
                 market_data=market_data_so_far
@@ -474,7 +458,6 @@ class BacktestingEngine:
                        portfolio: Portfolio,
                        market_trend: TrendType,
                        long_term_trend: TrendType) -> None:
-        # 이 메소드는 수정이 필요 없습니다.
         if current_price is None:
             return
 
@@ -514,7 +497,6 @@ class BacktestingEngine:
                                   portfolio: Portfolio,
                                   result: BacktestResult,
                                   all_data: Dict[str, pd.DataFrame]) -> None:
-        # 이 메소드는 수정이 필요 없습니다.
         if portfolio.open_positions:
             last_timestamp = max(data.index[-1] for data in all_data.values())
             last_prices = {ticker: data.iloc[-1]['Close'] for ticker, data in all_data.items() if ticker in portfolio.open_positions}

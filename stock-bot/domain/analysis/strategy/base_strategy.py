@@ -217,7 +217,7 @@ class BaseStrategy(ABC):
             
             # 전략별 점수 조정
             adjusted_score = self._adjust_score_by_strategy(
-                signal_result.get('score', 0), market_trend, long_term_trend
+                signal_result.get('score', 0), market_trend, long_term_trend, df_with_indicators
             )
             
             # 성능 모니터링 업데이트
@@ -267,7 +267,7 @@ class BaseStrategy(ABC):
                 stop_loss_price=None
             )
     
-    def _adjust_score_by_strategy(self, base_score: float, market_trend: TrendType, long_term_trend: TrendType) -> float:
+    def _adjust_score_by_strategy(self, base_score: float, market_trend: TrendType, long_term_trend: TrendType, df_with_indicators: pd.DataFrame) -> float:
         """전략별 점수 조정"""
         # 기본 점수 조정
         adjusted_score = base_score
@@ -322,11 +322,11 @@ class BaseStrategy(ABC):
             signal_id=None,
             ticker=ticker,
             signal_type=signal_type,
-            signal_score=score,
+            signal_score=int(score),
             timestamp_utc=datetime.now(),
             current_price=df_with_indicators['Close'].iloc[-1],
-            market_trend=signal_result.get('market_trend', 'NEUTRAL'),
-            long_term_trend=signal_result.get('long_term_trend', 'NEUTRAL'),
+            market_trend=TrendType(signal_result.get('market_trend', 'NEUTRAL')),
+            long_term_trend=TrendType(signal_result.get('long_term_trend', 'NEUTRAL')),
             details=signal_result.get('details', []),
             stop_loss_price=signal_result.get('stop_loss_price'),
             evidence=evidence

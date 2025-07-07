@@ -31,13 +31,15 @@ class WeightAdjustment:
 
 @dataclass
 class ModifierApplication:
-    """모디파이어 적용 기록"""
+    """Modifier 적용 기록"""
     modifier_name: str
-    action_type: ModifierActionType
+    modifier_type: str  # 'FILTER', 'ADJUSTMENT' 등
     applied: bool
     reason: str
-    details: Dict[str, Any] = field(default_factory=dict)
-    timestamp: datetime = field(default_factory=datetime.now)
+    original_score: Optional[float] = None
+    adjusted_score: Optional[float] = None
+    original_weight: Optional[float] = None
+    adjusted_weight: Optional[float] = None
 
 
 @dataclass
@@ -208,18 +210,18 @@ class DecisionContext:
             }
         )
     
-    def record_modifier_application(self, modifier_name: str, action_type: ModifierActionType, 
+    def record_modifier_application(self, modifier_name: str, modifier_type: str,
                                    applied: bool, reason: str, details: Dict[str, Any] = None):
         """모디파이어 적용 기록"""
         if details is None:
             details = {}
-            
+
         application = ModifierApplication(
             modifier_name=modifier_name,
-            action_type=action_type,
+            modifier_type=modifier_type,
             applied=applied,
             reason=reason,
-            details=details
+            **details
         )
         self.modifier_applications.append(application)
     

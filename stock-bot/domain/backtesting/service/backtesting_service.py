@@ -7,6 +7,8 @@ from infrastructure.logging import get_logger
 from domain.stock.service.stock_analysis_service import StockAnalysisService
 from domain.stock.repository.stock_repository import StockRepository
 from infrastructure.db.repository.sql_stock_repository import SQLStockRepository
+from domain.analysis.repository.analysis_repository import MarketDataRepository
+from infrastructure.db.repository.sql_market_data_repository import SQLMarketDataRepository
 
 # 새로운 전략 시스템 import
 from domain.analysis.config.static_strategies import StrategyType, STRATEGY_CONFIGS
@@ -21,12 +23,15 @@ class BacktestingService:
     """백테스팅 서비스 - 다중 전략 시스템 지원"""
     
     def __init__(self, 
-                 stock_repository: Optional[StockRepository] = None):
+                 stock_repository: Optional[StockRepository] = None,
+                 market_data_repository: Optional[MarketDataRepository] = None):
         """
         Args:
             stock_repository: 주식 데이터 저장소 (선택적)
+            market_data_repository: 시장 데이터 저장소 (선택적)
         """
         self.stock_repository = stock_repository or SQLStockRepository()
+        self.market_data_repository = market_data_repository or SQLMarketDataRepository()
         self.stock_analysis_service = StockAnalysisService(self.stock_repository)
         
         logger.info("BacktestingService initialized with multi-strategy support")
@@ -151,6 +156,48 @@ class BacktestingService:
         logger.info(f"Strategy mix '{mix_name}' backtest completed. "
                    f"Return: {result.total_return_percent:.2f}%, Win Rate: {result.win_rate:.1%}")
         
+        return result
+
+    def run_dynamic_strategy_backtest(self,
+                                    tickers: List[str],
+                                    start_date: datetime,
+                                    end_date: datetime,
+                                    dynamic_strategy_name: str,
+                                    initial_capital: float = 100000.0,
+                                    commission_rate: float = 0.001,
+                                    risk_per_trade: float = 0.02,
+                                    data_interval: str = '1h') -> BacktestResult:
+        """동적 전략으로 백테스트 실행"""
+        logger.info(f"Running backtest with dynamic strategy: {dynamic_strategy_name}")
+
+        # 1. 기간 내 모든 시장 지표 데이터 로드
+        logger.info(f"Loading market data from {start_date} to {end_date}")
+        daily_market_data = self.market_data_repository.get_all_market_data_in_range(start_date, end_date)
+        logger.info(f"Loaded {len(daily_market_data)} days of market data.")
+
+        # 2. 백테스팅 엔진 초기화
+        engine = BacktestingEngine(
+            stock_analysis_service=self.stock_analysis_service,
+            initial_capital=initial_capital,
+            commission_rate=commission_rate,
+            risk_per_trade=risk_per_trade,
+            use_enhanced_signals=True,
+            strategy_type=None  # 동적 전략은 자체 로직 사용
+        )
+
+        # 3. 동적 전략으로 백테스트 실행 (시장 데이터 전달)
+        result = engine.run_dynamic_strategy_backtest(
+            tickers=tickers,
+            start_date=start_date,
+            end_date=end_date,
+            dynamic_strategy_name=dynamic_strategy_name,
+            data_interval=data_interval,
+            daily_market_data=daily_market_data  # 수정된 부분
+        )
+
+        logger.info(f"Dynamic strategy '{dynamic_strategy_name}' backtest completed. "
+                   f"Return: {result.total_return_percent:.2f}%, Win Rate: {result.win_rate:.1%}")
+
         return result
 
     def run_auto_strategy_backtest(self,
@@ -578,4 +625,5 @@ class BacktestingService:
             'rankings': rankings,
             'best_overall': rankings['sharpe_ratio'][0] if rankings['sharpe_ratio'] else None,
             'strategy_count': len(strategy_results)
-        } 
+        }
+ 

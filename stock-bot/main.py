@@ -173,7 +173,7 @@ def save_startup_strategy_config():
             import os
             os.makedirs("./strategy_configs", exist_ok=True)
             
-            strategy_service.save_strategy_configs(config_file)
+            strategy_service.strategy_manager.save_strategies_to_file(config_file)
             logger.info(f"시작 시 전략 설정 저장: {config_file}")
             
         except Exception as e:

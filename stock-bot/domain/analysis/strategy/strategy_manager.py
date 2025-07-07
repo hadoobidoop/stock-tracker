@@ -29,6 +29,8 @@ except ImportError:
     
     class StrategyMixMode(Enum):
         WEIGHTED = "weighted"
+        VOTING = "voting"
+        ENSEMBLE = "ensemble"
     
     @dataclass
     class StrategyMixConfig:
@@ -80,12 +82,8 @@ class StrategyManager:
     def initialize_strategies(self, strategy_types: Optional[List[StrategyType]] = None) -> bool:
         """전략들을 초기화합니다."""
         if strategy_types is None:
-            # 기본적으로 주요 정적 전략들만 로드
-            strategy_types = [
-                StrategyType.CONSERVATIVE,
-                StrategyType.BALANCED,
-                StrategyType.AGGRESSIVE
-            ]
+            # 기본적으로 모든 정적 전략을 로드
+            strategy_types = get_static_strategy_types()
         
         logger.info(f"전략 초기화 시작: {len(strategy_types)}개 정적 전략")
         
@@ -165,7 +163,9 @@ class StrategyManager:
         if "dynamic_weight_strategy" in self.dynamic_strategies:
             self.current_dynamic_strategy = self.dynamic_strategies["dynamic_weight_strategy"]
         elif self.dynamic_strategies:
-            self.current_dynamic_strategy = list(self.dynamic_strategies.values())[0]
+            # self.dynamic_strategies.values()는 DynamicCompositeStrategy 객체의 뷰를 반환합니다.
+            # 이 뷰에서 첫 번째 항목을 가져와도 타입은 일치합니다.
+            self.current_dynamic_strategy = next(iter(self.dynamic_strategies.values()))
         
         if self.current_strategy:
             logger.info(f"기본 정적 전략 설정: {self.current_strategy.get_name()}")
@@ -189,10 +189,19 @@ class StrategyManager:
             return False
         
         # 전략 저장
-        if isinstance(strategy_type, StrategyType):
-            self.active_strategies[strategy_type] = strategy
-        else:
-            self.dynamic_strategies[strategy_type] = strategy
+        if isinstance(strategy, DynamicCompositeStrategy):
+            if isinstance(strategy_type, str):
+                self.dynamic_strategies[strategy_type] = strategy
+            else:
+                # 이 경우는 발생해서는 안 되지만, 안전을 위해 로깅
+                logger.error(f"Dynamic strategy must have a string name, got {strategy_type}")
+                return False
+        elif isinstance(strategy, BaseStrategy):
+            if isinstance(strategy_type, StrategyType):
+                self.active_strategies[strategy_type] = strategy
+            else:
+                logger.error(f"Static strategy must have a StrategyType enum, got {strategy_type}")
+                return False
         
         logger.info(f"전략 추가 성공: {strategy.get_name() if hasattr(strategy, 'get_name') else strategy_type}")
         return True
@@ -210,6 +219,20 @@ class StrategyManager:
         logger.info(f"전략 교체 완료: {self.current_strategy.get_name()}")
         return True
     
+    def set_strategy_mix(self, mix_name: str) -> bool:
+        """전략 조합을 설정합니다."""
+        mix_config = STRATEGY_MIXES.get(mix_name)
+        if not mix_config:
+            logger.warning(f"전략 조합 설정을 찾을 수 없음: {mix_name}")
+            return False
+
+        self.current_mix_config = mix_config
+        self.current_strategy = None  # 단일 전략 비활성화
+        self.current_dynamic_strategy = None  # 동적 전략 비활성화
+
+        logger.info(f"전략 조합 설정 완료: {mix_name}")
+        return True
+
     def switch_to_dynamic_strategy(self, strategy_name: str) -> bool:
         """동적 전략으로 교체"""
         if strategy_name not in self.dynamic_strategies:
@@ -220,7 +243,7 @@ class StrategyManager:
         self.current_strategy = None  # 정적 전략 비활성화
         self.current_mix_config = None  # 조합 모드 비활성화
         
-        logger.info(f"동적 전략 교체 완료: {strategy_name}")
+        logger.info(f"동��� 전략 교체 완료: {strategy_name}")
         return True
     
     def analyze_with_current_strategy(self, 
@@ -251,6 +274,21 @@ class StrategyManager:
         else:
             raise RuntimeError("활성화된 전략이 없습니다.")
     
+    def analyze_with_all_strategies(self,
+                                  df_with_indicators: pd.DataFrame,
+                                  ticker: str,
+                                  market_trend: TrendType = TrendType.NEUTRAL,
+                                  long_term_trend: TrendType = TrendType.NEUTRAL,
+                                  daily_extra_indicators: Dict = None) -> Dict[StrategyType, StrategyResult]:
+        """모든 활성화된 정적 전략으로 분석합니다."""
+        results = {}
+        for strategy_type, strategy in self.active_strategies.items():
+            result = strategy.analyze(
+                df_with_indicators, ticker, market_trend, long_term_trend, daily_extra_indicators
+            )
+            results[strategy_type] = result
+        return results
+
     def get_available_strategies(self) -> List[Dict[str, Any]]:
         """사용 가능한 전략 목록을 반환합니다."""
         strategies = []
@@ -399,7 +437,7 @@ class StrategyManager:
         
         # 신뢰도 높은 결과들만으로 재조합
         filtered_results = {
-            i: (result, weight) for i, (result, weight) in enumerate(high_confidence_results)
+            result.strategy_type: (result, weight) for result, weight in high_confidence_results
         }
         
         return self._weighted_combination(filtered_results)

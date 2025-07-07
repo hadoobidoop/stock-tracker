@@ -2,6 +2,13 @@ from datetime import datetime, date
 from typing import Dict, List, Optional
 import pandas as pd
 import asyncio
+import sys
+from pathlib import Path
+
+# 프로젝트 루트 디렉토리를 Python 경로에 추가
+project_root = Path(__file__).resolve().parents[3]
+sys.path.append(str(project_root))
+
 
 from infrastructure.logging import get_logger
 from infrastructure.db.models.enums import TrendType, SignalType

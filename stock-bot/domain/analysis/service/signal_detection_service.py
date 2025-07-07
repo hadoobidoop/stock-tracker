@@ -292,4 +292,4 @@ class SignalDetectionService:
             }
         else:
             logger.error("서비스가 초기화되지 않았습니다.")
-            return None
+            return {}

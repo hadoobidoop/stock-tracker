@@ -37,19 +37,20 @@ class RSIStochDetector(SignalDetector):
         # 조정 계수 가져오기
         momentum_reversal_adj = self.get_adjustment_factor(market_trend, "momentum_reversal_adj")
         
-        # RSI 과매도 탈출 + 스토캐스틱 매수
+        # RSI 과매도 탈출 + 스토캐스틱 매수 (과매도 구간에서 골든 크로스)
         if (prev_data['RSI_14'] <= 30 < latest_data['RSI_14']) and \
-           (prev_data['STOCHk_14_3_3'] < prev_data['STOCHd_14_3_3'] and 
-            latest_data['STOCHk_14_3_3'] > latest_data['STOCHd_14_3_3'] and 
-            latest_data['STOCHk_14_3_3'] < 80):
+           (prev_data['STOCHk_14_3_3'] < prev_data['STOCHd_14_3_3'] and
+            latest_data['STOCHk_14_3_3'] > latest_data['STOCHd_14_3_3'] and
+            latest_data['STOCHk_14_3_3'] < 20):
             buy_score += self.weight * momentum_reversal_adj
             buy_details.append(
                 f"RSI/Stoch 동시 매수 신호 (RSI:{latest_data['RSI_14']:.2f}, Stoch %K:{latest_data['STOCHk_14_3_3']:.2f})")
         
-        # RSI 과매수 하락 + 스토캐스틱 매도
+        # RSI 과매수 하락 + 스토캐스틱 매도 (과매수 구간에서 데드 크로스)
         if (prev_data['RSI_14'] >= 70 > latest_data['RSI_14']) and \
-           (prev_data['STOCHk_14_3_3'] > prev_data['STOCHd_14_3_3'] and 
-            latest_data['STOCHd_14_3_3'] > latest_data['STOCHk_14_3_3'] > 20):
+           (prev_data['STOCHk_14_3_3'] > prev_data['STOCHd_14_3_3'] and
+            latest_data['STOCHk_14_3_3'] < latest_data['STOCHd_14_3_3'] and
+            latest_data['STOCHk_14_3_3'] > 80):
             sell_score += self.weight * momentum_reversal_adj
             sell_details.append(
                 f"RSI/Stoch 동시 매도 신호 (RSI:{latest_data['RSI_14']:.2f}, Stoch %K:{latest_data['STOCHk_14_3_3']:.2f})")

@@ -13,12 +13,15 @@ from .base_strategy import BaseStrategy, StrategyResult
 from .decision_context import DecisionContext
 from .modifiers import ModifierEngine, ModifierFactory
 from domain.analysis.config.dynamic_strategies import (
-    get_strategy_definition, get_all_modifiers, MACRO_DETECTOR_MAPPING
+    get_strategy_definition, get_all_modifiers
 )
-from domain.analysis.models.trading_signal import TradingSignal, SignalType
+from domain.analysis.models.trading_signal import (
+    TradingSignal, SignalType, SignalEvidence, TechnicalIndicatorEvidence, MarketContextEvidence
+)
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
+from ..config import StrategyType
 
 logger = get_logger(__name__)
 
@@ -27,7 +30,7 @@ class DynamicCompositeStrategy(BaseStrategy):
     """
     동적 가중치 조절 전략
     
-    이 전략은 다음과 같은 과정으로 동작합니다:
+    이 ��략은 다음과 같은 과정으로 동작합니다:
     1. DecisionContext 생성 (기본 가중치 설정)
     2. 각 기술적 지표 detector의 점수 계산
     3. 거시 지표 데이터 수집
@@ -43,7 +46,7 @@ class DynamicCompositeStrategy(BaseStrategy):
             raise ValueError(f"Strategy definition not found: {strategy_name}")
         
         # BaseStrategy 초기화를 위한 더미 config 생성
-        from domain.analysis.config.static_strategies import StrategyConfig, DetectorConfig, StrategyType
+        from domain.analysis.config.static_strategies import StrategyConfig, StrategyType
         
         # 동적 전략용 더미 config
         dummy_config = StrategyConfig(
@@ -104,9 +107,10 @@ class DynamicCompositeStrategy(BaseStrategy):
             module = importlib.import_module(module_path)
             detector_class = getattr(module, class_name)
             
-            # detector 인스턴스 생성 (기본 가중치는 0으로 설정, 나중에 동적으로 조정)
-            weight = detector_config.get("weight", 0.0)
-            return detector_class(weight)
+            # detector 인스턴스를 생성합니다. 초기 가중치는 전략 설정에서 가져옵니다.
+            # 이 가중치는 DecisionContext의 초기값으로 사용되며,
+            # 이후 Modifier에 의해 동적으로 조정됩니다.
+            return detector_class(detector_config.get("weight", 0.0))
                 
         except Exception as e:
             logger.error(f"Failed to create technical detector {detector_name}: {e}")
@@ -181,7 +185,7 @@ class DynamicCompositeStrategy(BaseStrategy):
             context.calculate_final_score()
             
             # 6. 신호 생성
-            result = self._create_strategy_result(context, ticker, df_with_indicators)
+            result = self._create_strategy_result(context, ticker, df_with_indicators, market_trend, long_term_trend)
             
             # 컨텍스트 저장 (디버깅용)
             self.last_context = context
@@ -189,7 +193,7 @@ class DynamicCompositeStrategy(BaseStrategy):
             return result
             
         except Exception as e:
-            logger.error(f"Error in dynamic strategy analysis for {ticker}: {e}")
+            logger.error(f"Error in dynamic strategy analysis for {ticker}: {e}", exc_info=True)
             return self._create_error_result(f"Analysis error: {e}")
     
     def _calculate_technical_scores(self, context: DecisionContext, df_with_indicators: pd.DataFrame):
@@ -254,45 +258,78 @@ class DynamicCompositeStrategy(BaseStrategy):
         
         return market_data
     
-    def _create_strategy_result(self, context: DecisionContext, ticker: str, 
-                              df_with_indicators: pd.DataFrame) -> StrategyResult:
+    def _create_strategy_result(self, context: DecisionContext, ticker: str,
+                              df_with_indicators: pd.DataFrame,
+                              market_trend: TrendType,
+                              long_term_trend: TrendType) -> StrategyResult:
         """전략 결과 생성"""
         signal_type = context.get_signal_type()
-        
+
         # 신호가 있는 경우 TradingSignal 생성
         trading_signal = None
         if signal_type != SignalType.NEUTRAL:
             current_price = df_with_indicators['close'].iloc[-1]
-            
+            now_utc = pd.Timestamp.utcnow()
+
+            # 1. 기술적 지표 근거 생성
+            technical_evidences = []
+            for detector_name, score in context.detector_raw_scores.items():
+                if abs(score) > 0:
+                    weight = context.current_weights.get(detector_name, 0.0)
+                    technical_evidences.append(TechnicalIndicatorEvidence(
+                        indicator_name=detector_name,
+                        current_value=score,
+                        condition_met=f"Normalized score of {score:.2f}",
+                        contribution_score=score * weight
+                    ))
+
+            # 2. 시장 상황 근거 생성
+            market_context_evidence = MarketContextEvidence(
+                market_trend=market_trend.name,
+                volatility_level=context.market_data.get('vix_level'),
+                volume_analysis=None
+            )
+
+            # 3. 종합 신호 근거 (SignalEvidence) 생성
+            applied_filters = [
+                f"{m.modifier_name}: {m.reason}" for m in context.modifier_applications
+                if m.applied and m.modifier_type == 'FILTER'
+            ]
+            score_adjustments = [
+                f"{m.modifier_name}: {m.reason}" for m in context.modifier_applications
+                if m.applied and m.modifier_type != 'FILTER'
+            ]
+
+            evidence = SignalEvidence(
+                signal_timestamp=now_utc.to_pydatetime(),
+                ticker=ticker,
+                signal_type=signal_type.name,
+                final_score=int(context.final_score),
+                technical_evidences=technical_evidences,
+                market_context_evidence=market_context_evidence,
+                raw_signals=[f"{name}: {score:.2f}" for name, score in context.detector_raw_scores.items()],
+                applied_filters=applied_filters,
+                score_adjustments=score_adjustments
+            )
+
+            # 4. 최종 TradingSignal 생성
             trading_signal = TradingSignal(
                 ticker=ticker,
                 signal_type=signal_type,
-                strength=context.get_signal_strength(),
-                confidence=context.get_confidence(),
-                price=current_price,
-                timestamp=pd.Timestamp.now(),
-                strategy_name=self.strategy_name,
-                technical_indicators=context.detector_raw_scores,
-                market_conditions={
-                    "final_score": context.final_score,
-                    "threshold": context.current_threshold,
-                    "modifiers_applied": len([m for m in context.modifier_applications if m.applied]),
-                    "veto_status": context.is_vetoed
-                }
+                signal_score=int(context.final_score),
+                timestamp_utc=now_utc.to_pydatetime(),
+                current_price=current_price,
+                market_trend=market_trend,
+                long_term_trend=long_term_trend,
+                details=[log['message'] for log in context.get_detailed_log()],
+                evidence=evidence
             )
-        
+
         # StrategyResult 생성
-        signals_detected = []
-        for modifier_app in context.modifier_applications:
-            if modifier_app.applied:
-                signals_detected.append(f"{modifier_app.modifier_name}: {modifier_app.reason}")
-        
-        # 기술적 지표 신호도 추가
-        for detector_name, score in context.detector_raw_scores.items():
-            if abs(score) > 5:  # 임계값 이상인 경우만
-                direction = "BUY" if score > 0 else "SELL"
-                signals_detected.append(f"{detector_name}: {direction} ({score:.1f})")
-        
+        signals_detected = [log['message'] for log in context.get_detailed_log()]
+        if not signals_detected and trading_signal:
+            signals_detected.append(f"Final Signal: {trading_signal.signal_type.name} with score {trading_signal.signal_score}")
+
         result = StrategyResult(
             strategy_name=self.strategy_name,
             strategy_type=self._get_strategy_type(),
@@ -302,10 +339,10 @@ class DynamicCompositeStrategy(BaseStrategy):
             signals_detected=signals_detected,
             signal=trading_signal,
             confidence=context.get_confidence(),
-            buy_score=max(0, context.final_score),
-            sell_score=max(0, -context.final_score)
+            buy_score=max(0.0, context.final_score),
+            sell_score=max(0.0, -context.final_score)
         )
-        
+
         return result
     
     def _create_error_result(self, error_message: str) -> StrategyResult:
@@ -337,4 +374,4 @@ class DynamicCompositeStrategy(BaseStrategy):
         """상세 분석 로그 반환"""
         if self.last_context:
             return self.last_context.get_detailed_log()
-        return [] 
+        return []

@@ -43,7 +43,7 @@ class BaseModifier(ABC):
         try:
             if not self.definition.enabled:
                 context.record_modifier_application(
-                    self.name, self.definition.action.type, False, "Modifier disabled"
+                    self.name, self.definition.action.type.value, False, "Modifier disabled"
                 )
                 return False
             
@@ -54,21 +54,21 @@ class BaseModifier(ABC):
                 # 액션 적용
                 self.apply_action(context, historical_data, market_data)
                 context.record_modifier_application(
-                    self.name, self.definition.action.type, True, 
+                    self.name, self.definition.action.type.value, True,
                     self.definition.action.reason or self.definition.description
                 )
                 logger.info(f"Modifier '{self.name}' applied: {self.definition.action.reason}")
                 return True
             else:
                 context.record_modifier_application(
-                    self.name, self.definition.action.type, False, "Condition not met"
+                    self.name, self.definition.action.type.value, False, "Condition not met"
                 )
                 return False
                 
         except Exception as e:
             logger.error(f"Error processing modifier '{self.name}': {e}")
             context.record_modifier_application(
-                self.name, self.definition.action.type, False, f"Error: {e}"
+                self.name, self.definition.action.type.value, False, f"Error: {e}"
             )
             return False
 

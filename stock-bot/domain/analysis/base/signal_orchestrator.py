@@ -286,6 +286,11 @@ class SignalDetectionOrchestrator:
                 )
             
             # 최종 SignalEvidence 생성
+            score_adjustments = [f"Market trend adjustment: {market_trend.value}"]
+            if (signal_type == 'BUY' and long_term_trend == TrendType.BULLISH) or \
+               (signal_type == 'SELL' and long_term_trend == TrendType.BEARISH):
+                score_adjustments.append(f"Long-term trend alignment ({long_term_trend.value}): score adjusted by +20%")
+
             evidence = SignalEvidence(
                 signal_timestamp=timestamp,
                 ticker=ticker,
@@ -297,7 +302,7 @@ class SignalDetectionOrchestrator:
                 risk_management_evidence=risk_management_evidence,
                 raw_signals=[f"{detector.name}: contributed to {signal_type} signal" for detector in self.detectors],
                 applied_filters=["market_trend_filter", "long_term_trend_filter"],
-                score_adjustments=[f"Market trend adjustment: {market_trend.value}"]
+                score_adjustments=score_adjustments
             )
             
             return evidence

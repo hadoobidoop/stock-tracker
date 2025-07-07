@@ -49,17 +49,17 @@ def market_data_update_job():
         latest_fear_greed = service.get_latest_fear_greed_index()
         
         if latest_buffett:
-            logger.info(f"Latest Buffett Indicator: {latest_buffett:.2f}%")
+            logger.info(f"Latest Buffett Indicator: {latest_buffett:.3f}%")
         if latest_vix:
-            logger.info(f"Latest VIX: {latest_vix:.2f}")
+            logger.info(f"Latest VIX: {latest_vix:.3f}")
         if latest_gold:
-            logger.info(f"Latest Gold Price: ${latest_gold:.2f}")
+            logger.info(f"Latest Gold Price: ${latest_gold:.3f}")
         if latest_oil:
-            logger.info(f"Latest Crude Oil: ${latest_oil:.2f}")
+            logger.info(f"Latest Crude Oil: ${latest_oil:.3f}")
         if latest_sp500:
-            logger.info(f"Latest S&P 500: {latest_sp500:.2f}")
+            logger.info(f"Latest S&P 500: {latest_sp500:.3f}")
         if latest_treasury:
-            logger.info(f"Latest 10Y Treasury: {latest_treasury:.2f}%")
+            logger.info(f"Latest 10Y Treasury: {latest_treasury:.3f}%")
         if latest_put_call:
             logger.info(f"Latest Put/Call Ratio: {latest_put_call:.3f}")
         if latest_fear_greed:

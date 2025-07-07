@@ -2,7 +2,7 @@
 시장 지표 분석 유틸리티
 VIX, 버핏 지수 등 시장 전체 지표를 분석하는 함수들
 """
-from typing import Dict, Optional, Tuple, List
+from typing import Dict, Optional, Tuple, List, Any
 from datetime import datetime, timedelta
 import pandas as pd
 from infrastructure.db.models.enums import MarketIndicatorType
@@ -118,7 +118,7 @@ class MarketIndicatorAnalyzer:
     def _generate_vix_trading_signal(self, current_vix: float, vix_change_pct: float, 
                                    trend: str, fear_level: str) -> Dict:
         """VIX 기반 거래 신호를 생성합니다."""
-        signal = {
+        signal: Dict[str, Any] = {
             'type': None,
             'strength': 0.0,
             'confidence': 0.0,
@@ -250,7 +250,7 @@ class MarketIndicatorAnalyzer:
                 'type': vix_type,
                 'strength': combined_strength,
                 'confidence': combined_confidence,
-                'reason': f"VIX와 버핏 지수 신호 일치 ({vix_type})"
+                'reason': [f"VIX와 버핏 지수 신호 일치 ({vix_type})"]
             }
         else:
             # 신호가 상충하거나 한쪽만 있는 경우
@@ -261,14 +261,14 @@ class MarketIndicatorAnalyzer:
                     'type': buffett_type,
                     'strength': buffett_signal.get('confidence', 0) * 5,
                     'confidence': buffett_signal.get('confidence', 0),
-                    'reason': "버핏 지수 단독 신호"
+                    'reason': ["버핏 지수 단독 신호"]
                 }
             else:
                 return {
                     'type': None,
                     'strength': 0.0,
                     'confidence': 0.0,
-                    'reason': "상충하는 시장 신호"
+                    'reason': ["상충하는 시장 신호"]
                 }
     
     def _determine_market_sentiment(self, vix_analysis: Dict, buffett_analysis: Dict) -> str:
