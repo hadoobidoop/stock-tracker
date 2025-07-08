@@ -362,7 +362,7 @@ class BacktestingEngine:
                     df_with_indicators, ticker, market_trend, long_term_trend, daily_extras
                 )
 
-                if signal_result and self._is_valid_signal(signal_result):
+                if signal_result:
                     self._execute_trade(
                         signal_result, ticker, current_time, current_prices.get(ticker),
                         portfolio, market_trend, long_term_trend
@@ -377,48 +377,46 @@ class BacktestingEngine:
                        market_trend: TrendType,
                        long_term_trend: TrendType,
                        daily_extras: Dict) -> Optional[Dict]:
-        
-        if self.use_enhanced_signals and self.signal_service and self.signal_service.is_initialized:
-            try:
-                strategy_result: StrategyResult = self.signal_service.analyze_with_current_strategy(
-                    df_with_indicators, ticker, market_trend, long_term_trend, daily_extras
-                )
-                
-                if not strategy_result.has_signal:
-                    return None
-                    
-                if strategy_result.buy_score > strategy_result.sell_score:
-                    signal_type = 'BUY'
-                    score = strategy_result.buy_score
-                elif strategy_result.sell_score > strategy_result.buy_score:
-                    signal_type = 'SELL'
-                    score = strategy_result.sell_score
-                else:
-                    return None
-                
-                return {
-                    'score': score,
-                    'type': signal_type,
-                    'details': strategy_result.signals_detected,
-                    'stop_loss_price': strategy_result.stop_loss_price,
-                    'strategy_name': strategy_result.strategy_name,
-                    'strategy_result': strategy_result
-                }
-                
-            except Exception as e:
-                logger.warning(f"Enhanced signal detection failed for {ticker}: {e}, falling back to static mix")
-        
-        return None # Fallback to nothing in this new implementation
+        """
+        향상된 신호 감지 시스템을 사용하여 신호를 감지합니다.
+        StrategyResult의 has_signal을 신뢰하여 신호 유무를 판단합니다.
+        """
+        if not (self.use_enhanced_signals and self.signal_service and self.signal_service.is_initialized):
+            return None
 
-    def _is_valid_signal(self, signal_result: Dict) -> bool:
-        if not signal_result:
-            return False
-        
-        if 'strategy_result' in signal_result:
-            strategy_result: StrategyResult = signal_result['strategy_result']
-            return strategy_result.has_signal
-        
-        return False
+        try:
+            strategy_result: StrategyResult = self.signal_service.analyze_with_current_strategy(
+                df_with_indicators, ticker, market_trend, long_term_trend, daily_extras
+            )
+
+            # StrategyResult가 신호가 없다고 판단하면, 즉시 종료
+            if not strategy_result.has_signal:
+                return None
+
+            # 신호가 있다면, buy/sell 중 어떤 타입인지 결정
+            if strategy_result.buy_score > strategy_result.sell_score:
+                signal_type = 'BUY'
+                score = strategy_result.buy_score
+            # sell_score가 높거나, 점수가 같지만 sell 액션이 제안된 경우 등
+            else:
+                signal_type = 'SELL'
+                score = strategy_result.sell_score
+
+            # 유효한 신호이므로, 거래 실행에 필요한 모든 정보를 담은 딕셔너리 반환
+            return {
+                'score': score,
+                'type': signal_type,
+                'details': strategy_result.signals_detected,
+                'stop_loss_price': strategy_result.stop_loss_price,
+                'strategy_name': strategy_result.strategy_name,
+                'strategy_result': strategy_result  # 상세 분석을 위해 원본 결과 포함
+            }
+
+        except Exception as e:
+            logger.warning(f"Enhanced signal detection failed for {ticker}: {e}")
+            return None
+
+    
 
     def _update_daily_cache(self,
                             all_data: Dict[str, pd.DataFrame],

@@ -268,7 +268,7 @@ class DynamicCompositeStrategy(BaseStrategy):
         # 신호가 있는 경우 TradingSignal 생성
         trading_signal = None
         if signal_type != SignalType.NEUTRAL:
-            current_price = df_with_indicators['close'].iloc[-1]
+            current_price = df_with_indicators['Close'].iloc[-1]
             now_utc = pd.Timestamp.utcnow()
 
             # 1. 기술적 지표 근거 생성
@@ -312,6 +312,14 @@ class DynamicCompositeStrategy(BaseStrategy):
                 score_adjustments=score_adjustments
             )
 
+            # 상세 로그를 안전하게 처리하여 리스트 생성
+            detailed_log_messages = []
+            for log in context.get_detailed_log():
+                if isinstance(log, dict) and 'message' in log:
+                    detailed_log_messages.append(str(log['action']))
+                else:
+                    detailed_log_messages.append(str(log))
+
             # 4. 최종 TradingSignal 생성
             trading_signal = TradingSignal(
                 ticker=ticker,
@@ -321,12 +329,13 @@ class DynamicCompositeStrategy(BaseStrategy):
                 current_price=current_price,
                 market_trend=market_trend,
                 long_term_trend=long_term_trend,
-                details=[log['message'] for log in context.get_detailed_log()],
+                details=detailed_log_messages,
                 evidence=evidence
             )
 
         # StrategyResult 생성
-        signals_detected = [log['message'] for log in context.get_detailed_log()]
+        # 위에서 생성한 안전한 로그 리스트를 재사용
+        signals_detected = detailed_log_messages if 'detailed_log_messages' in locals() else []
         if not signals_detected and trading_signal:
             signals_detected.append(f"Final Signal: {trading_signal.signal_type.name} with score {trading_signal.signal_score}")
 
