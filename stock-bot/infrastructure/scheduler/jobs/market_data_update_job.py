@@ -63,7 +63,7 @@ def market_data_update_job():
         if latest_put_call:
             logger.info(f"Latest Put/Call Ratio: {latest_put_call:.3f}")
         if latest_fear_greed:
-            logger.info(f"Latest Fear & Greed Index: {latest_fear_greed:.1f}")
+            logger.info(f"Latest Fear & Greed Index: {latest_fear_greed:.3f}")
             
         logger.info("JOB END: Market data update completed successfully.")
         
