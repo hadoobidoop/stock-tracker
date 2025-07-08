@@ -30,13 +30,14 @@ class DynamicCompositeStrategy(BaseStrategy):
     """
     동적 가중치 조절 전략
     
-    이 ��략은 다음과 같은 과정으로 동작합니다:
+    이 전략은 다음과 같은 과정으로 동작합니다:
     1. DecisionContext 생성 (기본 가중치 설정)
     2. 각 기술적 지표 detector의 점수 계산
     3. 거시 지표 데이터 수집
     4. Modifier들을 우선순위 순으로 적용 (가중치 조정, 점수 보정, 거부 등)
     5. 최종 점수 계산 및 신호 생성
     """
+    REQUIRED_MACRO_INDICATORS: List[str] = []
     
     def __init__(self, strategy_name: str):
         self.strategy_name = strategy_name
@@ -63,6 +64,18 @@ class DynamicCompositeStrategy(BaseStrategy):
         self.technical_detectors: Dict[str, Any] = {}
         self.modifier_engine: Optional[ModifierEngine] = None
         self.last_context: Optional[DecisionContext] = None
+
+    def get_required_macro_indicators(self) -> List[str]:
+        """이 전략의 실행에 필요한 거시 지표 목록을 반환합니다."""
+        # Modifier들이 필요로 하는 모든 지표를 동적으로 수집할 수도 있음
+        # 지금은 정적으로 정의된 목록을 사용
+        
+        # 예시: 모든 모디파이어에서 필요한 지표들을 동적으로 수집
+        required = set(self.REQUIRED_MACRO_INDICATORS)
+        if self.modifier_engine:
+            for modifier in self.modifier_engine.modifiers:
+                required.update(getattr(modifier, 'REQUIRED_INDICATORS', []))
+        return list(required)
         
     def _get_strategy_type(self) -> 'StrategyType':
         from domain.analysis.config.static_strategies import StrategyType
@@ -173,18 +186,15 @@ class DynamicCompositeStrategy(BaseStrategy):
             # 2. 기술적 지표 점수 계산
             self._calculate_technical_scores(context, df_with_indicators)
             
-            # 3. 거시 지표 데이터 준비
-            market_data = self._prepare_market_data(daily_extra_indicators)
-            
-            # 4. 모디파이어 적용
+            # 3. 모디파이어 적용 (daily_extra_indicators는 이미 완결된 데이터로 간주)
             if self.modifier_engine:
-                applied_count = self.modifier_engine.apply_all(context, df_with_indicators, market_data)
+                applied_count = self.modifier_engine.apply_all(context, df_with_indicators, daily_extra_indicators or {})
                 logger.debug(f"Applied {applied_count} modifiers for {ticker}")
             
-            # 5. 최종 점수 계산
+            # 4. 최종 점수 계산
             context.calculate_final_score()
             
-            # 6. 신호 생성
+            # 5. 신호 생성
             result = self._create_strategy_result(context, ticker, df_with_indicators, market_trend, long_term_trend)
             
             # 컨텍스트 저장 (디버깅용)
@@ -230,33 +240,7 @@ class DynamicCompositeStrategy(BaseStrategy):
             logger.error(f"Error converting detector result to score for {detector_name}: {e}")
             return 0.0
     
-    def _prepare_market_data(self, daily_extra_indicators: Optional[Dict]) -> Dict[str, Any]:
-        """거시 지표 데이터 준비"""
-        if not daily_extra_indicators:
-            return {}
-        
-        market_data = {}
-        
-        # 거시 지표 데이터를 모디파이어가 이해할 수 있는 형태로 변환
-        macro_mapping = {
-            "VIX": "vix",
-            "FEAR_GREED_INDEX": "fear_greed_index", 
-            "DXY": "dxy",
-            "US_10Y_TREASURY_YIELD": "us_10y_treasury_yield",
-            "BUFFETT_INDICATOR": "buffett_indicator",
-            "PUT_CALL_RATIO": "put_call_ratio",
-            "SP500_INDEX": "sp500_sma_200"  # S&P 500 지수
-        }
-        
-        for db_key, modifier_key in macro_mapping.items():
-            if db_key in daily_extra_indicators:
-                market_data[modifier_key] = daily_extra_indicators[db_key]
-                
-                # S&P 500의 경우 200일선 정보도 추가 (임시로 현재가의 95%로 설정)
-                if modifier_key == "sp500_sma_200":
-                    market_data[f"{modifier_key}_reference"] = daily_extra_indicators[db_key] * 0.95
-        
-        return market_data
+    
     
     def _create_strategy_result(self, context: DecisionContext, ticker: str,
                               df_with_indicators: pd.DataFrame,

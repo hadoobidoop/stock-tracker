@@ -26,4 +26,5 @@ class MarketIndicatorType(str, enum.Enum):
     GOLD_PRICE = "GOLD_PRICE"  # 금 가격 (GC=F)
     CRUDE_OIL_PRICE = "CRUDE_OIL_PRICE"  # 원유 가격 (CL=F)
     SP500_INDEX = "SP500_INDEX"  # S&P 500 지수 (^GSPC)
+    SP500_SMA_200 = "SP500_SMA_200"  # S&P 500 지수의 200일 이동평균
     # 추후 추가될 지표들을 위한 여백 

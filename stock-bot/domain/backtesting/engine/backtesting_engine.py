@@ -13,6 +13,7 @@ from domain.analysis.strategy.base_strategy import StrategyResult
 
 from domain.analysis.utils import calculate_all_indicators, calculate_fibonacci_levels
 from domain.stock.service.stock_analysis_service import StockAnalysisService
+from domain.stock.service.market_data_service import MarketDataService
 from domain.analysis.config.signals import (
     SIGNAL_THRESHOLD,
     REALTIME_SIGNAL_DETECTION
@@ -46,6 +47,7 @@ class BacktestingEngine:
                  use_enhanced_signals: bool = True,
                  strategy_type: StrategyType = None):
         self.stock_analysis_service = stock_analysis_service
+        self.market_data_service = MarketDataService()
         self.initial_capital = initial_capital
         self.commission_rate = commission_rate
         self.risk_per_trade = risk_per_trade
@@ -350,12 +352,19 @@ class BacktestingEngine:
                 if df_with_indicators.empty:
                     continue
 
-                # 동적 전략을 위한 시장 데이터 추출
-                current_date = current_time.date()
-                daily_extras = self.daily_data_cache["daily_extras"].get(ticker, {})
-                if daily_market_data and current_date in daily_market_data:
-                    daily_extras.update(daily_market_data[current_date])
-                
+                # --- 중앙화된 데이터 공급 방식으로 변경 ---
+                daily_extras = {}
+                # 현재 전략이 동적 전략일 경우에만 거시 지표를 조회
+                current_strategy = self.signal_service.strategy_manager.current_strategy
+                if hasattr(current_strategy, 'get_required_macro_indicators'):
+                    required_indicators = current_strategy.get_required_macro_indicators()
+                    if required_indicators:
+                        current_date = current_time.date()
+                        daily_extras = self.market_data_service.get_macro_data_for_date(
+                            target_date=current_date,
+                            required_indicators=required_indicators
+                        )
+
                 long_term_trend = self.daily_data_cache["long_term_trends"].get(ticker, TrendType.NEUTRAL)
 
                 signal_result = self._detect_signals(

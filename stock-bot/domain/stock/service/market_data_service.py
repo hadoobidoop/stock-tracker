@@ -2,11 +2,12 @@
 시장 데이터 수집 및 관리 서비스
 버핏 지수, VIX, 공포지수 등 다양한 시장 지표를 수집합니다.
 """
+import pandas as pd
 import pandas_datareader.data as web
 import yfinance as yf
 import requests
 from datetime import datetime, date, timedelta
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any, Tuple, List
 import json
 import time
 import random
@@ -752,6 +753,17 @@ class MarketDataService:
             # 공포탐욕지수 업데이트 (CNN API)
             results['fear_greed_index'] = self.update_fear_greed_index()
 
+            # 달러 인덱스(DXY) 업데이트 (Yahoo Finance)
+            results['dxy_index'] = self.update_dxy_index()
+
+            # S&P 500 200일 이동평균 업데이트 (파생 데이터)
+            # S&P 500 지수 업데이트가 성공했을 경우에만 실행
+            if results.get('sp500_index', False):
+                results['sp500_sma_200'] = self.update_sp500_sma()
+            else:
+                results['sp500_sma_200'] = False
+                logger.warning("Skipping S&P 500 SMA calculation due to index update failure.")
+
             success_count = sum(results.values())
             total_count = len(results)
 
@@ -984,6 +996,72 @@ class MarketDataService:
         latest_data = self.repository.get_latest_market_data(MarketIndicatorType.FEAR_GREED_INDEX)
         return latest_data.value if latest_data else None
 
+    def update_dxy_index(self) -> bool:
+        """Yahoo Finance에서 달러 인덱스(DXY)를 가져와 저장합니다."""
+        logger.info("Starting DXY Index (DX-Y.NYB) update...")
+        try:
+            dxy_data = self._fetch_yahoo_data_with_retry("DX-Y.NYB", period="5d")
+            if dxy_data is None or dxy_data.empty:
+                logger.error("Failed to fetch DXY data from Yahoo Finance")
+                return False
+
+            for date_idx, row in dxy_data.iterrows():
+                dxy_date = date_idx.date()
+                dxy_value = row['Close']
+                additional_data = json.dumps({"data_source": "Yahoo Finance (DX-Y.NYB)"})
+                success = self.repository.save_market_data(
+                    indicator_type=MarketIndicatorType.DXY,
+                    data_date=dxy_date,
+                    value=dxy_value,
+                    additional_data=additional_data
+                )
+                if success:
+                    logger.info(f"Saved DXY for {dxy_date}: {dxy_value:.2f}")
+            return True
+        except Exception as e:
+            logger.error(f"Error updating DXY index: {e}", exc_info=True)
+            return False
+
+    def update_sp500_sma(self, window: int = 200) -> bool:
+        """DB의 S&P 500 데이터를 기반으로 SMA를 계산하고 저장합니다."""
+        logger.info(f"Starting S&P 500 {window}-day SMA calculation...")
+        try:
+            # SMA 계산에 필요한 충분한 데이터 조회 (window + 버퍼)
+            sp500_data = self.repository.get_recent_market_data(MarketIndicatorType.SP500_INDEX, limit=window + 50)
+            if len(sp500_data) < window:
+                logger.warning(f"Not enough S&P 500 data to calculate {window}-day SMA. Found {len(sp500_data)} points.")
+                return False
+
+            # DataFrame으로 변환
+            df = pd.DataFrame([(d.date, d.value) for d in sp500_data], columns=['Date', 'Close']).set_index('Date')
+            df.sort_index(inplace=True)
+
+            # SMA 계산
+            sma_series = df['Close'].rolling(window=window).mean().dropna()
+
+            if sma_series.empty:
+                logger.warning("SMA calculation resulted in an empty series.")
+                return False
+
+            # 최근 5일치 SMA 값 저장
+            for sma_date, sma_value in sma_series.tail(5).items():
+                additional_data = json.dumps({
+                    "data_source": "Calculated from SP500_INDEX in DB",
+                    "calculation_window": window
+                })
+                success = self.repository.save_market_data(
+                    indicator_type=MarketIndicatorType.SP500_SMA_200,
+                    data_date=sma_date,
+                    value=sma_value,
+                    additional_data=additional_data
+                )
+                if success:
+                    logger.info(f"Saved S&P 500 {window}-day SMA for {sma_date}: {sma_value:.2f}")
+            return True
+        except Exception as e:
+            logger.error(f"Error calculating S&P 500 SMA: {e}", exc_info=True)
+            return False
+
     # --- Backtesting Support Methods with Forward Fill ---
 
     def get_vix_by_date(self, target_date: date) -> Optional[float]:
@@ -1078,6 +1156,48 @@ class MarketDataService:
         except Exception as e:
             logger.error(f"Error getting all Put/Call ratios: {e}", exc_info=True)
             return {}
+
+    def get_macro_data_for_date(self, target_date: date, required_indicators: List[str]) -> Dict[str, Any]:
+        """
+        특정 날짜와 요구되는 지표 목록을 기반으로, 모든 거시 경제 지표를 조회하고
+        'Last Known Value' 정책을 적용하여 완결된 딕셔너리를 반환합니다.
+
+        Args:
+            target_date: 데이터를 조회할 기준 날짜
+            required_indicators: 필요한 거시 지표의 이름 목록 (예: ['VIX', 'FEAR_GREED_INDEX'])
+
+        Returns:
+            Dict[str, Any]: 조회된 거시 지표 데이터 딕셔너리.
+                           데이터가 없는 경우에도 키는 존재하되 값은 None이 됩니다.
+        """
+        macro_data = {}
+        
+        # 각 지표에 대한 조회 함수 매핑
+        indicator_fetch_map = {
+            'VIX': self.get_vix_by_date,
+            'US_10Y_TREASURY_YIELD': self.get_treasury_yield_by_date,
+            'BUFFETT_INDICATOR': self.get_buffett_indicator_by_date,
+            'PUT_CALL_RATIO': self.get_put_call_ratio_by_date,
+            'FEAR_GREED_INDEX': self.get_fear_greed_index_by_date,
+            'DXY': lambda d: self.repository.get_market_data_by_date_with_forward_fill(MarketIndicatorType.DXY, d).value if self.repository.get_market_data_by_date_with_forward_fill(MarketIndicatorType.DXY, d) else None,
+            'SP500_SMA_200': lambda d: self.repository.get_market_data_by_date_with_forward_fill(MarketIndicatorType.SP500_SMA_200, d).value if self.repository.get_market_data_by_date_with_forward_fill(MarketIndicatorType.SP500_SMA_200, d) else None,
+            # S&P500, 금, 유가 등 다른 지표도 필요 시 여기에 추가
+            'SP500_INDEX': lambda d: self.repository.get_market_data_by_date_with_forward_fill(MarketIndicatorType.SP500_INDEX, d).value if self.repository.get_market_data_by_date_with_forward_fill(MarketIndicatorType.SP500_INDEX, d) else None,
+            'GOLD_PRICE': lambda d: self.repository.get_market_data_by_date_with_forward_fill(MarketIndicatorType.GOLD_PRICE, d).value if self.repository.get_market_data_by_date_with_forward_fill(MarketIndicatorType.GOLD_PRICE, d) else None,
+            'CRUDE_OIL_PRICE': lambda d: self.repository.get_market_data_by_date_with_forward_fill(MarketIndicatorType.CRUDE_OIL_PRICE, d).value if self.repository.get_market_data_by_date_with_forward_fill(MarketIndicatorType.CRUDE_OIL_PRICE, d) else None,
+        }
+
+        logger.debug(f"Fetching macro data for {target_date} with required indicators: {required_indicators}")
+
+        for indicator_name in required_indicators:
+            fetch_function = indicator_fetch_map.get(indicator_name)
+            if fetch_function:
+                macro_data[indicator_name] = fetch_function(target_date)
+            else:
+                logger.warning(f"No fetch function defined for required indicator: {indicator_name}")
+                macro_data[indicator_name] = None
+        
+        return macro_data
 
 
 if __name__ == '__main__':
