@@ -91,7 +91,7 @@ STRATEGY_CONFIGS = {
         },
         position_management={
             "max_positions": 3,
-            "position_timeout_hours": 336  # 14일
+            "position_timeout_hours": 672  # 28일
         }
     ),
     
@@ -117,7 +117,7 @@ STRATEGY_CONFIGS = {
         },
         position_management={
             "max_positions": 5,
-            "position_timeout_hours": 336  # 14일
+            "position_timeout_hours": 504  # 21일
         }
     ),
     
@@ -192,7 +192,7 @@ STRATEGY_CONFIGS = {
         },
         position_management={
             "max_positions": 4,
-            "position_timeout_hours": 60
+            "position_timeout_hours": 720
         }
     ),
     
@@ -211,7 +211,7 @@ STRATEGY_CONFIGS = {
         },
         position_management={
             "max_positions": 3,
-            "position_timeout_hours": 48
+            "position_timeout_hours": 168
         }
     ),
     
@@ -252,7 +252,7 @@ STRATEGY_CONFIGS = {
         },
         position_management={
             "max_positions": 3,
-            "position_timeout_hours": 168  # 7일
+            "position_timeout_hours": 336  # 14일
         }
     ),
     
@@ -267,7 +267,7 @@ STRATEGY_CONFIGS = {
             DetectorConfig("StochSignalDetector", weight=3.0),
         ],
         market_filters={"trend_alignment": False},
-        position_management={"max_positions": 4, "position_timeout_hours": 24}
+        position_management={"max_positions": 4, "position_timeout_hours": 120}
     ),
     
     StrategyType.TREND_PULLBACK: StrategyConfig(
@@ -281,7 +281,7 @@ STRATEGY_CONFIGS = {
             DetectorConfig("RSISignalDetector", weight=6.0),
         ],
         market_filters={"trend_alignment": True},
-        position_management={"max_positions": 4, "position_timeout_hours": 72}
+        position_management={"max_positions": 4, "position_timeout_hours": 120}
     ),
     
     StrategyType.VOLATILITY_BREAKOUT: StrategyConfig(
@@ -311,7 +311,7 @@ STRATEGY_CONFIGS = {
             })
         ],
         market_filters={"trend_alignment": True, "trend_strength": True},
-        position_management={"max_positions": 2, "position_timeout_hours": 120}
+        position_management={"max_positions": 2, "position_timeout_hours": 672}
     ),
     
     StrategyType.MULTI_TIMEFRAME: StrategyConfig(
@@ -325,7 +325,7 @@ STRATEGY_CONFIGS = {
             DetectorConfig("RSISignalDetector", weight=4.0),
         ],
         market_filters={"multi_timeframe_confirmation": True},
-        position_management={"max_positions": 3, "position_timeout_hours": 96}
+        position_management={"max_positions": 3, "position_timeout_hours": 504}
     ),
     
     StrategyType.MACRO_DRIVEN: StrategyConfig(
@@ -348,7 +348,7 @@ STRATEGY_CONFIGS = {
         },
         position_management={
             "max_positions": 4, 
-            "position_timeout_hours": 120,
+            "position_timeout_hours": 720,
             "stop_loss_percent": 0.05,
             "take_profit_percent": 0.12
         }
