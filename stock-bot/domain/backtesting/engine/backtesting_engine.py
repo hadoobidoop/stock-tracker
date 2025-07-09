@@ -100,8 +100,12 @@ class BacktestingEngine:
             start_date = start_date.replace(tzinfo=timezone.utc)
         if end_date.tzinfo is None:
             end_date = end_date.replace(tzinfo=timezone.utc)
-            
-        strategy_name = self.strategy_type.value if self.use_enhanced_signals else "Static_Strategy_Mix"
+        
+        # 현재 활성 전략 정보 가져오기
+        current_strategy_info = self._get_current_strategy_info()
+        strategy_name = current_strategy_info['name']
+        strategy_type_value = current_strategy_info['type']
+        
         logger.info(f"Starting backtest for {len(tickers)} tickers from {start_date} to {end_date} using {strategy_name}")
 
         portfolio = Portfolio(
@@ -117,7 +121,7 @@ class BacktestingEngine:
             'risk_per_trade': self.risk_per_trade,
             'signal_threshold': SIGNAL_THRESHOLD,
             'use_enhanced_signals': self.use_enhanced_signals,
-            'strategy_type': self.strategy_type.value if hasattr(self, 'strategy_type') and self.strategy_type else None
+            'strategy_type': strategy_type_value
         }
 
         result = BacktestResult(
@@ -244,6 +248,39 @@ class BacktestingEngine:
                 continue
         return results
 
+    def _get_current_strategy_info(self) -> Dict[str, str]:
+        """현재 활성 전략 정보를 반환합니다."""
+        if not self.use_enhanced_signals or not self.signal_service:
+            return {
+                'name': 'Static_Strategy_Mix',
+                'type': 'static_mix'
+            }
+        
+        # 전략 조합이 활성화되어 있는지 확인
+        if hasattr(self.signal_service.strategy_manager, 'current_mix_config') and \
+           self.signal_service.strategy_manager.current_mix_config:
+            mix_config = self.signal_service.strategy_manager.current_mix_config
+            return {
+                'name': f"Strategy Mix: {mix_config.name}",
+                'type': mix_config.name
+            }
+        
+        # 동적 전략이 활성화되어 있는지 확인
+        if hasattr(self.signal_service.strategy_manager, 'current_dynamic_strategy') and \
+           self.signal_service.strategy_manager.current_dynamic_strategy:
+            dynamic_strategy = self.signal_service.strategy_manager.current_dynamic_strategy
+            return {
+                'name': f"Dynamic Strategy: {dynamic_strategy.strategy_name}",
+                'type': dynamic_strategy.strategy_name
+            }
+        
+        # 정적 전략
+        strategy_type = self.strategy_type.value if hasattr(self, 'strategy_type') and self.strategy_type else 'balanced'
+        return {
+            'name': f"Static Strategy: {strategy_type}",
+            'type': strategy_type
+        }
+
     def _execute_backtest_logic(self,
                               tickers: List[str],
                               start_date: datetime,
@@ -265,6 +302,11 @@ class BacktestingEngine:
 
             all_data = {t: data for t, data in all_fetched_data.items() if t != MARKET_INDEX_TICKER and data is not None and not data.empty}
             market_index_data = all_fetched_data.get(MARKET_INDEX_TICKER)
+            
+            print(f"📊 Loaded data for {len(all_data)} tickers")
+            for ticker, data in all_data.items():
+                print(f"  {ticker}: {len(data)} rows, date range: {data.index[0]} to {data.index[-1]}")
+                print(f"    Sample timestamps: {data.index[:3].tolist()}")
 
             if not all_data:
                 logger.error("No data loaded for any ticker")
@@ -273,8 +315,10 @@ class BacktestingEngine:
                 logger.error(f"Market index data ({MARKET_INDEX_TICKER}) could not be loaded.")
                 return False
 
+            print(f"🚀 Starting backtest execution by timeframe")
             self._execute_backtest_by_timeframe(all_data, market_index_data, portfolio, result, start_date, end_date, daily_market_data)
 
+            print(f"🏁 Finalizing backtest result")
             self._finalize_backtest_result(portfolio, result, all_data)
 
             return True
@@ -296,6 +340,12 @@ class BacktestingEngine:
             all_timestamps.update(data.index)
 
         timestamps = sorted([ts for ts in all_timestamps if start_date <= ts <= end_date])
+        
+        print(f"🕐 Total timestamps in range: {len(timestamps)}")
+        print(f"📅 Date range: {start_date} to {end_date}")
+        if timestamps:
+            print(f"🔢 First timestamp: {timestamps[0]}")
+            print(f"🔢 Last timestamp: {timestamps[-1]}")
 
         logger.info(f"Processing {len(timestamps)} time points...")
 
@@ -338,18 +388,30 @@ class BacktestingEngine:
         self._update_daily_cache(all_data, market_index_data, current_time)
 
         market_trend = self.daily_data_cache["market_trend"]
+        print(f"🌊 Market trend at {current_time}: {market_trend}")
+        print(f"🏢 Processing {len(all_data)} tickers: {list(all_data.keys())}")
+        print(f"🏢 Portfolio open positions: {list(portfolio.open_positions.keys())}")
 
         for ticker, data in all_data.items():
-            if ticker in portfolio.open_positions or current_time not in data.index:
+            if ticker in portfolio.open_positions:
+                print(f"⏭️ Skipping {ticker}: already have open position")
+                continue
+            if current_time not in data.index:
+                print(f"⏭️ Skipping {ticker}: current_time {current_time} not in data")
                 continue
 
+            print(f"🔍 Processing {ticker} at {current_time}")
             try:
                 current_data = data.loc[:current_time].copy()
+                print(f"  📏 Current data length: {len(current_data)}, minimum required: {REALTIME_SIGNAL_DETECTION['MIN_HOURLY_DATA_LENGTH']}")
                 if len(current_data) < REALTIME_SIGNAL_DETECTION["MIN_HOURLY_DATA_LENGTH"]:
+                    print(f"  ⏭️ Insufficient data length for {ticker}")
                     continue
 
                 df_with_indicators = calculate_all_indicators(current_data)
+                print(f"  📊 Indicators calculated, empty: {df_with_indicators.empty}")
                 if df_with_indicators.empty:
+                    print(f"  ⏭️ Empty indicators for {ticker}")
                     continue
 
                 # --- 중앙화된 데이터 공급 방식으로 변경 ---
@@ -372,6 +434,7 @@ class BacktestingEngine:
                 )
 
                 if signal_result:
+                    logger.info(f"📊 Signal detected for {ticker} at {current_time}: {signal_result['type']} (Score: {signal_result['score']:.2f})")
                     self._execute_trade(
                         signal_result, ticker, current_time, current_prices.get(ticker),
                         portfolio, market_trend, long_term_trend
@@ -400,7 +463,10 @@ class BacktestingEngine:
 
             # StrategyResult가 신호가 없다고 판단하면, 즉시 종료
             if not strategy_result.has_signal:
+                print(f"❌ No signal for {ticker}: has_signal={strategy_result.has_signal}, buy_score={strategy_result.buy_score:.2f}, sell_score={strategy_result.sell_score:.2f}")
                 return None
+            else:
+                print(f"✅ Signal found for {ticker}: has_signal={strategy_result.has_signal}, buy_score={strategy_result.buy_score:.2f}, sell_score={strategy_result.sell_score:.2f}")
 
             # 신호가 있다면, buy/sell 중 어떤 타입인지 결정
             if strategy_result.buy_score > strategy_result.sell_score:

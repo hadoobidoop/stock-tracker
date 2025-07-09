@@ -215,19 +215,23 @@ class BaseStrategy(ABC):
                 df_with_indicators, ticker, market_trend, long_term_trend, daily_extra_indicators or {}
             )
             
-            # 전략별 점수 조정
-            adjusted_score = self._adjust_score_by_strategy(
-                signal_result.get('score', 0), market_trend, long_term_trend, df_with_indicators
-            )
+            # 오케스트레이터에서 신호가 있으면 전략에서도 인정
+            base_score = signal_result.get('score', 0)
+            has_signal = bool(signal_result and signal_result.get('type'))  # 신호 타입이 있으면 신호 있음
+            
+            # 전략별 점수 조정 (신호가 있을 때만)
+            if has_signal:
+                adjusted_score = self._adjust_score_by_strategy(
+                    base_score, market_trend, long_term_trend, df_with_indicators
+                )
+            else:
+                adjusted_score = 0.0
             
             # 성능 모니터링 업데이트
             self.score_history.append(adjusted_score)
             if len(self.score_history) > 100:  # 최근 100개만 유지
                 self.score_history.pop(0)
             self.average_score = sum(self.score_history) / len(self.score_history)
-            
-            # 신호 여부 판단
-            has_signal = adjusted_score >= self.config.signal_threshold
             
             if has_signal:
                 self.signals_generated += 1

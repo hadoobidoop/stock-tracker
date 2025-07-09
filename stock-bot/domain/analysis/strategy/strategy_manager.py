@@ -15,31 +15,11 @@ from infrastructure.db.models.enums import TrendType
 from domain.analysis.config.static_strategies import (
     StrategyType, StrategyConfig, STRATEGY_CONFIGS, get_static_strategy_types
 )
-# Static Strategy Mix 관련은 legacy_config_backup에서 임시로 참조
-try:
-    from legacy_config_backup.strategy_settings import (
-        StrategyMixMode, StrategyMixConfig, STRATEGY_MIXES,
-        MARKET_CONDITION_STRATEGIES
-    )
-except ImportError:
-    # 조합 기능 비활성화를 위한 더미 클래스들
-    from enum import Enum
-    from dataclasses import dataclass
-    from typing import Dict
-    
-    class StrategyMixMode(Enum):
-        WEIGHTED = "weighted"
-        VOTING = "voting"
-        ENSEMBLE = "ensemble"
-    
-    @dataclass
-    class StrategyMixConfig:
-        mode: StrategyMixMode
-        strategies: Dict
-        threshold_adjustment: float = 1.0
-    
-    STRATEGY_MIXES = {}
-    MARKET_CONDITION_STRATEGIES = {}
+# Static Strategy Mix 관련 설정 import
+from domain.analysis.config.strategy_mixes import (
+    StrategyMixMode, StrategyMixConfig, STRATEGY_MIXES,
+    MARKET_CONDITION_STRATEGIES
+)
 
 from .base_strategy import BaseStrategy, StrategyResult
 from .strategy_implementations import StrategyFactory

@@ -89,7 +89,11 @@ class SignalDetectionOrchestrator:
         self.last_signals = current_signals
         
         # 근거 수집
-        all_technical_evidences = self._collect_all_technical_evidences()
+        try:
+            all_technical_evidences = self._collect_all_technical_evidences()
+        except Exception as e:
+            logger.error(f"Error collecting technical evidences: {e}")
+            all_technical_evidences = []
         
         # 최종 신호 판단
         return self._evaluate_final_signal(
