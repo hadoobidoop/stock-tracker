@@ -63,17 +63,28 @@ class Trade:
         if self.metadata is None:
             self.metadata = {}
     
-    def calculate_pnl(self) -> None:
-        """손익 계산"""
+    def calculate_pnl(self, commission_rate: float = 0.0) -> None:
+        """손익 계산 (수수료 반영)"""
         if self.exit_price is None:
             return
             
+        # 총 거래 대금
+        entry_value = self.entry_price * self.entry_quantity
+        exit_value = self.exit_price * self.entry_quantity
+        
+        # 수수료
+        entry_commission = entry_value * commission_rate
+        exit_commission = exit_value * commission_rate
+        total_commission = entry_commission + exit_commission
+            
         if self.trade_type == TradeType.BUY:
-            self.pnl = (self.exit_price - self.entry_price) * self.entry_quantity
-            self.pnl_percent = ((self.exit_price - self.entry_price) / self.entry_price) * 100
+            gross_pnl = (self.exit_price - self.entry_price) * self.entry_quantity
+            self.pnl = gross_pnl - total_commission
+            self.pnl_percent = (self.pnl / entry_value) * 100 if entry_value != 0 else 0.0
         else:  # SELL (공매도)
-            self.pnl = (self.entry_price - self.exit_price) * self.entry_quantity
-            self.pnl_percent = ((self.entry_price - self.exit_price) / self.entry_price) * 100
+            gross_pnl = (self.entry_price - self.exit_price) * self.entry_quantity
+            self.pnl = gross_pnl - total_commission
+            self.pnl_percent = (self.pnl / entry_value) * 100 if entry_value != 0 else 0.0
     
     def calculate_holding_period(self) -> None:
         """보유 기간 계산 (시간 단위)"""
@@ -86,6 +97,7 @@ class Trade:
     def close_trade(self, 
                    exit_timestamp: datetime,
                    exit_price: float,
+                   commission_rate: float,
                    exit_signal_details: Optional[List[str]] = None,
                    exit_signal_score: Optional[int] = None,
                    status: TradeStatus = TradeStatus.CLOSED) -> None:
@@ -96,7 +108,7 @@ class Trade:
         self.exit_signal_score = exit_signal_score
         self.status = status
         
-        self.calculate_pnl()
+        self.calculate_pnl(commission_rate)
         self.calculate_holding_period()
     
     def is_stop_loss_triggered(self, current_price: float) -> bool:

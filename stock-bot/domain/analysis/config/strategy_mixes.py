@@ -31,43 +31,41 @@ class StrategyMixConfig:
 # 전략 조합 정의
 STRATEGY_MIXES: Dict[str, StrategyMixConfig] = {
     
-    # 균형 조합: 다양한 전략의 균형있는 조합
-    "balanced_mix": StrategyMixConfig(
-        name="균형 조합 (Balanced Mix)",
-        description="균형, 모멘텀, 추세추종 전략을 조합하여 다양한 시장 상황에 대응",
-        mode=StrategyMixMode.WEIGHTED,
-        strategies={
-            StrategyType.BALANCED: 0.4,      # 40% - 기본 균형 전략
-            StrategyType.MOMENTUM: 0.3,      # 30% - 모멘텀 포착
-            StrategyType.TREND_FOLLOWING: 0.3  # 30% - 추세 확인
-        },
-        threshold_adjustment=0.9  # 임계값을 약간 낮춤 (더 많은 신호)
-    ),
-    
-    # 보수적 조합: 신뢰도 높은 전략들의 보수적 조합
+    # 보수적 조합: 안정적인 추세 추종
     "conservative_mix": StrategyMixConfig(
         name="보수적 조합 (Conservative Mix)",
-        description="보수적, 고신뢰도, 스윙 전략을 조합하여 안정적인 신호 생성",
-        mode=StrategyMixMode.VOTING,  # 투표 방식 - 과반수 동의 시에만 신호
+        description="여러 추세 및 품질 기반 전략들의 만장일치로 안정적인 신호 생성",
+        mode=StrategyMixMode.VOTING,
         strategies={
-            StrategyType.CONSERVATIVE: 1.0,    # 보수적 전략
-            StrategyType.QUALITY_TREND: 1.0,   # 고신뢰도 복합 추세
-            StrategyType.SWING: 1.0,           # 스윙 전략
+            StrategyType.CONSERVATIVE: 1.0,
+            StrategyType.TREND_FOLLOWING: 1.0,
         },
-        threshold_adjustment=1.2  # 임계값을 높임 (더 엄격한 신호)
+        threshold_adjustment=1.2  # 임계값을 높여 더 엄격한 신호 필터링
     ),
-    
-    # 공격적 조합: 빠른 신호 포착을 위한 공격적 조합
-    "aggressive_mix": StrategyMixConfig(
-        name="공격적 조합 (Aggressive Mix)",
-        description="공격적, 스캘핑, 변동성돌파 전략을 조합하여 빠른 기회 포착",
+
+    # 균형 조합: 추세와 평균 회귀의 조화
+    "balanced_mix": StrategyMixConfig(
+        name="균형 조합 (Balanced Mix)",
+        description="추세추종 전략과 평균 회귀 전략을 조합하여 다양한 시장 상황에 대응",
         mode=StrategyMixMode.WEIGHTED,
         strategies={
-            StrategyType.AGGRESSIVE: 0.4,           # 40% - 기본 공격적 전략
-            StrategyType.SCALPING: 0.3,            # 30% - 단기 신호
+            StrategyType.TREND_FOLLOWING: 0.5,  # 50% - 추세 추종
+            StrategyType.MEAN_REVERSION: 0.5,   # 50% - 평균 회귀
+        },
+        threshold_adjustment=1.0  # 기본 임계값
+    ),
+    
+    # 공격적 조합: 빠른 신호 및 변동성 포착
+    "aggressive_mix": StrategyMixConfig(
+        name="공격적 조합 (Aggressive Mix)",
+        description="모멘텀, 스캘핑, 변동성 돌파 전략을 조합하여 빠른 기회 포착",
+        mode=StrategyMixMode.WEIGHTED,
+        strategies={
+            StrategyType.MOMENTUM: 0.4,             # 40% - 모멘텀
+            StrategyType.SCALPING: 0.3,             # 30% - 초단기 신호
             StrategyType.VOLATILITY_BREAKOUT: 0.3,  # 30% - 변동성 돌파
         },
-        threshold_adjustment=0.8  # 임계값을 낮춤 (더 빠른 신호)
+        threshold_adjustment=0.8  # 임계값을 낮춰 더 많은 신호 포착
     ),
     
 }

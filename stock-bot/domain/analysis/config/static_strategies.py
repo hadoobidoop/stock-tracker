@@ -21,21 +21,23 @@ class StrategyType(Enum):
     TREND_FOLLOWING = "trend_following"  # 추세추종 전략
     CONTRARIAN = "contrarian"       # 역추세 전략
     SCALPING = "scalping"           # 스캘핑 전략
-    SWING = "swing"                 # 스윙 전략
-    MEAN_REVERSION = "mean_reversion"             # 평균 회귀 전략
-    TREND_PULLBACK = "trend_pullback"             # 추세 추종 눌림목 전략
-    VOLATILITY_BREAKOUT = "volatility_breakout"   # 변동성 돌파 전략
-    QUALITY_TREND = "quality_trend"               # 고신뢰도 복합 추세 전략
-    MULTI_TIMEFRAME = "multi_timeframe"           # 다중 시간대 확인 전략
-    MACRO_DRIVEN = "macro_driven"                 # 거시지표 기반 전략
-    
-    # 동적 전략용 (호환성)
-    DYNAMIC_WEIGHT = "dynamic_weight"   # 동적 가중치 전략
+    SWING = "swing"
+    MEAN_REVERSION = "mean_reversion"
+    TREND_PULLBACK = "trend_pullback"
+    VOLATILITY_BREAKOUT = "volatility_breakout"
+    MULTI_TIMEFRAME = "multi_timeframe"
+    MACRO_DRIVEN = "macro_driven"
+    ADAPTIVE_MOMENTUM = "adaptive_momentum"
+    CONSERVATIVE_REVERSION_HYBRID = "conservative_reversion_hybrid"
+    MARKET_REGIME_HYBRID = "market_regime_hybrid"
+    STABLE_VALUE_HYBRID = "stable_value_hybrid"
+    DYNAMIC_WEIGHT = "dynamic_weight" # 동적 전략을 위한 플레이스홀더
+
 
 
 @dataclass
 class DetectorConfig:
-    """감지기 설정"""
+    """신호 탐지기 설정"""
     detector_class: str
     weight: float
     enabled: bool = True
@@ -298,22 +300,6 @@ STRATEGY_CONFIGS = {
         position_management={"max_positions": 3, "position_timeout_hours": 48}
     ),
     
-    StrategyType.QUALITY_TREND: StrategyConfig(
-        name="고신뢰도 복합 추세 전략",
-        description="여러 추세 지표가 모두 동의할 때만 진입하는 보수적 추세 전략",
-        signal_threshold=10.0,
-        risk_per_trade=0.01,
-        detectors=[
-            DetectorConfig("CompositeSignalDetector", weight=10.0, parameters={
-                "require_all": True,
-                "name": "Quality_Trend_Confirm",
-                "sub_detectors": ["SMASignalDetector", "MACDSignalDetector", "ADXSignalDetector"]
-            })
-        ],
-        market_filters={"trend_alignment": True, "trend_strength": True},
-        position_management={"max_positions": 2, "position_timeout_hours": 672}
-    ),
-    
     StrategyType.MULTI_TIMEFRAME: StrategyConfig(
         name="다중 시간대 확인 전략",
         description="장기 추세(일봉)와 단기(시간봉) 진입 신호를 함께 확인하는 전략",
@@ -352,6 +338,46 @@ STRATEGY_CONFIGS = {
             "stop_loss_percent": 0.05,
             "take_profit_percent": 0.12
         }
+    ),
+
+    StrategyType.ADAPTIVE_MOMENTUM: StrategyConfig(
+        name="적응형 모멘텀",
+        description="추세, 모멘텀, 변동성을 결합한 적응형 전략",
+        signal_threshold=6.0,
+        risk_per_trade=0.02,
+        detectors=[],  # 로직이 클래스 내부에 직접 구현됨
+        market_filters={},
+        position_management={}
+    ),
+
+    StrategyType.CONSERVATIVE_REVERSION_HYBRID: StrategyConfig(
+        name="보수적 평균 회귀 하이브리드",
+        description="보수적 추세 확인 후 평균 회귀로 진입하는 전략",
+        signal_threshold=6.0, # 임계값을 약간 낮춰 더 많은 기회 포착
+        risk_per_trade=0.015,
+        detectors=[], # 로직이 클래스 내부에 직접 구현됨
+        market_filters={},
+        position_management={}
+    ),
+
+    StrategyType.MARKET_REGIME_HYBRID: StrategyConfig(
+        name="시장 체제 적응형 하이브리드",
+        description="시장의 추세와 변동성을 진단하여 최적의 하위 전략을 동적으로 선택",
+        signal_threshold=6.0, # 하위 전략의 임계값을 따르므로, 중간값으로 설정
+        risk_per_trade=0.02,
+        detectors=[], # 로직이 클래스 내부에 직접 구현됨
+        market_filters={},
+        position_management={}
+    ),
+
+    StrategyType.STABLE_VALUE_HYBRID: StrategyConfig(
+        name="안정 가치 하이브리드",
+        description="안정적인 추세에서 눌림목을 공략하는 우량주 특화 전략",
+        signal_threshold=8.0, # 눌림목 전략의 임계값을 따름
+        risk_per_trade=0.015,
+        detectors=[], # 로직이 클래스 내부에 직접 구현됨
+        market_filters={},
+        position_management={}
     )
 }
 
@@ -380,7 +406,7 @@ def get_available_strategies() -> Dict[str, List[str]]:
     return {
         "basic": ["CONSERVATIVE", "BALANCED", "AGGRESSIVE"],
         "momentum": ["MOMENTUM", "RSI_STOCH", "SCALPING"],
-        "trend": ["TREND_FOLLOWING", "TREND_PULLBACK", "QUALITY_TREND"],
+        "trend": ["TREND_FOLLOWING", "TREND_PULLBACK"],
         "reversion": ["CONTRARIAN", "MEAN_REVERSION", "SWING"],
         "advanced": ["VOLATILITY_BREAKOUT", "MULTI_TIMEFRAME", "MACRO_DRIVEN"]
     }

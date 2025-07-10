@@ -340,7 +340,8 @@ class StrategyManager:
     def _weighted_combination(self, 
                             individual_results: Dict[StrategyType, Tuple[StrategyResult, float]]) -> StrategyResult:
         """가중치 기반 조합"""
-        total_weighted_score = 0.0
+        total_weighted_buy_score = 0.0
+        total_weighted_sell_score = 0.0
         total_weight = 0.0
         all_signals = []
         total_confidence = 0.0
@@ -348,8 +349,8 @@ class StrategyManager:
         strategy_names = []
         
         for strategy_type, (result, weight) in individual_results.items():
-            weighted_score = result.total_score * weight
-            total_weighted_score += weighted_score
+            total_weighted_buy_score += result.buy_score * weight
+            total_weighted_sell_score += result.sell_score * weight
             total_weight += weight
             total_confidence += result.confidence * weight
             
@@ -357,49 +358,83 @@ class StrategyManager:
             strategy_names.append(f"{result.strategy_name}({weight:.1f})")
         
         # 평균 계산
-        final_score = total_weighted_score / total_weight if total_weight > 0 else 0
+        final_buy_score = total_weighted_buy_score / total_weight if total_weight > 0 else 0
+        final_sell_score = total_weighted_sell_score / total_weight if total_weight > 0 else 0
         final_confidence = total_confidence / total_weight if total_weight > 0 else 0
         
         # 임계값 조정
         adjusted_threshold = self.current_mix_config.threshold_adjustment * 8.0  # 기본 임계값
         
+        final_score = 0
+        has_signal = False
+        if final_buy_score > final_sell_score and final_buy_score >= adjusted_threshold:
+            final_score = final_buy_score
+            has_signal = True
+        elif final_sell_score > final_buy_score and final_sell_score >= adjusted_threshold:
+            final_score = final_sell_score
+            has_signal = True
+
         return StrategyResult(
             strategy_name=f"Mix({'+'.join(strategy_names)})",
             strategy_type=StrategyType.BALANCED,  # 조합은 BALANCED로 분류
-            has_signal=final_score >= adjusted_threshold,
+            has_signal=has_signal,
             total_score=final_score,
             signal_strength="",  # __post_init__에서 자동 계산
             signals_detected=all_signals,
             signal=None,  # 필요시 별도 생성
-            confidence=final_confidence
+            confidence=final_confidence,
+            buy_score=final_buy_score,
+            sell_score=final_sell_score
         )
     
     def _voting_combination(self, 
                           individual_results: Dict[StrategyType, Tuple[StrategyResult, float]]) -> StrategyResult:
         """투표 기반 조합"""
-        vote_count = 0
+        buy_votes = 0
+        sell_votes = 0
+        buy_scores = []
+        sell_scores = []
+        all_signals = []
+        
         total_strategies = len(individual_results)
         
         for strategy_type, (result, weight) in individual_results.items():
             if result.has_signal:
-                vote_count += 1
-        
-        # 과반수 이상이 신호를 생성한 경우
+                if result.buy_score > result.sell_score:
+                    buy_votes += 1
+                    buy_scores.append(result.total_score)
+                else:
+                    sell_votes += 1
+                    sell_scores.append(result.total_score)
+            all_signals.extend(result.signals_detected)
+
         majority_threshold = total_strategies / 2
-        has_majority_signal = vote_count > majority_threshold
-        
-        # 최고 점수 전략 선택
+        has_signal = False
+        final_score = 0
+        signal_type = None
+
+        if buy_votes > majority_threshold and buy_votes > sell_votes:
+            has_signal = True
+            signal_type = 'BUY'
+            final_score = sum(buy_scores) / len(buy_scores) if buy_scores else 0
+        elif sell_votes > majority_threshold and sell_votes > buy_votes:
+            has_signal = True
+            signal_type = 'SELL'
+            final_score = sum(sell_scores) / len(sell_scores) if sell_scores else 0
+
         best_result = max(individual_results.values(), key=lambda x: x[0].total_score)[0]
-        
+
         return StrategyResult(
-            strategy_name=f"Voting({vote_count}/{total_strategies})",
+            strategy_name=f"Voting(B:{buy_votes},S:{sell_votes}/{total_strategies})",
             strategy_type=StrategyType.BALANCED,
-            has_signal=has_majority_signal,
-            total_score=best_result.total_score,
-            signal_strength="",  # __post_init__에서 자동 계산
-            signals_detected=best_result.signals_detected,
-            signal=best_result.signal if has_majority_signal else None,
-            confidence=vote_count / total_strategies
+            has_signal=has_signal,
+            total_score=final_score,
+            signal_strength="",
+            signals_detected=all_signals,
+            signal=best_result.signal if has_signal else None,
+            confidence=(max(buy_votes, sell_votes) / total_strategies) if has_signal else 0,
+            buy_score=sum(buy_scores) / len(buy_scores) if buy_scores else 0,
+            sell_score=sum(sell_scores) / len(sell_scores) if sell_scores else 0
         )
     
     def _ensemble_combination(self, 

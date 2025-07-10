@@ -178,7 +178,13 @@ class SignalDetectionOrchestrator:
                 'evidence': evidence
             }
         
-        return {}
+        return {
+            'type': None,
+            'score': 0,
+            'buy_score': buy_score,
+            'sell_score': sell_score,
+            'details': [],
+        }
     
     def _get_adjusted_threshold(self, market_trend: TrendType) -> float:
         """시장 추세에 따른 임계값을 조정합니다."""

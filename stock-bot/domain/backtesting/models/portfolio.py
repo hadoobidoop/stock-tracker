@@ -97,15 +97,25 @@ class Portfolio:
         
         trade = self.open_positions.pop(ticker)
         
-        # 거래 청산
-        trade.close_trade(exit_timestamp, exit_price, exit_signal_details, exit_signal_score, status)
+        # 거래 청산 (수수료율 전달)
+        trade.close_trade(
+            exit_timestamp, 
+            exit_price, 
+            self.commission_rate,
+            exit_signal_details, 
+            exit_signal_score, 
+            status
+        )
         
         # 현금 회수
-        gross_proceeds = exit_price * trade.entry_quantity
-        commission = gross_proceeds * self.commission_rate
-        net_proceeds = gross_proceeds - commission
+        # PnL은 이미 수수료가 반영되었으므로, 여기서는 수수료를 다시 계산하지 않고 PnL을 직접 더함
+        # gross_proceeds = exit_price * trade.entry_quantity
+        # commission = gross_proceeds * self.commission_rate
+        # net_proceeds = gross_proceeds - commission
         
-        self.current_cash += net_proceeds
+        # 올바른 현금 회수 로직: 초기 투자 원금 + PnL
+        entry_value = trade.entry_price * trade.entry_quantity
+        self.current_cash += (entry_value + trade.pnl)
         
         # 완료된 거래 기록
         self.closed_trades.append(trade)

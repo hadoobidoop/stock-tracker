@@ -361,7 +361,7 @@ class BacktestingEngine:
 
                 portfolio.check_stop_loss_take_profit(current_prices, current_time)
 
-                self._process_signals_and_trades(all_data, market_index_data, portfolio, current_time, current_prices, daily_market_data)
+                self._process_signals_and_trades(all_data, market_index_data, portfolio, current_time, current_prices, daily_market_data, start_date)
 
                 portfolio_value = portfolio.get_portfolio_value(current_prices)
                 result.portfolio_values.append({
@@ -383,35 +383,27 @@ class BacktestingEngine:
                                     portfolio: Portfolio,
                                     current_time: datetime,
                                     current_prices: Dict[str, float],
-                                    daily_market_data: Optional[Dict[date, Dict]] = None) -> None:
+                                    daily_market_data: Optional[Dict[date, Dict]],
+                                    start_date: datetime) -> None:
 
         self._update_daily_cache(all_data, market_index_data, current_time)
 
         market_trend = self.daily_data_cache["market_trend"]
-        print(f"🌊 Market trend at {current_time}: {market_trend}")
-        print(f"🏢 Processing {len(all_data)} tickers: {list(all_data.keys())}")
-        print(f"🏢 Portfolio open positions: {list(portfolio.open_positions.keys())}")
 
         for ticker, data in all_data.items():
             if ticker in portfolio.open_positions:
-                print(f"⏭️ Skipping {ticker}: already have open position")
                 continue
             if current_time not in data.index:
-                print(f"⏭️ Skipping {ticker}: current_time {current_time} not in data")
                 continue
 
-            print(f"🔍 Processing {ticker} at {current_time}")
             try:
-                current_data = data.loc[:current_time].copy()
-                print(f"  📏 Current data length: {len(current_data)}, minimum required: {REALTIME_SIGNAL_DETECTION['MIN_HOURLY_DATA_LENGTH']}")
+                # --- 수정된 부분: start_date를 사용하여 데이터 슬라이싱 ---
+                current_data = data.loc[start_date:current_time].copy()
                 if len(current_data) < REALTIME_SIGNAL_DETECTION["MIN_HOURLY_DATA_LENGTH"]:
-                    print(f"  ⏭️ Insufficient data length for {ticker}")
                     continue
 
                 df_with_indicators = calculate_all_indicators(current_data)
-                print(f"  📊 Indicators calculated, empty: {df_with_indicators.empty}")
                 if df_with_indicators.empty:
-                    print(f"  ⏭️ Empty indicators for {ticker}")
                     continue
 
                 # --- 중앙화된 데이터 공급 방식으로 변경 ---
@@ -463,10 +455,10 @@ class BacktestingEngine:
 
             # StrategyResult가 신호가 없다고 판단하면, 즉시 종료
             if not strategy_result.has_signal:
-                print(f"❌ No signal for {ticker}: has_signal={strategy_result.has_signal}, buy_score={strategy_result.buy_score:.2f}, sell_score={strategy_result.sell_score:.2f}")
+                logger.debug(f"No signal for {ticker}: has_signal={strategy_result.has_signal}, buy_score={strategy_result.buy_score:.2f}, sell_score={strategy_result.sell_score:.2f}")
                 return None
             else:
-                print(f"✅ Signal found for {ticker}: has_signal={strategy_result.has_signal}, buy_score={strategy_result.buy_score:.2f}, sell_score={strategy_result.sell_score:.2f}")
+                logger.debug(f"Signal details for {ticker}: has_signal={strategy_result.has_signal}, buy_score={strategy_result.buy_score:.2f}, sell_score={strategy_result.sell_score:.2f}")
 
             # 신호가 있다면, buy/sell 중 어떤 타입인지 결정
             if strategy_result.buy_score > strategy_result.sell_score:
