@@ -71,7 +71,7 @@ class SQLMarketDataRepository(MarketDataRepository):
 
                 if existing:
                     # 동일한 데이터인지 확인 (값과 메타데이터 비교)
-                    if self._is_data_identical(existing, value, additional_data):
+                    if self._is_data_identical(existing, value, additional_data, indicator_type):
                         logger.debug(f"Identical data found for {indicator_type.value} on {data_date}: {value} - Skipping save")
                         return True  # 동일한 데이터이므로 저장하지 않고 성공 반환
                     
@@ -105,7 +105,7 @@ class SQLMarketDataRepository(MarketDataRepository):
             logger.error(f"Error saving market data: {e}", exc_info=True)
             return False
 
-    def _is_data_identical(self, existing: MarketData, new_value: float, new_additional_data: str = None) -> bool:
+    def _is_data_identical(self, existing: MarketData, new_value: float, new_additional_data: str = None, indicator_type: MarketIndicatorType = None) -> bool:
         """
         기존 데이터와 새로운 데이터가 동일한지 확인합니다.
         
@@ -113,13 +113,19 @@ class SQLMarketDataRepository(MarketDataRepository):
             existing: 기존 데이터베이스 레코드
             new_value: 새로운 값
             new_additional_data: 새로운 추가 데이터
+            indicator_type: 지표 타입 (비교 로직 분기용)
             
         Returns:
             bool: 데이터가 동일한지 여부
         """
         # 값 비교 (소수점 6자리까지 비교)
         value_tolerance = 1e-6
-        if abs(existing.value - new_value) > value_tolerance:
+        try:
+            # 두 값 모두 float으로 변환하여 안전하게 비교
+            if abs(float(existing.value) - float(new_value)) > value_tolerance:
+                return False
+        except (TypeError, ValueError):
+             # 하나라도 float으로 변환할 수 없으면 다른 것으로 간주
             return False
         
         # 추가 데이터 비교
@@ -134,7 +140,13 @@ class SQLMarketDataRepository(MarketDataRepository):
                     existing_json = json.loads(existing_additional)
                     new_json = json.loads(new_additional)
                     
-                    # 중요한 필드만 비교 (timestamp 등 제외)
+                    # PUT_CALL_RATIO의 경우, all_ratios 딕셔너리만 비교
+                    if indicator_type == MarketIndicatorType.PUT_CALL_RATIO:
+                        existing_ratios = existing_json.get('all_ratios', {})
+                        new_ratios = new_json.get('all_ratios', {})
+                        return existing_ratios == new_ratios
+
+                    # 버핏 지수의 경우, 중요한 필드만 비교
                     important_fields = ['data_source', 'calculation_method', 'market_cap_billions', 'gdp_billions']
                     
                     for field in important_fields:

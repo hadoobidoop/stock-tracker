@@ -13,6 +13,7 @@ import time
 import random
 
 from infrastructure.db.repository.sql_market_data_repository import SQLMarketDataRepository
+from infrastructure.db.repository.sql_stock_repository import SQLStockRepository
 from infrastructure.db.models.enums import MarketIndicatorType
 from infrastructure.logging import get_logger
 
@@ -24,6 +25,7 @@ class MarketDataService:
 
     def __init__(self):
         self.repository = SQLMarketDataRepository()
+        self.stock_repository = SQLStockRepository()
         # API 호출 제한 방지를 위한 설정
         self.yahoo_request_delay = 30.0  # Yahoo API 호출 간 지연 시간 (초) - 단건 호출 시
         self.yahoo_batch_delay = 2.0  # 배치 작업 시 지연 시간 (초)
@@ -1109,6 +1111,37 @@ class MarketDataService:
         logger.warning(f"No Fear & Greed Index data found on or before {target_date}")
         return None
 
+    def get_daily_ohlcv(self, ticker: str, end_date: date, limit: int = 200) -> Optional[pd.DataFrame]:
+        """특정 종목의 일봉 OHLCV 데이터를 DB 우선으로 가져옵니다."""
+        logger.info(f"Fetching daily OHLCV for {ticker} with limit {limit} until {end_date} (DB-first)")
+        # fetch_and_cache_ohlcv는 내부적으로 DB 조회 -> API 호출 -> DB 저장을 모두 처리합니다.
+        # limit을 기반으로 필요한 데이터 기간(days)을 계산합니다. 주말/휴일 감안하여 1.5배수.
+        days_to_fetch = int(limit * 1.5)
+        data_dict = self.stock_repository.fetch_and_cache_ohlcv([ticker], days=days_to_fetch, interval="1d")
+        
+        if ticker in data_dict and not data_dict[ticker].empty:
+            df = data_dict[ticker]
+            # end_date 이전 데이터만 필터링하고 limit만큼 반환
+            return df[df.index.date <= end_date].tail(limit)
+        
+        logger.warning(f"Failed to get daily OHLCV data for {ticker}")
+        return None
+
+    def get_hourly_ohlcv(self, ticker: str, end_date: date, limit: int = 100) -> Optional[pd.DataFrame]:
+        """특정 종목의 시간봉 OHLCV 데이터를 DB 우선으로 가져옵니다."""
+        logger.info(f"Fetching hourly OHLCV for {ticker} with limit {limit} until {end_date} (DB-first)")
+        # 시간봉은 1일 8시간 거래로 가정하고 필요한 기간을 계산합니다.
+        days_to_fetch = min(729, int(limit / 8 * 1.5))
+        data_dict = self.stock_repository.fetch_and_cache_ohlcv([ticker], days=days_to_fetch, interval="60m")
+
+        if ticker in data_dict and not data_dict[ticker].empty:
+            df = data_dict[ticker]
+            # end_date 이전 데이터만 필터링하고 limit만큼 반환
+            return df[df.index.date <= end_date].tail(limit)
+            
+        logger.warning(f"Failed to get hourly OHLCV data for {ticker}")
+        return None
+
     def get_all_put_call_ratios(self, limit: int = 1) -> Dict[str, Dict]:
         """
         모든 Put/Call 비율들을 조회합니다.
@@ -1199,6 +1232,234 @@ class MarketDataService:
         
         return macro_data
 
+
+    def backfill_all_indicators(self, start_date: date, end_date: date, indicators: Optional[List[str]] = None) -> bool:
+        """
+        지정된 기간 동안의 모든 또는 특정 지표를 백필합니다.
+
+        Args:
+            start_date: 백필 시작 날짜
+            end_date: 백필 종료 날짜
+            indicators: 백필할 지표 이름 리스트. None이면 모든 지표를 대상으로 함.
+        """
+        logger.info(f"Backfilling indicators from {start_date} to {end_date} for: {indicators or 'ALL'}")
+
+        backfill_map = {
+            "VIX": lambda: self._backfill_vix(start_date, end_date),
+            "BUFFETT_INDICATOR": lambda: self._backfill_buffett_indicator(start_date, end_date),
+            "US_10Y_TREASURY_YIELD": lambda: self._backfill_treasury_yield(start_date, end_date),
+            "FEAR_GREED_INDEX": lambda: self._backfill_fear_greed_index(start_date, end_date),
+            "PUT_CALL_RATIO": lambda: self._backfill_put_call_ratio(start_date, end_date),
+            "DXY": lambda: self._backfill_yahoo_symbol("DX-Y.NYB", MarketIndicatorType.DXY, start_date, end_date),
+            "GOLD_PRICE": lambda: self._backfill_yahoo_symbol("GC=F", MarketIndicatorType.GOLD_PRICE, start_date, end_date),
+            "CRUDE_OIL_PRICE": lambda: self._backfill_yahoo_symbol("CL=F", MarketIndicatorType.CRUDE_OIL_PRICE, start_date, end_date),
+            "SP500_INDEX": lambda: self._backfill_yahoo_symbol("^GSPC", MarketIndicatorType.SP500_INDEX, start_date, end_date),
+        }
+
+        target_indicators = indicators or list(backfill_map.keys())
+        results = {}
+
+        for indicator_name in target_indicators:
+            if indicator_name.upper() in backfill_map:
+                results[indicator_name] = backfill_map[indicator_name.upper()]()
+            else:
+                logger.warning(f"Unknown indicator '{indicator_name}' requested for backfill. Skipping.")
+                results[indicator_name] = False
+        
+        # S&P500 데이터가 성공적으로 백필된 경우에만 SMA 계산
+        if "SP500_INDEX" in target_indicators and results.get("SP500_INDEX"):
+            results["SP500_SMA_200"] = self.update_sp500_sma()
+
+        successful_fills = [k for k, v in results.items() if v]
+        failed_fills = [k for k, v in results.items() if not v]
+
+        logger.info(f"Backfill summary - Success: {successful_fills}, Failed: {failed_fills}")
+        return all(results.values())
+
+    def _backfill_vix(self, start_date: date, end_date: date) -> bool:
+        """FRED에서 VIX 데이터를 가져와 백필합니다."""
+        try:
+            logger.info(f"Backfilling VIX from {start_date} to {end_date}...")
+            vix_data = web.DataReader('VIXCLS', 'fred', start_date, end_date)
+            if vix_data.empty:
+                logger.warning("No VIX data from FRED for the period.")
+                return False
+            
+            for data_date, row in vix_data.iterrows():
+                value = row['VIXCLS']
+                if pd.notna(value):
+                    self.repository.save_market_data(
+                        indicator_type=MarketIndicatorType.VIX,
+                        data_date=data_date.date(),
+                        value=value.item() # .item()으로 스칼라 값 추출
+                    )
+            logger.info(f"Successfully backfilled VIX for {len(vix_data)} data points.")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to backfill VIX: {e}")
+            return False
+
+    def _backfill_buffett_indicator(self, start_date: date, end_date: date) -> bool:
+        """버핏 지표를 백필합니다."""
+        try:
+            logger.info(f"Backfilling Buffett Indicator from {start_date} to {end_date}...")
+            gdp = web.DataReader('GDP', 'fred', start_date, end_date)
+            market_cap = web.DataReader('NCBEILQ027S', 'fred', start_date, end_date)
+
+            if gdp.empty or market_cap.empty:
+                logger.warning("No GDP or Market Cap data from FRED.")
+                return False
+
+            # 분기별 데이터를 일별로 forward-fill
+            gdp_daily = gdp.resample('D').ffill()
+            market_cap_daily = market_cap.resample('D').ffill()
+
+            combined = pd.concat([gdp_daily, market_cap_daily], axis=1).dropna()
+            
+            for data_date, row in combined.iterrows():
+                gdp_val = row['GDP']
+                market_cap_val = row['NCBEILQ027S'] / 1000
+                buffett_ratio = (market_cap_val / gdp_val) * 100
+                
+                self.repository.save_market_data(
+                    indicator_type=MarketIndicatorType.BUFFETT_INDICATOR,
+                    data_date=data_date.date(),
+                    value=buffett_ratio.item() # .item()으로 스칼라 값 추출
+                )
+            logger.info(f"Successfully backfilled Buffett Indicator for {len(combined)} data points.")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to backfill Buffett Indicator: {e}")
+            return False
+
+    def _backfill_treasury_yield(self, start_date: date, end_date: date) -> bool:
+        """10년 국채 수익률을 백필합니다."""
+        return self._backfill_fred_symbol('DGS10', MarketIndicatorType.US_10Y_TREASURY_YIELD, start_date, end_date)
+
+    def _backfill_fear_greed_index(self, start_date: date, end_date: date) -> bool:
+        """CNN 공포탐욕지수를 백필합니다."""
+        try:
+            logger.info(f"Backfilling Fear & Greed Index from {start_date} to {end_date}...")
+            api_url = f"https://production.dataviz.cnn.io/index/fearandgreed/graphdata/{start_date.strftime('%Y-%m-%d')}"
+            
+            # 실제 브��우저와 유사한 헤더 사용
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'application/json, text/plain, */*',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+            }
+            
+            response = requests.get(api_url, headers=headers, timeout=30)
+            
+            if response.status_code != 200:
+                logger.error(f"CNN API returned status {response.status_code}")
+                logger.debug(f"Response content: {response.text}")
+                return False
+
+            response_json = response.json()
+            historical_data = response_json.get('fear_and_greed_historical', {})
+            data = historical_data.get('data', [])
+
+            if not data:
+                logger.warning("No 'data' field found in CNN API response.")
+                logger.debug(f"Full API response: {response_json}")
+                return False
+
+            count = 0
+            for item in data:
+                try:
+                    data_date = datetime.fromtimestamp(int(float(item.get('x', 0))) / 1000).date()
+                    value = float(item.get('y', 0))
+
+                    if start_date <= data_date <= end_date:
+                        self.repository.save_market_data(
+                            indicator_type=MarketIndicatorType.FEAR_GREED_INDEX,
+                            data_date=data_date,
+                            value=value
+                        )
+                        count += 1
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"Could not parse item, skipping: {item}. Error: {e}")
+                    continue
+
+            logger.info(f"Successfully backfilled Fear & Greed Index for {count} data points.")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to backfill Fear & Greed Index: {e}", exc_info=True)
+            return False
+
+    def _backfill_put_call_ratio(self, start_date: date, end_date: date) -> bool:
+        """CBOE Put/Call 비율을 백필합니다."""
+        logger.info(f"Backfilling Put/Call Ratio from {start_date} to {end_date}...")
+        current_date = start_date
+        while current_date <= end_date:
+            try:
+                date_str = current_date.strftime('%Y-%m-%d')
+                api_url = f"https://cdn.cboe.com/data/us/options/market_statistics/daily/{date_str}_daily_options"
+                response = requests.get(api_url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
+                if response.status_code == 200:
+                    data = response.json()
+                    if 'ratios' in data:
+                        for ratio_item in data['ratios']:
+                            if ratio_item.get('name') == 'TOTAL PUT/CALL RATIO':
+                                self.repository.save_market_data(
+                                    indicator_type=MarketIndicatorType.PUT_CALL_RATIO,
+                                    data_date=current_date,
+                                    value=float(ratio_item.get('value'))
+                                )
+                                break
+            except Exception:
+                pass # 주말/휴일 등 데이터 없는 날은 그냥 넘어감
+            finally:
+                current_date += timedelta(days=1)
+                time.sleep(0.1) # API 호출 제한 방지
+        logger.info(f"Put/Call Ratio backfill completed for the period.")
+        return True
+
+    def _backfill_yahoo_symbol(self, symbol: str, indicator_type: MarketIndicatorType, start_date: date, end_date: date) -> bool:
+        """Yahoo Finance에서 단일 심볼 데이터를 백필합니다."""
+        try:
+            logger.info(f"Backfilling {symbol} from {start_date} to {end_date}...")
+            data = yf.download(symbol, start=start_date, end=end_date, progress=False)
+            if data.empty:
+                return False
+            
+            for data_date, row in data.iterrows():
+                self.repository.save_market_data(
+                    indicator_type=indicator_type,
+                    data_date=data_date.date(),
+                    value=row['Close']
+                )
+            logger.info(f"Successfully backfilled {symbol} for {len(data)} data points.")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to backfill {symbol}: {e}")
+            return False
+            
+    def _backfill_fred_symbol(self, symbol: str, indicator_type: MarketIndicatorType, start_date: date, end_date: date) -> bool:
+        """FRED에서 단일 심볼 데이터를 백필합니다."""
+        try:
+            logger.info(f"Backfilling {symbol} from FRED ({start_date} to {end_date})...")
+            data = web.DataReader(symbol, 'fred', start_date, end_date)
+            if data.empty:
+                return False
+            
+            for data_date, row in data.iterrows():
+                value = row[symbol]
+                if pd.notna(value):
+                    self.repository.save_market_data(
+                        indicator_type=indicator_type,
+                        data_date=data_date.date(),
+                        value=value.item() # .item()으로 스칼라 값 추출
+                    )
+            logger.info(f"Successfully backfilled {symbol} for {len(data)} data points.")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to backfill {symbol} from FRED: {e}")
+            return False
 
 if __name__ == '__main__':
     """테스트용 실행"""
