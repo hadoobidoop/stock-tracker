@@ -84,21 +84,23 @@ class BuffettIndicatorProvider(BaseIndicatorProvider):
                 logger.info("No new historical Buffett Indicator data to save.")
                 return True
 
-            # 6. Bulk 저장을 위한 데이터 준비
+            # 6. Bulk 저장을 위한 데이터 준비 (최적화)
             logger.info(f"Preparing {len(df_to_save)} historical Buffett Indicator records for batch save...")
-            records_to_save = []
-            for index, row in df_to_save.iterrows():
-                records_to_save.append({
+            df_dict = df_to_save.to_dict('index')
+            records_to_save = [
+                {
                     "indicator_type": MarketIndicatorType.BUFFETT_INDICATOR,
-                    "date": index.date(),
-                    "value": row['buffett_ratio'],
+                    "date": date_idx.date(),
+                    "value": data['buffett_ratio'],
                     "additional_data": json.dumps({
-                        "market_cap_billions": row['market_cap_billions'],
-                        "gdp_billions": row['gdp_billions'],
+                        "market_cap_billions": data['market_cap_billions'],
+                        "gdp_billions": data['gdp_billions'],
                         "calculation_method": "fed_z1_market_cap_to_gdp_point_in_time",
                         "data_source": "Federal Reserve Z.1 (NCBEILQ027S) + FRED (GDP)"
                     })
-                })
+                }
+                for date_idx, data in df_dict.items()
+            ]
             
             # 7. 단일 트랜잭션으로 배치 저장
             with self.repository.transaction() as session:
@@ -140,25 +142,25 @@ class BuffettIndicatorProvider(BaseIndicatorProvider):
                 logger.info("No new recent Buffett Indicator data to estimate and save.")
                 return True
 
-            # 4. Bulk 저장을 위한 데이터 준비
+            # 4. Bulk 저장을 위한 데이터 준비 (최적화)
             logger.info(f"Estimating and preparing {len(wilshire_to_save)} recent Buffett Indicator records for batch save...")
             conversion_factor = 1.08
-            records_to_save = []
-            for date_idx, row in wilshire_to_save.iterrows():
-                estimated_market_cap = row['Close'] * conversion_factor
-                buffett_ratio = (estimated_market_cap / latest_gdp) * 100
-                records_to_save.append({
+            df_dict = wilshire_to_save.to_dict('index')
+            records_to_save = [
+                {
                     "indicator_type": MarketIndicatorType.BUFFETT_INDICATOR,
                     "date": date_idx.date(),
-                    "value": buffett_ratio,
+                    "value": (row['Close'] * conversion_factor / latest_gdp) * 100,
                     "additional_data": json.dumps({
                         "wilshire_5000_points": float(row['Close']),
-                        "market_cap_billions": float(estimated_market_cap),
+                        "market_cap_billions": float(row['Close'] * conversion_factor),
                         "gdp_billions": float(latest_gdp),
                         "calculation_method": "yahoo_w5000_to_gdp_estimation",
                         "data_source": "Yahoo Finance (^W5000) + FRED (GDP)"
                     })
-                })
+                }
+                for date_idx, row in df_dict.items()
+            ]
 
             # 5. 단일 트랜잭션으로 배치 저장
             with self.repository.transaction() as session:

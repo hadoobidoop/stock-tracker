@@ -4,6 +4,7 @@ from datetime import datetime
 import time
 from typing import List, Dict, Any, Optional
 
+from domain.market_data_backfiller.providers.buffett_provider import BuffettBackfillProvider
 from .config import ENABLED_PROVIDERS as DEFAULT_ENABLED_PROVIDERS, BACKFILL_PROVIDERS_CONFIG
 from .providers import *
 from infrastructure.db.repository.sql_market_data_repository import SQLMarketDataRepository
