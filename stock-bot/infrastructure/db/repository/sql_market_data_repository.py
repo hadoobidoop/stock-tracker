@@ -45,8 +45,11 @@ class SQLMarketDataRepository(MarketDataRepository):
         if not records:
             return True
         try:
-            # SQLAlchemy의 bulk_insert_mappings를 사용하여 효율적으로 삽입
-            session.bulk_insert_mappings(MarketData, records)
+            # 딕셔너리 리스트를 MarketData 객체 리스트로 변환
+            market_data_objects = [MarketData(**record) for record in records]
+
+            # bulk_save_objects를 사용하여 객체 리스트를 저장
+            session.bulk_save_objects(market_data_objects)
             logger.info(f"Successfully batched {len(records)} records for insertion.")
             return True
         except Exception as e:

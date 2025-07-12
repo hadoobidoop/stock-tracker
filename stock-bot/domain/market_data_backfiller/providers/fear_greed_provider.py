@@ -66,7 +66,7 @@ class FearGreedBackfillProvider(BaseBackfillProvider):
                 
                 if start_date <= data_date <= end_date:
                     all_records.append({
-                        "indicator_type": indicator_type.value,
+                        "indicator_type": indicator_type,
                         "date": data_date,
                         "value": value,
                         "additional_data": json.dumps({"data_source": "CNN Fear & Greed API (Historical)", "rating": item.get('rating')})
