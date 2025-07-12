@@ -125,9 +125,13 @@ class MarketDataService:
             'CRUDE_OIL_PRICE': MarketIndicatorType.CRUDE_OIL_PRICE,
         }
         for indicator_name in required_indicators:
-            indicator_type = indicator_map.get(indicator_name)
+            # 대소문자 구분 없이 매핑을 찾기 위해 입력된 이름을 대문자로 변환
+            normalized_name = indicator_name.upper()
+            indicator_type = indicator_map.get(normalized_name)
+            
             if indicator_type:
                 data = self.repository.get_market_data_by_date_with_forward_fill(indicator_type, target_date)
+                # 반환하는 딕셔너리의 키는 원래 요청된 이름(소문자)을 사용
                 macro_data[indicator_name] = data.value if data else None
             else:
                 logger.warning(f"No fetch function defined for required indicator: {indicator_name}")

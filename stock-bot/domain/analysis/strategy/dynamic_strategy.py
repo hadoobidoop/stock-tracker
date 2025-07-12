@@ -52,6 +52,7 @@ class DynamicCompositeStrategy(BaseStrategy):
         
         self.technical_detectors: Dict[str, Any] = {}
         self.last_context: Optional[DecisionContext] = None
+        self.is_initialized = False
 
     def get_required_macro_indicators(self) -> List[str]:
         """이 전략의 실행에 필요한 거시 지표 목록을 반환합니다."""
@@ -174,27 +175,43 @@ class DynamicCompositeStrategy(BaseStrategy):
                 detector_result = detector.detect_signals(df_with_indicators)
                 
                 # detector 결과를 점수로 변환 (-100 ~ +100 범위)
-                score = self._convert_detector_result_to_score(detector_result, detector_name)
+                score = self._convert_detector_result_to_score(detector_result, detector_name, df_with_indicators)
                 context.set_detector_score(detector_name, score)
                 
             except Exception as e:
                 logger.error(f"Error calculating score for {detector_name}: {e}")
                 context.set_detector_score(detector_name, 0.0)
     
-    def _convert_detector_result_to_score(self, detector_result: tuple, detector_name: str) -> float:
-        """기존 detector의 결과를 점수로 변환"""
+    def _convert_detector_result_to_score(self, detector_result: tuple, detector_name: str, df: pd.DataFrame) -> float:
+        """
+        기존 detector의 결과를 각 지표의 특성에 맞게 점수로 변환합니다.
+        - RSI: 과매수/과매도 영역을 기준으로 점수화
+        - 기타: buy_score - sell_score를 기반으로 점수화
+        """
         try:
-            buy_score, sell_score, buy_details, sell_details = detector_result
-            
-            # 매수/매도 점수를 -100~+100 범위로 정규화
+            buy_score, sell_score, _, _ = detector_result
             raw_score = buy_score - sell_score
-            
-            # 일반적인 detector 점수 범위를 고려한 정규화 (보통 0~5 범위)
+
+            if detector_name == 'rsi':
+                if 'RSI' not in df.columns:
+                    logger.warning("RSI column not found in DataFrame. Returning 0 score for RSI.")
+                    return 0.0
+                last_rsi = df['RSI'].iloc[-1]
+                logger.debug(f"RSI value for scoring: {last_rsi:.2f}") # RSI 값 로깅 추가
+                if last_rsi < 30: # 과매도
+                    # RSI가 낮을수록(e.g., 10) 더 강한 매수 신호 -> (30 - last_rsi)
+                    return (30 - last_rsi) * 3.33  # 0~100점 척도로 변환
+                elif last_rsi > 70: # 과매수
+                    # RSI가 높을수록(e.g., 90) 더 강한 매도 신호 -> (last_rsi - 70)
+                    return -(last_rsi - 70) * 3.33 # -100~0점 척도로 변환
+                else:
+                    return 0.0 # 중립 구간에서는 점수 없음
+
+            # 다른 지표들은 기존 방식대로 점수화
             normalized_score = max(-100.0, min(100.0, raw_score * 20))  # 5점 -> 100점으로 스케일링
-            
             return normalized_score
-            
-        except (ValueError, TypeError, IndexError) as e:
+
+        except (ValueError, TypeError, IndexError, KeyError) as e:
             logger.error(f"Error converting detector result to score for {detector_name}: {e}")
             return 0.0
     

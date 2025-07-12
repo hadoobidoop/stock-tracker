@@ -144,23 +144,46 @@ class BacktestingEngine:
                             tickers: List[str],
                             start_date: datetime,
                             end_date: datetime,
-                            strategy_type: StrategyType,
+                            strategy_type: Optional[StrategyType] = None,
+                            strategy: Optional[Any] = None, # BaseStrategy 또는 DynamicCompositeStrategy
                             data_interval: str = '1h') -> Optional[BacktestResult]:
-        original_strategy = self.strategy_type
-        self.strategy_type = strategy_type
         
-        if self.use_enhanced_signals and self.signal_service:
-            self.signal_service.switch_strategy(strategy_type)
+        if strategy is None and strategy_type is None:
+            raise ValueError("Either strategy_type or strategy object must be provided.")
+
+        original_strategy_type = self.strategy_type
         
+        # SignalService와 상호작용하는 부분은 strategy_type이 있을 때만 유효
+        if strategy_type:
+            self.strategy_type = strategy_type
+            if self.use_enhanced_signals and self.signal_service:
+                self.signal_service.switch_strategy(strategy_type)
+        
+        # BacktestingEngine 자체의 strategy를 직접 설정 (동적 전략용)
+        if strategy:
+            # SignalDetectionService 내부의 StrategyManager가 이 strategy를 사용하도록 설정
+            if self.use_enhanced_signals and self.signal_service:
+                self.signal_service.strategy_manager.set_strategy(strategy)
+
         try:
             result = self.run_backtest(tickers, start_date, end_date, data_interval)
             if result:
-                result.backtest_settings['strategy_type'] = strategy_type.value
+                if strategy:
+                    result.backtest_settings['strategy_name'] = strategy.strategy_name
+                    result.backtest_settings['strategy_type'] = 'dynamic'
+                elif strategy_type:
+                    result.backtest_settings['strategy_type'] = strategy_type.value
             return result
         finally:
-            self.strategy_type = original_strategy
-            if self.use_enhanced_signals and self.signal_service:
-                self.signal_service.switch_strategy(original_strategy)
+            # 원래의 정적 전략으로 복구
+            self.strategy_type = original_strategy_type
+            if self.use_enhanced_signals and self.signal_service and original_strategy_type:
+                self.signal_service.switch_strategy(original_strategy_type)
+            
+            # 동적 전략 사용 후, 기본 전략으로 리셋
+            if strategy and self.use_enhanced_signals and self.signal_service:
+                self.signal_service.strategy_manager.set_strategy(None) # 기본 전략으로 리셋
+                self.signal_service.switch_strategy(original_strategy_type or StrategyType.BALANCED)
 
     def run_dynamic_strategy_backtest(self,
                                     tickers: List[str],
@@ -408,8 +431,9 @@ class BacktestingEngine:
 
                 # --- 중앙화된 데이터 공급 방식으로 변경 ---
                 daily_extras = {}
-                # 현재 전략이 동적 전략일 경우에만 거시 지표를 조회
-                current_strategy = self.signal_service.strategy_manager.current_strategy
+                # 현재 활성화된 전략(정적/동적)을 가져옴
+                current_strategy = self.signal_service.strategy_manager.active_strategy
+                
                 if hasattr(current_strategy, 'get_required_macro_indicators'):
                     required_indicators = current_strategy.get_required_macro_indicators()
                     if required_indicators:

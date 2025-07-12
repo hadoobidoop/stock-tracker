@@ -273,8 +273,20 @@ def get_modifier_definition(modifier_name: str) -> Optional[ModifierDefinition]:
 
 
 def get_strategy_definition(strategy_name: str) -> Optional[Dict[str, Any]]:
-    """전략 정의 조회"""
-    return STRATEGY_DEFINITIONS.get(strategy_name)
+    """전략 정의 조회 (이름 정규화 기능 추가)"""
+    # 1. 소문자로 변환하고 하이픈을 밑줄로 변경
+    normalized_name = strategy_name.lower().replace('-', '_')
+
+    # 2. 정규화된 이름으로 직접 매칭 시도
+    if normalized_name in STRATEGY_DEFINITIONS:
+        return STRATEGY_DEFINITIONS[normalized_name]
+
+    # 3. '_strategy' 접미사를 붙여서 다시 시도
+    name_with_suffix = f"{normalized_name}_strategy"
+    if name_with_suffix in STRATEGY_DEFINITIONS:
+        return STRATEGY_DEFINITIONS[name_with_suffix]
+
+    return None
 
 
 def get_all_modifiers() -> Dict[str, ModifierDefinition]:

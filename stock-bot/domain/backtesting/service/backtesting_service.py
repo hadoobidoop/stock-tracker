@@ -123,8 +123,36 @@ class BacktestingService:
                                     commission_rate: float,
                                     risk_per_trade: float,
                                     data_interval: str) -> BacktestResult:
-        # ... (기존 코드와 동일)
-        pass
+        """동적 전략으로 백테스트 실행"""
+        logger.info(f"Running backtest with dynamic strategy: {dynamic_strategy_name}")
+        
+        from domain.analysis.strategy.strategy_factory import StrategyFactory
+        
+        # DynamicStrategyFactory를 사용하여 동적 전략 인스턴스 생성
+        dynamic_strategy = StrategyFactory.create_dynamic_strategy(dynamic_strategy_name)
+
+        if not dynamic_strategy:
+            raise ValueError(f"Failed to create dynamic strategy: {dynamic_strategy_name}")
+
+        engine = BacktestingEngine(
+            stock_analysis_service=self.stock_analysis_service,
+            initial_capital=initial_capital,
+            commission_rate=commission_rate,
+            risk_per_trade=risk_per_trade,
+            use_enhanced_signals=True,
+            # strategy_type 대신 strategy 객체 직접 전달 - 이 부분은 BacktestingEngine 생성자에서 직접 처리하지 않음
+        )
+        
+        result = engine.run_strategy_backtest(
+            tickers=tickers,
+            start_date=start_date,
+            end_date=end_date,
+            strategy=dynamic_strategy,  # engine에 객체 전달
+            data_interval=data_interval
+        )
+        
+        logger.info(f"Dynamic strategy '{dynamic_strategy_name}' backtest completed. Return: {result.total_return_percent:.2f}%")
+        return result
 
     def _run_auto_strategy_backtest(self,
                                  tickers: List[str],

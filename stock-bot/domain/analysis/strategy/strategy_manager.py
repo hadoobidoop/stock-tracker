@@ -116,6 +116,34 @@ class StrategyManager:
         logger.info(f"전략 추가 성공: {strategy.get_name()}")
         return True
     
+    def set_strategy(self, strategy: Optional[BaseStrategy]):
+        """
+        외부에서 생���된 전략 객체를 직접 설정합니다. (주로 동적 전략 백테스팅용)
+        """
+        if strategy is None:
+            # None으로 설정하면 기본 정적 전략으로 리셋
+            self._set_default_strategy()
+            self.dynamic_manager.current_strategy = None
+            self.current_mix_config = None
+            logger.info("전략이 None으로 설정되어 기본 전략으로 리셋합니다.")
+            return
+
+        # 전략의 종류에 따라 적절한 매니저에 할당
+        from .dynamic_strategy import DynamicCompositeStrategy
+        if isinstance(strategy, DynamicCompositeStrategy):
+            self.dynamic_manager.current_strategy = strategy
+            self.current_strategy = None
+            self.current_mix_config = None
+            logger.info(f"동적 전략 직접 설정: {strategy.strategy_name}")
+        elif isinstance(strategy, BaseStrategy):
+            # 정적 전략인 경우
+            self.current_strategy = strategy
+            self.dynamic_manager.current_strategy = None
+            self.current_mix_config = None
+            logger.info(f"정적 전략 직접 설정: {strategy.get_name()}")
+        else:
+            logger.error(f"알 수 없는 타입의 전략 객체입니다: {type(strategy)}")
+
     def switch_strategy(self, strategy_type: StrategyType) -> bool:
         """정적 전략 교체"""
         if strategy_type not in self.active_strategies:
@@ -151,6 +179,15 @@ class StrategyManager:
             return True
         return False
     
+    @property
+    def active_strategy(self) -> Optional[BaseStrategy]:
+        """현재 활성화된 단일 전략 객체를 반환합니다 (동적 또는 정적)."""
+        if self.dynamic_manager.current_strategy:
+            return self.dynamic_manager.current_strategy
+        if self.current_strategy:
+            return self.current_strategy
+        return None
+
     def analyze_with_current_strategy(self, 
                                     df_with_indicators: pd.DataFrame,
                                     ticker: str,
@@ -163,17 +200,15 @@ class StrategyManager:
         if self.auto_strategy_selection:
             self._auto_select_strategy(market_trend, df_with_indicators)
         
-        # 전략 실행 우선순위: 동적 -> 조합 -> 정적
-        if self.dynamic_manager.current_strategy:
-            return self.dynamic_manager.current_strategy.analyze(
+        # 실제 분석을 수행할 전략 객체 가져오기
+        strategy_to_run = self.active_strategy
+
+        if strategy_to_run:
+             return strategy_to_run.analyze(
                 df_with_indicators, ticker, market_trend, long_term_trend, daily_extra_indicators
             )
         elif self.current_mix_config:
             return self._analyze_with_strategy_mix(
-                df_with_indicators, ticker, market_trend, long_term_trend, daily_extra_indicators
-            )
-        elif self.current_strategy:
-            return self.current_strategy.analyze(
                 df_with_indicators, ticker, market_trend, long_term_trend, daily_extra_indicators
             )
         else:

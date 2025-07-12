@@ -75,7 +75,13 @@ class StrategyFactory:
                 strategy_config=strategy_config,
                 modifier_engine=modifier_engine
             )
-            logger.info(f"동적 전략 생성 성공: {strategy_name}")
+
+            # 3. 전략 초기화
+            if not strategy.initialize():
+                logger.error(f"Failed to initialize dynamic strategy: {strategy_name}")
+                return None
+
+            logger.info(f"동적 전략 생성 및 초기화 성공: {strategy_name}")
             return strategy
 
         except Exception as e:
@@ -114,15 +120,8 @@ class StrategyFactory:
             pass
 
         # 동적 전략 확인
-        try:
-            if get_strategy_definition(strategy_identifier) is not None:
-                return True, "dynamic"
-        except ImportError:
-            def get_strategy_definition(name):
-                return None
-
-            if get_strategy_definition(strategy_identifier) is not None:
-                return True, "dynamic"
+        if get_strategy_definition(strategy_identifier) is not None:
+            return True, "dynamic"
 
         return False, "none"
 

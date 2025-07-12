@@ -8,4 +8,7 @@ __pycache__/
 *.pyd
 .Python
 env/
-venv/ 
+venv/
+
+# Backtest results
+backtest_results/ 
