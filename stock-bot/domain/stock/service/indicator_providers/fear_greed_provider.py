@@ -1,6 +1,7 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import requests
+from typing import Dict
 
 from domain.stock.service.indicator_providers.base_provider import BaseIndicatorProvider
 from domain.stock.service.indicator_providers.vix_provider import VixProvider
@@ -12,21 +13,32 @@ logger = get_logger(__name__)
 
 class FearGreedIndexProvider(BaseIndicatorProvider):
     """
-    CNN 공포탐욕지수를 업데이트하는 책임을 가집니다.
+    CNN 공포탐욕지수 및 모든 하위 지표의 최신 5일치 데이터를 업데이트합니다.
     API 호출 실패 시 VIX 기반 추정치를 사용합니다.
     """
 
     def __init__(self, vix_provider: VixProvider = None):
         super().__init__()
         self.vix_provider = vix_provider or VixProvider()
+        self.indicator_map = {
+            "fear_and_greed": MarketIndicatorType.FEAR_GREED_INDEX,
+            "junk_bond_demand": MarketIndicatorType.FEAR_GREED_JUNK_BOND_DEMAND,
+            "market_momentum_sp500": MarketIndicatorType.FEAR_GREED_MARKET_MOMENTUM,
+            "market_volatility_vix": MarketIndicatorType.FEAR_GREED_MARKET_VOLATILITY,
+            "put_call_options": MarketIndicatorType.FEAR_GREED_PUT_CALL_OPTIONS,
+            "safe_haven_demand": MarketIndicatorType.FEAR_GREED_SAFE_HAVEN_DEMAND,
+            "stock_price_breadth": MarketIndicatorType.FEAR_GREED_STOCK_PRICE_BREADTH,
+            "stock_price_strength": MarketIndicatorType.FEAR_GREED_STOCK_PRICE_STRENGTH,
+        }
 
     def update(self) -> bool:
-        logger.info("Starting Fear & Greed Index update...")
+        logger.info("Starting Fear & Greed Index and components update for the last 5 days...")
         try:
+            # _update_from_cnn_api가 한 번이라도 성공하면 True를 반환
             if self._update_from_cnn_api():
                 return True
 
-            logger.warning("Failed to get Fear & Greed Index from CNN API, using VIX-based estimation.")
+            logger.warning("Failed to get any Fear & Greed data from CNN API for the last 5 days, using VIX-based estimation for the main index.")
             return self._update_with_vix_estimation()
 
         except Exception as e:
@@ -34,64 +46,66 @@ class FearGreedIndexProvider(BaseIndicatorProvider):
             return False
 
     def _update_from_cnn_api(self) -> bool:
-        api_url = "https://production.dataviz.cnn.io/index/fearandgreed/graphdata"
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
-            'Accept': 'application/json, text/plain, */*',
-            'Origin': 'https://edition.cnn.com',
-            'Referer': 'https://edition.cnn.com/',
-        }
+        today = date.today()
+        successful_update_found = False
 
-        try:
-            logger.info(f"Fetching Fear & Greed Index from CNN API: {api_url}")
-            response = requests.get(api_url, headers=headers, timeout=15)
+        for i in range(5):
+            target_date = today - timedelta(days=i)
+            date_str = target_date.strftime('%Y-%m-%d')
+            api_url = f"https://production.dataviz.cnn.io/index/fearandgreed/graphdata/{date_str}"
             
-            if response.status_code != 200:
-                logger.error(f"CNN API returned status {response.status_code}")
-                return False
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
+                'Accept': 'application/json, text/plain, */*',
+                'Origin': 'https://edition.cnn.com',
+                'Referer': 'https://edition.cnn.com/',
+            }
 
-            data = response.json()
-            main_index_data = data.get('fear_and_greed')
-            if not main_index_data or 'score' not in main_index_data:
-                logger.warning("Main 'fear_and_greed' score not found in CNN API response.")
-                return False
-
-            # --- 최신 데이터 저장 ---
-            fear_greed_value = float(main_index_data['score'])
-            data_date = datetime.fromisoformat(main_index_data.get('timestamp').replace("Z", "+00:00")).date()
-
-            if not self.repository.get_market_data_by_date(MarketIndicatorType.FEAR_GREED_INDEX, data_date):
-                components = {k: {'score': v.get('score'), 'rating': v.get('rating')} for k, v in data.items() if isinstance(v, dict) and 'score' in v and k not in ['fear_and_greed', 'fear_and_greed_historical']}
-                additional_data = json.dumps({"data_source": "CNN Fear & Greed API", "rating": main_index_data.get('rating'), "components": components})
-                self.repository.save_market_data(MarketIndicatorType.FEAR_GREED_INDEX, data_date, fear_greed_value, additional_data)
-                logger.info(f"Saved CNN Fear & Greed Index for {data_date}: {fear_greed_value}")
-
-            # --- 누락된 과거 데이터 채우기(Backfill) 로직 ---
-            logger.info("Checking for historical data to backfill...")
-            historical_data = data.get('fear_and_greed_historical', {}).get('data', [])
-            if historical_data:
-                start_date = datetime.fromtimestamp(int(float(historical_data[0]['x'])) / 1000).date()
-                existing_dates = self.repository.get_existing_dates(MarketIndicatorType.FEAR_GREED_INDEX, start_date)
+            try:
+                logger.info(f"Fetching Fear & Greed data for {date_str} from: {api_url}")
+                response = requests.get(api_url, headers=headers, timeout=15)
                 
-                backfilled_count = 0
-                for item in historical_data:
-                    hist_date = datetime.fromtimestamp(int(float(item['x'])) / 1000).date()
-                    if hist_date not in existing_dates:
-                        hist_value = float(item['y'])
-                        additional_data_hist = json.dumps({"data_source": "CNN Fear & Greed API (Historical)"})
-                        self.repository.save_market_data(MarketIndicatorType.FEAR_GREED_INDEX, hist_date, hist_value, additional_data_hist)
-                        backfilled_count += 1
-                if backfilled_count > 0:
-                    logger.info(f"Backfilled {backfilled_count} missing historical data points.")
-            
-            return True
+                if response.status_code != 200:
+                    logger.info(f"No data for {date_str} (status code: {response.status_code}). Likely a non-trading day. Skipping.")
+                    continue
 
-        except requests.RequestException as e:
-            logger.error(f"Request failed for CNN Fear & Greed API: {e}", exc_info=True)
-        except (json.JSONDecodeError, KeyError, TypeError) as e:
-            logger.error(f"Failed to parse CNN API response: {e}", exc_info=True)
+                data = response.json()
+                
+                # 응답의 타임스탬프를 우선하여 정확한 날짜를 사용
+                timestamp_str = data.get('fear_and_greed', {}).get('timestamp')
+                if timestamp_str:
+                    actual_date = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00")).date()
+                else:
+                    actual_date = target_date  # 타임스탬프가 없으면 순회 날짜를 사용
+
+                # 데이터가 성공적으로 수신되었음을 표시
+                successful_update_found = True
+                
+                for api_key, indicator_type in self.indicator_map.items():
+                    indicator_data = data.get(api_key)
+                    
+                    if not indicator_data or 'score' not in indicator_data:
+                        logger.warning(f"Indicator '{api_key}' not found in response for {date_str}.")
+                        continue
+                        
+                    value = float(indicator_data['score'])
+                    rating = indicator_data.get('rating', 'N/A')
+                    
+                    additional_data = json.dumps({
+                        "data_source": "CNN Fear & Greed API (Daily)",
+                        "rating": rating
+                    })
+                    
+                    # repository.save_market_data가 upsert를 처리
+                    self.repository.save_market_data(indicator_type, actual_date, value, additional_data)
+                    logger.info(f"Upserted {indicator_type.value} for {actual_date}: {value:.2f}")
+
+            except requests.RequestException as e:
+                logger.error(f"Request failed for {date_str}: {e}", exc_info=True)
+            except (json.JSONDecodeError, KeyError, TypeError) as e:
+                logger.error(f"Failed to parse response for {date_str}: {e}", exc_info=True)
         
-        return False
+        return successful_update_found
 
     def _update_with_vix_estimation(self) -> bool:
         try:
