@@ -6,6 +6,7 @@ from datetime import datetime
 
 from infrastructure.logging import get_logger
 from domain.stock.service.market_data_service import MarketDataService
+from infrastructure.db.models.enums import MarketIndicatorType
 
 logger = get_logger(__name__)
 
@@ -46,7 +47,9 @@ def market_data_update_job():
         latest_sp500 = service.get_latest_sp500_index()
         latest_treasury = service.get_latest_treasury_yield()
         latest_put_call = service.get_latest_put_call_ratio()
-        latest_fear_greed = service.get_latest_fear_greed_index()
+        
+        # 공포탐욕지수 데이터와 소스 확인
+        latest_fear_greed_data = service.repository.get_latest_market_data(MarketIndicatorType.FEAR_GREED_INDEX)
         
         if latest_buffett:
             logger.info(f"Latest Buffett Indicator: {latest_buffett:.3f}%")
@@ -62,9 +65,19 @@ def market_data_update_job():
             logger.info(f"Latest 10Y Treasury: {latest_treasury:.3f}%")
         if latest_put_call:
             logger.info(f"Latest Put/Call Ratio: {latest_put_call:.3f}")
-        if latest_fear_greed:
-            logger.info(f"Latest Fear & Greed Index: {latest_fear_greed:.3f}")
-            
+        
+        if latest_fear_greed_data:
+            value = latest_fear_greed_data.value
+            source_info = "Unknown"
+            if latest_fear_greed_data.additional_data:
+                try:
+                    import json
+                    additional_data = json.loads(latest_fear_greed_data.additional_data)
+                    source_info = additional_data.get('data_source', 'Unknown')
+                except json.JSONDecodeError:
+                    pass
+            logger.info(f"Latest Fear & Greed Index: {value:.3f} (Source: {source_info})")
+
         logger.info("JOB END: Market data update completed successfully.")
         
     except Exception as e:

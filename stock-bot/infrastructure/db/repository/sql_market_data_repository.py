@@ -208,6 +208,19 @@ class SQLMarketDataRepository(MarketDataRepository):
             logger.error(f"Error getting latest market data: {e}", exc_info=True)
             return None
 
+    def get_latest_indicator_date(self, indicator_type: MarketIndicatorType) -> Optional[date]:
+        """
+        특정 지표의 가장 최신 데이터 날짜를 가져옵니다.
+        
+        Args:
+            indicator_type: 지표 타입
+            
+        Returns:
+            date 또는 None
+        """
+        latest_data = self.get_latest_market_data(indicator_type)
+        return latest_data.date if latest_data else None
+
     def get_recent_market_data(self, indicator_type: MarketIndicatorType, limit: int = 10) -> List[MarketData]:
         """
         특정 지표의 최근 데이터를 가져옵니다.
@@ -253,6 +266,54 @@ class SQLMarketDataRepository(MarketDataRepository):
         except Exception as e:
             logger.error(f"Error getting market data by date range: {e}", exc_info=True)
             return []
+
+    def get_market_data_by_date(self, indicator_type: MarketIndicatorType, target_date: date) -> Optional[MarketData]:
+        """
+        특정 날짜와 지표 타입에 정확히 일치하는 데이터를 가져옵니다.
+
+        Args:
+            indicator_type: 지표 타입
+            target_date: 대상 날짜
+
+        Returns:
+            MarketData 또�� None
+        """
+        try:
+            with get_db() as session:
+                return session.query(MarketData).filter(
+                    and_(
+                        MarketData.indicator_type == indicator_type,
+                        MarketData.date == target_date
+                    )
+                ).first()
+        except Exception as e:
+            logger.error(f"Error getting market data by date: {e}", exc_info=True)
+            return None
+
+    def get_existing_dates(self, indicator_type: MarketIndicatorType, start_date: date) -> set:
+        """
+        특정 시작 날짜 이후로 특정 지표에 대해 데이터가 이미 존재하는 날짜들의 집합을 반환합니다.
+        백필링 시 중복 저장을 방지하기 위해 사용됩니다.
+
+        Args:
+            indicator_type: 지표 타입
+            start_date: 조회 시작 날짜
+
+        Returns:
+            날짜(date) 객체들의 집합(set)
+        """
+        try:
+            with get_db() as session:
+                results = session.query(MarketData.date).filter(
+                    and_(
+                        MarketData.indicator_type == indicator_type,
+                        MarketData.date >= start_date
+                    )
+                ).all()
+                return {result.date for result in results}
+        except Exception as e:
+            logger.error(f"Error getting existing dates: {e}", exc_info=True)
+            return set()
 
     def get_market_data_by_date_with_forward_fill(self, indicator_type: MarketIndicatorType,
                                                   target_date: date) -> Optional[MarketData]:
