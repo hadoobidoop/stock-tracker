@@ -17,12 +17,11 @@ from domain.analysis.config.static_strategies import (
 )
 # Static Strategy Mix 관련 설정 import
 from domain.analysis.config.strategy_mixes import (
-    StrategyMixMode, StrategyMixConfig, STRATEGY_MIXES,
-    MARKET_CONDITION_STRATEGIES
+    StrategyMixMode, StrategyMixConfig, STRATEGY_MIXES
 )
 
 from .base_strategy import BaseStrategy, StrategyResult
-from .strategy_implementations import StrategyFactory
+from .strategy_factory import StrategyFactory
 from .dynamic_strategy import DynamicCompositeStrategy
 from domain.analysis.config.dynamic_strategies import get_all_strategies
 from infrastructure.logging import get_logger
@@ -461,44 +460,37 @@ class StrategyManager:
         """시장 상황에 따라 자동으로 전략을 선택합니다."""
         if not self.market_condition_detection:
             return
+
+        # 1. StrategySelector를 통해 시장 상황 분석 및 전략 추천 받기
+        # (이 프로젝트에서는 market_trend를 그대로 market_condition으로 사용)
+        market_condition = market_trend.value  # 예: 'BULLISH'
         
-        # 시장 상황 분석
-        market_condition = self._analyze_market_condition(market_trend, df)
+        # StrategySelector의 전역 인스턴스 사용
+        from domain.analysis.utils.strategy_selector import strategy_selector
         
-        # 해당 상황에 맞는 전략 선택
-        condition_strategies = MARKET_CONDITION_STRATEGIES.get(market_condition, {})
-        
-        for priority in ["primary", "secondary", "fallback"]:
-            strategy_type = condition_strategies.get(priority)
-            if strategy_type and strategy_type in self.active_strategies:
-                if self.current_strategy is None or self.current_strategy.strategy_type != strategy_type:
-                    self.switch_strategy(strategy_type)
-                    logger.info(f"시장 상황 '{market_condition}'에 따라 전략 자동 선택: {strategy_type}")
-                break
-    
-    def _analyze_market_condition(self, market_trend: TrendType, df: pd.DataFrame) -> str:
-        """시장 상황을 분석합니다."""
-        if df.empty:
-            return "NEUTRAL"
-        
-        # 변동성 분석
-        if 'atr' in df.columns:
-            recent_atr = df['atr'].iloc[-5:].mean()
-            long_term_atr = df['atr'].mean()
-            volatility_ratio = recent_atr / long_term_atr if long_term_atr > 0 else 1.0
+        recommended_strategy = strategy_selector.get_recommended_strategy(market_condition)
+
+        if not recommended_strategy:
+            logger.warning(f"시장 상황 '{market_condition}'에 대한 추천 전략을 찾지 못했습니다.")
+            return
+
+        strategy_id, strategy_class = recommended_strategy
+
+        # 2. 추천받은 전략으로 교체
+        try:
+            if strategy_class == 'static':
+                # 현재 전략과 다른 경우에만 교체
+                if self.current_strategy is None or self.current_strategy.strategy_type != strategy_id:
+                    self.switch_strategy(strategy_id)
+                    logger.info(f"시장 상황 '{market_condition}'에 따라 정적 전략 자동 선택: {strategy_id.value}")
             
-            if volatility_ratio > 1.5:
-                return "HIGH_VOLATILITY"
-            elif volatility_ratio < 0.7:
-                return "LOW_VOLATILITY"
-        
-        # 추세 분석
-        if market_trend == TrendType.BULLISH:
-            return "BULL_MARKET"
-        elif market_trend == TrendType.BEARISH:
-            return "BEAR_MARKET"
-        else:
-            return "SIDEWAYS_MARKET"
+            elif strategy_class == 'dynamic':
+                # 현재 전략과 다른 경우에만 교체
+                if self.current_dynamic_strategy is None or self.current_dynamic_strategy.strategy_name != strategy_id:
+                    self.switch_to_dynamic_strategy(strategy_id)
+                    logger.info(f"시장 상황 '{market_condition}'에 따라 동적 전략 자동 선택: {strategy_id}")
+        except Exception as e:
+            logger.error(f"추천 전략({strategy_id})으로 교체 중 오류 발생: {e}")
     
     def get_strategy_performance_summary(self) -> Dict[str, Any]:
         """전략별 성능 요약을 반환합니다."""

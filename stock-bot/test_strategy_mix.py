@@ -35,8 +35,6 @@ def test_strategy_mix_import():
             print(f"    - 임계값 조정: {config.threshold_adjustment}")
             print()
         
-        return True
-        
     except ImportError as e:
         print(f"❌ Import 실패: {e}")
         return False
@@ -79,8 +77,6 @@ def test_strategy_manager_integration():
                 print(f"❌ {mix_name} 설정 실패")
                 return False
         
-        return True
-        
     except ImportError as e:
         print(f"❌ Import 실패: {e}")
         return False
@@ -106,8 +102,6 @@ def test_market_condition_strategies():
             for priority in priorities:
                 strategy = get_market_condition_strategy(condition, priority)
                 print(f"  - {priority}: {strategy}")
-        
-        return True
         
     except Exception as e:
         print(f"❌ 오류: {e}")

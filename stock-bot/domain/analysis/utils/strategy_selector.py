@@ -4,7 +4,7 @@
 설정 기반으로 정적/동적/Static Strategy Mix 전략을 유연하게 선택하고 관리
 """
 
-from typing import Dict, Any, Optional, List, Union, Callable
+from typing import Dict, Any, Optional, List, Union, Callable, Tuple
 from enum import Enum
 import os
 from functools import lru_cache
@@ -14,6 +14,8 @@ from common.config.settings import (
 )
 from domain.analysis.config.static_strategies import StrategyType, get_strategy_config, get_static_strategy_types
 from domain.analysis.config.dynamic_strategies import STRATEGY_DEFINITIONS
+# MARKET_CONDITION_STRATEGIES를 strategy_mixes에서 직접 가져옵니다.
+from domain.analysis.config.strategy_mixes import MARKET_CONDITION_STRATEGIES
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
@@ -272,22 +274,40 @@ class StrategySelector:
         self._load_available_strategies.cache_clear()
         logger.info(f"전략 모드 변경: {mode.value}")
     
-    def get_recommended_strategy(self, market_condition: Optional[str] = None) -> Dict[str, Any]:
-        """시장 상황에 따른 추천 전략"""
-        recommendations = {
-            "high_volatility": lambda: self.get_static_strategy_config("CONSERVATIVE"),
-            "bull_market": lambda: self.get_dynamic_strategy_config("aggressive_dynamic_strategy"),
-            "bear_market": lambda: self.get_static_strategy_config("CONTRARIAN")
-        }
+    def get_recommended_strategy(self, market_condition: str) -> Optional[Tuple[Union[StrategyType, str], str]]:
+        """
+        시장 상황에 가장 적합한 전략을 추천합니다.
+        :param market_condition: 'BULL_MARKET', 'BEAR_MARKET' 등 시장 상황 문자열
+        :return: (전략 타입/이름, 전략 클래스('static' 또는 'dynamic')) 튜플 또는 None
+        """
+        condition_strategies = MARKET_CONDITION_STRATEGIES.get(market_condition, {})
         
-        recommender = recommendations.get(market_condition)
-        if recommender:
-            result = recommender()
-            if result:
-                return result
-        
-        # 기본 추천: 동적 전략
-        return self.get_dynamic_strategy_config(DefaultStrategyConfig.DEFAULT_DYNAMIC_STRATEGY)
+        for priority in ["primary", "secondary", "fallback"]:
+            strategy_info = condition_strategies.get(priority)
+            if not strategy_info:
+                continue
+
+            strategy_id = strategy_info['id']
+            strategy_class = strategy_info['class']
+
+            # 정적 전략인 경우, StrategyType Enum으로 변환 시도
+            if strategy_class == 'static':
+                try:
+                    strategy_type_enum = StrategyType(strategy_id)
+                    # 사용 가능한지 확인
+                    if self.get_static_strategy_config(strategy_type_enum.value):
+                        return strategy_type_enum, 'static'
+                except ValueError:
+                    logger.warning(f"'{strategy_id}'는 유효한 StrategyType이 아닙니다.")
+            
+            # 동적 전략인 경우
+            elif strategy_class == 'dynamic':
+                # 사용 가능한지 확인
+                if self.get_dynamic_strategy_config(strategy_id):
+                    return strategy_id, 'dynamic'
+
+        logger.warning(f"'{market_condition}'에 대한 유효한 추천 전���을 찾지 못했습니다.")
+        return None
     
     def refresh_available_strategies(self):
         """사용 가능한 전략 목록 갱신"""
