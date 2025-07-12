@@ -198,4 +198,6 @@ def save_strategy_comparison_results(comparison_result, args):
 
 
 if __name__ == '__main__':
+    from infrastructure.logging import setup_logging
+    setup_logging(log_level='DEBUG')
     main() 

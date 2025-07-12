@@ -506,9 +506,9 @@ class BacktestingEngine:
                     if len(current_data) >= REALTIME_SIGNAL_DETECTION["FIB_LOOKBACK_DAYS"]:
                         self.daily_data_cache["daily_extras"][ticker] = calculate_fibonacci_levels(current_data)
 
-                        long_term_trend, trend_values = self.stock_analysis_service.get_long_term_trend(current_data)
-                        self.daily_data_cache["long_term_trends"][ticker] = long_term_trend
-                        self.daily_data_cache["long_term_trend_values"][ticker] = trend_values
+                        trend_result = self.stock_analysis_service.get_long_term_trend(current_data)
+                        self.daily_data_cache["long_term_trends"][ticker] = trend_result.trend
+                        self.daily_data_cache["long_term_trend_values"][ticker] = trend_result.values
                 except Exception as e:
                     logger.error(f"Error updating daily cache for {ticker}: {e}")
                     continue
@@ -524,6 +524,7 @@ class BacktestingEngine:
                        market_trend: TrendType,
                        long_term_trend: TrendType) -> None:
         if current_price is None:
+            logger.debug(f"Skipping trade for {ticker} at {current_time}: No current price available.")
             return
 
         signal_type = signal_result.get('type')
@@ -535,6 +536,12 @@ class BacktestingEngine:
         )
 
         if not portfolio.can_open_position(current_price, quantity):
+            logger.debug(
+                f"Cannot open position for {ticker}. "
+                f"Cash: {portfolio.current_cash:.2f}, "
+                f"Required: {current_price * quantity:.2f}, "
+                f"Open Positions: {len(portfolio.open_positions)}"
+            )
             return
 
         take_profit_price = None
@@ -556,7 +563,15 @@ class BacktestingEngine:
         )
 
         if portfolio.open_position(trade):
-            logger.info(f"Opened {signal_type} position for {ticker} at ${current_price:.2f} (Score: {signal_score}, Qty: {quantity})")
+            sub_strategy_info = ""
+            if "Chosen sub-strategy" in signal_result.get('details', [''])[0]:
+                sub_strategy_info = f" (Sub: {signal_result['details'][0].split(': ')[-1]})"
+
+            logger.info(
+                f"TRADE EXECUTED: {trade.trade_type.value} {ticker} at ${current_price:.2f} "
+                f"(Score: {signal_score:.2f}, Qty: {quantity}, "
+                f"Strategy: {signal_result.get('strategy_name', 'N/A')}{sub_strategy_info})"
+            )
 
     def _finalize_backtest_result(self,
                                   portfolio: Portfolio,
