@@ -30,9 +30,9 @@ class YahooBackfillProvider(BaseBackfillProvider):
         records = []
         for data_date, row in df.iterrows():
             records.append({
-                "indicator_type": self.indicator_type.value,
+                "indicator_type": self.indicator_type,
                 "date": data_date.date(),
-                "value": row['Close'],
+                "value": float(row['Close']),
                 "additional_data": json.dumps({"data_source": f"Yahoo Finance ({self.symbol})"})
             })
             
