@@ -48,8 +48,8 @@ class BuffettIndicatorProvider(BaseIndicatorProvider):
         """
         try:
             logger.info("Fetching historical data from FRED...")
-            # 20년치 데이터를 가져와서 전체적인 시계열을 만듭니다.
-            start_date = datetime.now() - timedelta(days=365 * 20)
+            # 데이터 조회 기간 최적화: 최근 2년치 데이터만 가져와 처리
+            start_date = datetime.now() - timedelta(days=365 * 2)
             end_date = datetime.now()
 
             # 1. 데이터 수집
@@ -65,7 +65,6 @@ class BuffettIndicatorProvider(BaseIndicatorProvider):
             market_cap = (market_cap_quarterly['NCBEILQ027S'] / 1000).resample('D').ffill().dropna() # 십억 달러로 변환
 
             # 3. 시점(Point-in-Time)에 맞게 데이터 병합
-            # 각 날짜의 시가총액에 대해, 해당 날짜 또는 그 이전의 가장 최신 GDP를 매칭
             df = pd.merge_asof(market_cap, gdp, left_index=True, right_index=True, direction='backward')
             df.columns = ['market_cap_billions', 'gdp_billions']
             df.dropna(inplace=True)
@@ -76,30 +75,35 @@ class BuffettIndicatorProvider(BaseIndicatorProvider):
             # 5. 증분 업데이트 (DB에 없는 최신 데이터만 저장)
             latest_db_date = self.repository.get_latest_indicator_date(MarketIndicatorType.BUFFETT_INDICATOR)
             
-            # DB에 데이터가 있으면, 그 다음 날부터의 데이터만 필터링
             if latest_db_date:
                 df_to_save = df[df.index.date > latest_db_date]
-            else: # DB가 비어있으면 전체 데이터 저장
+            else:
                 df_to_save = df
 
             if df_to_save.empty:
                 logger.info("No new historical Buffett Indicator data to save.")
                 return True
 
-            logger.info(f"Saving {len(df_to_save)} new historical Buffett Indicator data points...")
+            # 6. Bulk 저장을 위한 데이터 준비
+            logger.info(f"Preparing {len(df_to_save)} historical Buffett Indicator records for batch save...")
+            records_to_save = []
             for index, row in df_to_save.iterrows():
-                additional_data = json.dumps({
-                    "market_cap_billions": row['market_cap_billions'],
-                    "gdp_billions": row['gdp_billions'],
-                    "calculation_method": "fed_z1_market_cap_to_gdp_point_in_time",
-                    "data_source": "Federal Reserve Z.1 (NCBEILQ027S) + FRED (GDP)"
+                records_to_save.append({
+                    "indicator_type": MarketIndicatorType.BUFFETT_INDICATOR,
+                    "date": index.date(),
+                    "value": row['buffett_ratio'],
+                    "additional_data": json.dumps({
+                        "market_cap_billions": row['market_cap_billions'],
+                        "gdp_billions": row['gdp_billions'],
+                        "calculation_method": "fed_z1_market_cap_to_gdp_point_in_time",
+                        "data_source": "Federal Reserve Z.1 (NCBEILQ027S) + FRED (GDP)"
+                    })
                 })
-                self.repository.save_market_data(
-                    indicator_type=MarketIndicatorType.BUFFETT_INDICATOR,
-                    data_date=index.date(),
-                    value=row['buffett_ratio'],
-                    additional_data=additional_data
-                )
+            
+            # 7. 단일 트랜잭션으로 배치 저장
+            with self.repository.transaction() as session:
+                self.repository.save_market_data_batch(records_to_save, session)
+            
             return True
         except Exception as e:
             logger.error(f"Error updating historical Buffett Indicator with Fed data: {e}", exc_info=True)
@@ -112,7 +116,7 @@ class BuffettIndicatorProvider(BaseIndicatorProvider):
         try:
             logger.info("Fetching recent data from Yahoo Finance for estimation...")
             # 1. 가장 최신의 GDP 데이터 가져오기
-            gdp_start_date = datetime.now() - timedelta(days=365 * 2) # 2년치 GDP 데이터 확보
+            gdp_start_date = datetime.now() - timedelta(days=365 * 2)
             gdp_data = web.DataReader('GDP', 'fred', gdp_start_date, datetime.now())
             if gdp_data.empty:
                 logger.warning("Cannot fetch latest GDP for Yahoo-based estimation.")
@@ -136,29 +140,30 @@ class BuffettIndicatorProvider(BaseIndicatorProvider):
                 logger.info("No new recent Buffett Indicator data to estimate and save.")
                 return True
 
-            logger.info(f"Estimating and saving {len(wilshire_to_save)} new recent Buffett Indicator data points...")
+            # 4. Bulk 저장을 위한 데이터 준비
+            logger.info(f"Estimating and preparing {len(wilshire_to_save)} recent Buffett Indicator records for batch save...")
             conversion_factor = 1.08
+            records_to_save = []
             for date_idx, row in wilshire_to_save.iterrows():
-                # 덮어쓰기 방지를 위해, 저장하려는 날짜가 DB의 최신 날짜보다 이후인지 다시 한번 확인
-                if latest_db_date and date_idx.date() <= latest_db_date:
-                    continue
-
                 estimated_market_cap = row['Close'] * conversion_factor
                 buffett_ratio = (estimated_market_cap / latest_gdp) * 100
-
-                additional_data = json.dumps({
-                    "wilshire_5000_points": float(row['Close']),
-                    "market_cap_billions": float(estimated_market_cap),
-                    "gdp_billions": float(latest_gdp),
-                    "calculation_method": "yahoo_w5000_to_gdp_estimation",
-                    "data_source": "Yahoo Finance (^W5000) + FRED (GDP)"
+                records_to_save.append({
+                    "indicator_type": MarketIndicatorType.BUFFETT_INDICATOR,
+                    "date": date_idx.date(),
+                    "value": buffett_ratio,
+                    "additional_data": json.dumps({
+                        "wilshire_5000_points": float(row['Close']),
+                        "market_cap_billions": float(estimated_market_cap),
+                        "gdp_billions": float(latest_gdp),
+                        "calculation_method": "yahoo_w5000_to_gdp_estimation",
+                        "data_source": "Yahoo Finance (^W5000) + FRED (GDP)"
+                    })
                 })
-                self.repository.save_market_data(
-                    indicator_type=MarketIndicatorType.BUFFETT_INDICATOR,
-                    data_date=date_idx.date(),
-                    value=buffett_ratio,
-                    additional_data=additional_data
-                )
+
+            # 5. 단일 트랜잭션으로 배치 저장
+            with self.repository.transaction() as session:
+                self.repository.save_market_data_batch(records_to_save, session)
+
             return True
         except Exception as e:
             logger.error(f"Error updating recent Buffett Indicator with Yahoo data: {e}", exc_info=True)
@@ -167,7 +172,7 @@ class BuffettIndicatorProvider(BaseIndicatorProvider):
 
 # Yahoo API 호출 로직을 재사용 가능하도록 별도 헬퍼 클래스로 분리
 class YahooApiHelper:
-    def __init__(self, single_delay: float = 30.0, batch_delay: float = 2.0, retry_count: int = 3):
+    def __init__(self, single_delay: float = 2.0, batch_delay: float = 2.0, retry_count: int = 3):
         self.single_delay = single_delay
         self.batch_delay = batch_delay
         self.retry_count = retry_count
