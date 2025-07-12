@@ -11,7 +11,8 @@ import importlib
 
 from .base_strategy import BaseStrategy, StrategyResult
 from .decision_context import DecisionContext
-from .modifiers import ModifierEngine, ModifierFactory
+from .modifier_engine import ModifierEngine
+from .modifiers.registry import ModifierFactory
 from domain.analysis.config.dynamic_strategies import (
     get_strategy_definition, get_all_modifiers
 )
