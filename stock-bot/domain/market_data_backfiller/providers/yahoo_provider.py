@@ -32,7 +32,7 @@ class YahooBackfillProvider(BaseBackfillProvider):
             records.append({
                 "indicator_type": self.indicator_type,
                 "date": data_date.date(),
-                "value": float(row['Close']),
+                "value": float(row['Close'].item()),
                 "additional_data": json.dumps({"data_source": f"Yahoo Finance ({self.symbol})"})
             })
             
