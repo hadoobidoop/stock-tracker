@@ -12,10 +12,6 @@ import importlib
 from .base_strategy import BaseStrategy, StrategyResult
 from .decision_context import DecisionContext
 from .modifier_engine import ModifierEngine
-from .modifiers.registry import ModifierFactory
-from domain.analysis.config.dynamic_strategies import (
-    get_strategy_definition, get_all_modifiers
-)
 from domain.analysis.models.trading_signal import (
     TradingSignal, SignalType, SignalEvidence, TechnicalIndicatorEvidence, MarketContextEvidence
 )
@@ -30,75 +26,56 @@ logger = get_logger(__name__)
 class DynamicCompositeStrategy(BaseStrategy):
     """
     동적 가중치 조절 전략
-    
-    이 전략은 다음과 같은 과정으로 동작합니다:
-    1. DecisionContext 생성 (기본 가중치 설정)
-    2. 각 기술적 지표 detector의 점수 계산
-    3. 거시 지표 데이터 수집
-    4. Modifier들을 우선순위 순으로 적용 (가중치 조정, 점수 보정, 거부 등)
-    5. 최종 점수 계산 및 신호 생성
+    - 팩토리에서 생성 시 모든 의존성이 주입됩니다.
     """
     REQUIRED_MACRO_INDICATORS: List[str] = []
     
-    def __init__(self, strategy_name: str):
-        self.strategy_name = strategy_name
-        self.strategy_config = get_strategy_definition(strategy_name)
+    def __init__(self, 
+                 strategy_name: str, 
+                 strategy_config: Dict[str, Any],
+                 modifier_engine: ModifierEngine):
         
-        if not self.strategy_config:
-            raise ValueError(f"Strategy definition not found: {strategy_name}")
+        self.strategy_name = strategy_name
+        self.strategy_config = strategy_config
+        self.modifier_engine = modifier_engine
         
         # BaseStrategy 초기화를 위한 더미 config 생성
-        from domain.analysis.config.static_strategies import StrategyConfig, StrategyType
-        
-        # 동적 전략용 더미 config
+        from domain.analysis.config.static_strategies import StrategyConfig
         dummy_config = StrategyConfig(
             name=self.strategy_name,
-            description=self.strategy_config["description"],
+            description=self.strategy_config.get("description", ""),
             signal_threshold=self.strategy_config.get("signal_threshold", 8.0),
             risk_per_trade=self.strategy_config.get("risk_per_trade", 0.02),
-            detectors=[]  # 동적으로 관리하므로 빈 리스트
+            detectors=[]
         )
-        
         super().__init__(StrategyType.MACRO_DRIVEN, dummy_config)
         
-        # 동적 전략 전용 속성
         self.technical_detectors: Dict[str, Any] = {}
-        self.modifier_engine: Optional[ModifierEngine] = None
         self.last_context: Optional[DecisionContext] = None
 
     def get_required_macro_indicators(self) -> List[str]:
         """이 전략의 실행에 필요한 거시 지표 목록을 반환합니다."""
-        # Modifier들이 필요로 하는 모든 지표를 동적으로 수집할 수도 있음
-        # 지금은 정적으로 정의된 목록을 사용
-        
-        # 예시: 모든 모디파이어에서 필요한 지표들을 동적으로 수집
         required = set(self.REQUIRED_MACRO_INDICATORS)
-        if self.modifier_engine:
-            for modifier in self.modifier_engine.modifiers:
-                required.update(getattr(modifier, 'REQUIRED_INDICATORS', []))
+        for modifier in self.modifier_engine.modifiers:
+            required.add(modifier.definition.detector)
         return list(required)
         
     def _get_strategy_type(self) -> 'StrategyType':
-        from domain.analysis.config.static_strategies import StrategyType
         return StrategyType.MACRO_DRIVEN
     
     def _create_orchestrator(self) -> SignalDetectionOrchestrator:
         """기술적 지표 detector들을 위한 오케스트레이터 생성"""
         orchestrator = SignalDetectionOrchestrator()
-        
-        # 전략 설정에서 기술적 지표 detector들을 동적으로 생성
-        for detector_name, detector_config in self.strategy_config["detectors"].items():
+        for detector_name, detector_config in self.strategy_config.get("detectors", {}).items():
             detector = self._create_technical_detector(detector_name, detector_config)
             if detector:
                 orchestrator.add_detector(detector)
                 self.technical_detectors[detector_name] = detector
-        
         return orchestrator
     
     def _create_technical_detector(self, detector_name: str, detector_config: Dict[str, Any]):
         """기술적 지표 detector 생성"""
         try:
-            # detector 클래스 매핑
             detector_class_mapping = {
                 "rsi": "domain.analysis.detectors.momentum.rsi_detector.RSISignalDetector",
                 "macd": "domain.analysis.detectors.trend_following.macd_detector.MACDSignalDetector",
@@ -108,22 +85,14 @@ class DynamicCompositeStrategy(BaseStrategy):
                 "volume": "domain.analysis.detectors.volume.volume_detector.VolumeSignalDetector",
                 "bb": "domain.analysis.detectors.volatility.bb_detector.BBSignalDetector"
             }
-            
             class_path = detector_class_mapping.get(detector_name)
             if not class_path:
                 logger.warning(f"Unknown technical detector: {detector_name}")
                 return None
             
-            # 모듈과 클래스 분리
             module_path, class_name = class_path.rsplit('.', 1)
-            
-            # 모듈 동적 임포트
             module = importlib.import_module(module_path)
             detector_class = getattr(module, class_name)
-            
-            # detector 인스턴스를 생성합니다. 초기 가중치는 전략 설정에서 가져옵니다.
-            # 이 가중치는 DecisionContext의 초기값으로 사용되며,
-            # 이후 Modifier에 의해 동적으로 조정됩니다.
             return detector_class(detector_config.get("weight", 0.0))
                 
         except Exception as e:
@@ -133,22 +102,10 @@ class DynamicCompositeStrategy(BaseStrategy):
     def initialize(self) -> bool:
         """전략 초기화"""
         try:
-            # 기술적 지표 오케스트레이터 초기화
             self.orchestrator = self._create_orchestrator()
-            
-            # 모디파이어 엔진 초기화
-            modifier_definitions = get_all_modifiers()
-            modifier_names = self.strategy_config.get("modifiers", [])
-            
-            modifiers = ModifierFactory.create_modifiers_from_config(
-                modifier_names, modifier_definitions
-            )
-            self.modifier_engine = ModifierEngine(modifiers)
-            
             self.is_initialized = True
-            logger.info(f"DynamicCompositeStrategy '{self.strategy_name}' initialized with {len(modifiers)} modifiers")
+            logger.info(f"DynamicCompositeStrategy '{self.strategy_name}' initialized with {len(self.technical_detectors)} detectors.")
             return True
-            
         except Exception as e:
             logger.error(f"Failed to initialize DynamicCompositeStrategy '{self.strategy_name}': {e}")
             return False

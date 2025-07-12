@@ -1,6 +1,6 @@
 from typing import Dict, Optional
 
-from domain.analysis.config.dynamic_strategies import get_all_strategies, get_strategy_definition
+from domain.analysis.config.dynamic_strategies import get_all_strategies, get_strategy_definition, get_all_modifiers
 from domain.analysis.config.static_strategies import StrategyType, StrategyConfig, get_strategy_config, \
     get_static_strategy_types
 from domain.analysis.strategy.base_strategy import BaseStrategy
@@ -11,6 +11,8 @@ from domain.analysis.strategy.implementations import (
     StableValueHybridStrategy,
     UniversalStrategy
 )
+from .modifier_engine import ModifierEngine
+from .modifiers.registry import ModifierFactory
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
@@ -19,18 +21,12 @@ logger = get_logger(__name__)
 class StrategyFactory:
     """
     통합 전략 팩토리 - 모든 정적 전략과 동적 전략 지원
-
-    개선 사항:
-    1. 모든 확장된 정적 전략 지원
-    2. 동적 전략 생성 기능 추가
-    3. 중복 경고 메시지 제거
-    4. 설정 기반 전략 생성
     """
 
     @classmethod
     def create_static_strategy(cls, strategy_type: StrategyType,
                                config: Optional[StrategyConfig] = None) -> Optional[BaseStrategy]:
-        """정적 전략 인스턴스 생성"""
+        """정적 ���략 인스턴스 생성"""
         if config is None:
             config = get_strategy_config(strategy_type)
 
@@ -48,7 +44,6 @@ class StrategyFactory:
             if strategy_type == StrategyType.STABLE_VALUE_HYBRID:
                 return StableValueHybridStrategy(strategy_type, config)
 
-            # 모든 나머지 정적 전략을 UniversalStrategy로 생성
             strategy = UniversalStrategy(strategy_type, config)
             logger.info(f"정적 전략 생성 성공: {strategy_type.value}")
             return strategy
@@ -59,16 +54,34 @@ class StrategyFactory:
 
     @classmethod
     def create_dynamic_strategy(cls, strategy_name: str) -> Optional[BaseStrategy]:
-        """동적 전략 인스턴스 생성"""
+        """동적 전략 인스턴스 생성 및 의존성 주입"""
         try:
             from .dynamic_strategy import DynamicCompositeStrategy
-            strategy = DynamicCompositeStrategy(strategy_name)
+            
+            strategy_config = get_strategy_definition(strategy_name)
+            if not strategy_config:
+                logger.error(f"Dynamic strategy definition not found: {strategy_name}")
+                return None
+
+            # 1. ModifierEngine 생성
+            modifier_definitions = get_all_modifiers()
+            modifier_names = strategy_config.get("modifiers", [])
+            modifiers = ModifierFactory.create_modifiers_from_config(modifier_names, modifier_definitions)
+            modifier_engine = ModifierEngine(modifiers)
+
+            # 2. DynamicCompositeStrategy에 의존성 주입
+            strategy = DynamicCompositeStrategy(
+                strategy_name=strategy_name,
+                strategy_config=strategy_config,
+                modifier_engine=modifier_engine
+            )
             logger.info(f"동적 전략 생성 성공: {strategy_name}")
             return strategy
 
         except Exception as e:
-            logger.error(f"동적 전략 생성 실패 {strategy_name}: {e}")
+            logger.error(f"동적 전략 생성 실패 {strategy_name}: {e}", exc_info=True)
             return None
+
 
     @classmethod
     def create_strategy(cls, strategy_type: StrategyType,
