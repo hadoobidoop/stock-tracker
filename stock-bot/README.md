@@ -62,7 +62,9 @@
 
 ## 🛠️ The Strategies: Built-in & Custom Models
 
-시스템에는 다음과 같은 정적 전략이 내장되어 있으며, `run_backtest.py` 실행| 전략명 (Enum) | 핵심 특징 |
+시스템에는 다음과 같은 정적 및 동적 전략이 내장되어 있으며, `run_backtest.py`의 `--strategy` 또는 `--compare` 인자를 통해 직접 실행하고 검증할 수 있습니다.
+
+| 전략명 (Enum) | 핵심 특징 |
 | :--- | :--- |
 | **CONSERVATIVE** | 안정성 최우선, 초강력 신호만 감지 |
 | **BALANCED** | 안정성과 수익성의 균형 |

@@ -56,6 +56,8 @@ def parse_arguments():
     parser.add_argument('--start-date', required=True, help='백테스트 시작 날짜 (YYYY-MM-DD)')
     parser.add_argument('--end-date', required=True, help='백테스트 종료 날짜 (YYYY-MM-DD)')
     parser.add_argument('--initial-capital', type=float, default=100000, help='초기 자본금 (기본값: 100,000)')
+    parser.add_argument('--commission-rate', type=float, default=0.001, help='수수료율 (기본값: 0.001)')
+    parser.add_argument('--risk-per-trade', type=float, default=0.02, help='거래당 리스크 비율 (기본값: 0.02)')
     parser.add_argument('--data-interval', default='1h', choices=['1h', '1d'], help='데이터 간격 (기본값: 1h)')
     parser.add_argument('--output-dir', default='./backtest_results', help='결과 저장 디렉토리')
 
@@ -83,6 +85,8 @@ def main():
             "start_date": datetime.strptime(args.start_date, '%Y-%m-%d'),
             "end_date": datetime.strptime(args.end_date, '%Y-%m-%d'),
             "initial_capital": args.initial_capital,
+            "commission_rate": args.commission_rate,
+            "risk_per_trade": args.risk_per_trade,
             "data_interval": args.data_interval,
         }
 
