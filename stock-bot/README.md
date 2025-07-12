@@ -135,6 +135,9 @@
   - **`StrategySelector` (정보 제공자/추천자):** 설정 파일을 기반으로 사용 가능한 전략의 **정보를 제공**하고, 특정 조건에 **가장 적합한 전략을 추천**하는 역할을 전담합니다.
   - **`StrategyManager` (실행 관리자):** `Selector`의 추천을 받아, `Factory`를 통해 생성된 전략 인스턴스의 **실행과 생명주기를 관리**합니다.
 
+#### 3. 데이터 프로바이더 효율성 최적화 (Data Provider Efficiency Optimization)
+- `BuffettIndicatorProvider`의 비효율적인 로직을 대대적으로 개선했습니다. 매번 20년치 전체 데이터를 조회하던 방식에서 최근 2년치 데이터만 가져오도록 변경하고, 개별 DB 저장을 `bulk_save_objects`를 사용한 일괄 저장 방식으로 전환하여 API 및 DB 부하를 크게 줄이고 성능을 향상시켰습니다.
+
 ## 📦 Installation
 
 1.  **Clone the repository:**
