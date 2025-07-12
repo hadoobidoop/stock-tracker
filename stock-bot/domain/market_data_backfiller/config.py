@@ -16,7 +16,6 @@ BACKFILL_PROVIDERS_CONFIG = {
     },
     "FEAR_GREED_INDEX": {
         "provider": "FearGreedBackfillProvider",
-        "indicator_type": MarketIndicatorType.FEAR_GREED_INDEX,
     },
     "PUT_CALL_RATIO": {
         "provider": "PutCallRatioBackfillProvider",
@@ -54,10 +53,5 @@ BACKFILL_PROVIDERS_CONFIG = {
 # 사용자가 실제로 백필을 실행할 지표 목록입니다.
 # 이 리스트를 수정하여 원하는 지표만 선택적으로 실행할 수 있습니다.
 ENABLED_PROVIDERS = [
-    "VIX",
-    "US_10Y_TREASURY_YIELD",
     "FEAR_GREED_INDEX",
-    "PUT_CALL_RATIO",
-    "SP500_INDEX",
-    "DXY",
 ]

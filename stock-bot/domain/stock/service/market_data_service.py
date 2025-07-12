@@ -59,7 +59,7 @@ class MarketDataService:
             self.sp500_sma_provider,
         ]
 
-    def update_all_indicators(self) -> Dict[str, bool]:
+    def update_all_indicators(self) -> None:
         """모든 지표를 업데이트합니다."""
         logger.info("Starting update of all market indicators (batch mode)...")
         self.yahoo_helper.set_batch_mode(True)

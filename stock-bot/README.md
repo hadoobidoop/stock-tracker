@@ -100,6 +100,18 @@
 
 모든 백테스팅 결과는 `./backtest_results/` 디렉토리에 상세 정보가 담긴 `JSON` 파일로 자동 저장됩니다.
 
+### **과거 시장 데이터 채우기 (백필링)**
+
+시스템의 정확도를 높이거나, 장기간의 데이터 분석을 위해 과거의 누락된 시장 지표 데이터를 채워 넣을 수 있습니다. 이 기능은 독립된 `market_data_backfiller` 패키지를 통해 제공됩니다.
+
+**1. 특정 기간 동안 기본 설정된 모든 지표 채우기**
+`python -m domain.market_data_backfiller.backfiller --start_date 2023-01-01 --end_date 2023-12-31`
+
+**2. 특정 지표만 골라서 채우기**
+`python -m domain.market_data_backfiller.backfiller --start_date 2024-01-01 --end_date 2024-06-30 --indicators VIX DXY`
+
+- 백필할 지표 목록은 `domain/market_data_backfiller/config.py` 파일의 `ENABLED_PROVIDERS` 리스트에서 기본값을 수정할 수 있습니다.
+
 ## 🏗️ Architecture
 
 *   **Domain-Driven Design (DDD)**: 비즈니스 로직(`domain`)과 기술적 구현(`infrastructure`)을 명확히 분리하여 유지보수성과 확장성을 극대화했습니다.

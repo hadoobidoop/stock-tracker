@@ -111,4 +111,4 @@ if __name__ == '__main__':
     # main(start_date="2024-01-01", end_date="2024-07-01")
     
     # 예시 2: VIX와 DXY만 특정하여 백필
-    main(start_date="2024-06-01", end_date="2024-07-01", indicators=["VIX", "DXY"])
+    main(start_date="2024-06-01", end_date="2024-07-01", indicators=["FEAR_GREED_INDEX"])
