@@ -62,9 +62,7 @@
 
 ## 🛠️ The Strategies: Built-in & Custom Models
 
-시스템에는 다음과 같은 정적 전략이 내장되어 있으며, `run_backtest.py` 실행 시 선택하여 사용할 수 있습니다.
-
-| 전략명 (Enum) | 핵심 특징 |
+시스템에는 다음과 같은 정적 전략이 내장되어 있으며, `run_backtest.py` 실행| 전략명 (Enum) | 핵심 특징 |
 | :--- | :--- |
 | **CONSERVATIVE** | 안정성 최우선, 초강력 신호만 감지 |
 | **BALANCED** | 안정성과 수익성의 균형 |
@@ -87,16 +85,17 @@
 
 ## 🚀 Usage: Backtesting Your Strategies
 
-`run_backtest.py` 스크립트를 통해 다양한 방식으로 전략을 검증할 수 있습니다.
+`run_backtest.py` 스크립트를 통해 간단하고 명확한 방식으로 전략을 검증할 수 있습니다. 복잡한 `--mode` 인자는 제거되고, 두 가지 핵심적인 사용법에 집중합니다.
 
-**1. 특정 전략으로 백테스팅 (가장 일반적인 사용법)**
-`python run_backtest.py --mode strategy --strategy AGGRESSIVE --tickers AAPL --start-date 2024-01-01 --end-date 2025-01-01`
+**1. 단일 전략 심층 분석 (Single Strategy Deep-Dive)**
+하나의 특정 전략(정적, 동적, 하이브리드 무관)을 지정하여 그 성과를 상세하게 분석합니다.
 
-**2. 여러 전략의 성과 비교**
-`python run_backtest.py --mode strategy-comparison --compare-strategies CONSERVATIVE BALANCED MOMENTUM --tickers WM --start-date 2024-01-01 --end-date 2025-01-01`
+`python run_backtest.py --strategy MARKET_REGIME_HYBRID --tickers AAPL --start-date 2024-01-01 --end-date 2025-01-01`
 
-**3. 전략 조합(Mix)으로 백테스팅**
-`python run_backtest.py --mode strategy-mix --strategy-mix balanced_mix --tickers WM --start-date 2024-01-01 --end-date 2025-01-01`
+**2. 여러 전략 성과 비교 (Strategy Portfolio Comparison)**
+관심 있는 여러 전략들을 한 번에 실행하여 성과를 비교하고, 어떤 전략이 가장 우수한지 찾아냅니다.
+
+`python run_backtest.py --compare CONSERVATIVE MARKET_REGIME_HYBRID dynamic_weight_strategy --tickers TSLA --start-date 2024-01-01 --end-date 2025-01-01`
 
 모든 백테스팅 결과는 `./backtest_results/` 디렉토리에 상세 정보가 담긴 `JSON` 파일로 자동 저장됩니다.
 
