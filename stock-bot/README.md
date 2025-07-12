@@ -90,13 +90,13 @@
 `run_backtest.py` 스크립트를 통해 다양한 방식으로 전략을 검증할 수 있습니다.
 
 **1. 특정 전략으로 백테스팅 (가장 일반적인 사용법)**
-`python run_backtest.py --mode strategy --strategy AGGRESSIVE --tickers AAPL MSFT --start-date 2024-01-01 --end-date 2025-01-01`
+`python run_backtest.py --mode strategy --strategy AGGRESSIVE --tickers AAPL --start-date 2024-01-01 --end-date 2025-01-01`
 
 **2. 여러 전략의 성과 비교**
-`python run_backtest.py --mode strategy-comparison --compare-strategies CONSERVATIVE BALANCED MOMENTUM --tickers NVDA --start-date 2024-01-01 --end-date 2025-01-01`
+`python run_backtest.py --mode strategy-comparison --compare-strategies CONSERVATIVE BALANCED MOMENTUM --tickers WM --start-date 2024-01-01 --end-date 2025-01-01`
 
 **3. 전략 조합(Mix)으로 백테스팅**
-`python run_backtest.py --mode strategy-mix --strategy-mix balanced_mix --tickers GOOGL --start-date 2024-01-01 --end-date 2025-01-01`
+`python run_backtest.py --mode strategy-mix --strategy-mix balanced_mix --tickers WM --start-date 2024-01-01 --end-date 2025-01-01`
 
 모든 백테스팅 결과는 `./backtest_results/` 디렉토리에 상세 정보가 담긴 `JSON` 파일로 자동 저장됩니다.
 
