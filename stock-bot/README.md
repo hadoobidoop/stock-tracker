@@ -120,6 +120,20 @@ python scripts/backfill_market_data.py --start-date 2020-01-01 --end-date 2023-1
 *   **Repository Pattern**: 데이터 영속성 처리를 추상화하여, 데이터베이스 기술이 변경되어도 비즈니스 로직은 영향을 받지 않도록 설계되었습니다.
 *   **Scheduler**: `APScheduler`를 사용하여 모든 자동화 작업을 중앙에서 관리하고 실행합니다.
 
+### 아키텍처 주요 변경사항 (Architecture Highlights)
+
+최근 코드베이스의 ��지보수성과 확장성을 높이기 위해 다음과 같은 주요 리팩토링이 진행되었습니다.
+
+#### 1. 전략 구현 모듈화 (Strategy Implementation Modularization)
+- 기존의 거대했던 `strategy_implementations.py` 파일을 각 전략 클래스별로 하나의 파일로 분리하여 `domain/analysis/strategy/implementations/` 디렉토리 아래로 이동시켰습니다.
+- 이를 통해 개별 전략의 코드를 더 쉽게 찾고 수정할 수 있게 되었습니다.
+
+#### 2. 클래스 역할 및 책임 분리 (SOLID 원칙 강화)
+- `StrategyFactory`, `StrategyManager`, `StrategySelector` 클래스의 역할을 명확히 분리하여 단일 책임 원칙(SRP)을 강화했습니다.
+  - **`StrategyFactory` (생성자):** 오직 전략의 **인스턴스 생성**만을 책임집니다.
+  - **`StrategySelector` (정보 제공자/추천자):** 설정 파일을 기반으로 사용 가능한 전략의 **정보를 제공**하고, 특정 조건에 **가장 적합한 전략을 추천**하는 역할을 전담합니다.
+  - **`StrategyManager` (실행 관리자):** `Selector`의 추천을 받아, `Factory`를 통해 생성된 전략 인스턴스의 **실행과 생명주기를 관리**합니다.
+
 ## 📦 Installation
 
 1.  **Clone the repository:**
