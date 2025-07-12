@@ -39,8 +39,9 @@ class PutCallRatioBackfillProvider(BaseBackfillProvider):
                         total_ratio = all_ratios.get('TOTAL PUT/CALL RATIO')
 
                         if total_ratio:
+                            logger.info(f"Successfully parsed Put/Call Ratio for {target_date}: {total_ratio}")
                             records.append({
-                                "indicator_type": self.indicator_type.value,
+                                "indicator_type": self.indicator_type,
                                 "date": target_date,
                                 "value": total_ratio,
                                 "additional_data": json.dumps({"data_source": f"CBOE JSON API ({api_url})", "all_ratios": all_ratios})
