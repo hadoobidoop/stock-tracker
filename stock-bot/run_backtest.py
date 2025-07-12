@@ -800,35 +800,23 @@ def main():
     args = parse_arguments()
     
     try:
-        # 백테스팅 서비스 초기화
         logger.info("백테스팅 서비스 초기화 중...")
         service = BacktestingService()
         
-        # 모드에 따른 실행
-        if args.mode == 'single':
-            run_single_backtest(service, args)
-        elif args.mode == 'strategy':
-            run_strategy_backtest(service, args)
-        elif args.mode == 'strategy-mix':
-            run_strategy_mix_backtest(service, args)
-        elif args.mode == 'auto-strategy':
-            run_auto_strategy_backtest(service, args)
-        elif args.mode == 'strategy-comparison':
-            run_strategy_comparison(service, args)
-        elif args.mode == 'dynamic-strategy':
-            run_dynamic_strategy_backtest(service, args)
-        elif args.mode == 'dynamic-comparison':
-            run_dynamic_strategy_comparison(service, args)
-        elif args.mode == 'optimization':
-            run_parameter_optimization(service, args)
-        elif args.mode == 'walk-forward':
-            run_walk_forward_analysis(service, args)
-        elif args.mode == 'comparison':
-            run_static_mix_strategy_comparison(service, args)
-        elif args.mode == 'macro-analysis':
-            run_macro_analysis(service, args)
-        else:
-            raise ValueError(f"지원하지 않는 모드: {args.mode}")
+        # 서비스의 단일 진입점으로 모든 인자 전달
+        kwargs = vars(args)
+        result = service.run_backtest(**kwargs)
+        
+        # 결과 처리 (모드에 따라 다른 출력 함수 호출)
+        if args.mode in ['single', 'strategy', 'strategy-mix', 'auto-strategy', 'dynamic-strategy']:
+            print_backtest_summary(result, f"{args.mode} 백테스트")
+            save_backtest_report(service, result, args, f"{args.mode}_backtest")
+        elif args.mode in ['strategy-comparison', 'dynamic-comparison']:
+            print_strategy_comparison_results(result)
+            save_strategy_comparison_results(result, args)
+        elif args.mode in ['optimization', 'walk-forward', 'macro-analysis']:
+            # 이 모드들은 이미 자체적으로 출력 및 저장 로직을 가짐
+            pass
         
         logger.info("백테스트가 성공적으로 완료되었습니다.")
         
