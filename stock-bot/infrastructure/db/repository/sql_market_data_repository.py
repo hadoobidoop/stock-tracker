@@ -6,6 +6,8 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, and_
 
+from contextlib import contextmanager
+
 from infrastructure.db.db_manager import get_db
 from infrastructure.db.models.market_data import MarketData
 from infrastructure.db.models.enums import MarketIndicatorType
@@ -18,6 +20,39 @@ from domain.analysis.repository.analysis_repository import MarketDataRepository
 
 class SQLMarketDataRepository(MarketDataRepository):
     """시장 데이터 SQL 레포지토리"""
+
+    @contextmanager
+    def transaction(self):
+        """데이터베이스 트랜잭션 컨텍스트를 제공합니다."""
+        with get_db() as session:
+            try:
+                yield session
+                session.commit()
+                logger.debug("Transaction committed successfully.")
+            except Exception as e:
+                logger.error(f"Transaction failed, rolling back. Error: {e}", exc_info=True)
+                session.rollback()
+                raise
+
+    def save_market_data_batch(self, records: List[Dict[str, Any]], session: Session) -> bool:
+        """
+        여러 시장 데이터를 배치로 저장합니다. 트랜잭션 내에서 호출되어야 합니다.
+        
+        Args:
+            records: 저장할 데이터 딕셔너리의 리스트.
+            session: 활성 SQLAlchemy 세션.
+        """
+        if not records:
+            return True
+        try:
+            # SQLAlchemy의 bulk_insert_mappings를 사용하여 효율적으로 삽입
+            session.bulk_insert_mappings(MarketData, records)
+            logger.info(f"Successfully batched {len(records)} records for insertion.")
+            return True
+        except Exception as e:
+            logger.error(f"Error during batch save: {e}", exc_info=True)
+            # 트랜잭션 롤백을 위해 예외를 다시 발생시킴
+            raise
 
     def get_all_market_data_in_range(self, start_date: date, end_date: date) -> Dict[date, Dict[str, Any]]:
         """
@@ -45,65 +80,51 @@ class SQLMarketDataRepository(MarketDataRepository):
             return {}
 
     def save_market_data(self, indicator_type: MarketIndicatorType, data_date: date, 
-                        value: float, additional_data: str = None) -> bool:
+                        value: float, additional_data: str = None, session: Optional[Session] = None) -> bool:
         """
-        시장 데이터를 저장합니다. 
-        동일한 데이터가 이미 존재하면 중복 저장하지 않고, 값이 다른 경우에만 업데이트합니다.
-        
-        Args:
-            indicator_type: 지표 타입
-            data_date: 데이터 날짜
-            value: 지표 값
-            additional_data: 추가 메타데이터 (JSON 문자열)
-            
-        Returns:
-            bool: 저장/업데이트 성공 여부
+        시장 데이터를 저장하거나 업데이트합니다.
+        외부 세션을 주입받아 트랜잭션의 일부로 실행하거나, 자체 세션을 생성하여 실행할 수 있습니다.
         """
-        try:
-            with get_db() as session:
-                # 기존 데이터 확인
-                existing = session.query(MarketData).filter(
-                    and_(
-                        MarketData.date == data_date,
-                        MarketData.indicator_type == indicator_type
-                    )
-                ).first()
+        if session:
+            return self._save_market_data_internal(indicator_type, data_date, value, additional_data, session)
+        else:
+            try:
+                with self.transaction() as new_session:
+                    return self._save_market_data_internal(indicator_type, data_date, value, additional_data, new_session)
+            except Exception as e:
+                logger.error(f"Error in self-managed session for save_market_data: {e}", exc_info=True)
+                return False
 
-                if existing:
-                    # 동일한 데이터인지 확인 (값과 메타데이터 비교)
-                    if self._is_data_identical(existing, value, additional_data, indicator_type):
-                        logger.debug(f"Identical data found for {indicator_type.value} on {data_date}: {value} - Skipping save")
-                        return True  # 동일한 데이터이므로 저장하지 않고 성공 반환
-                    
-                    # 데이터가 다르면 업데이트
-                    old_value = existing.value
-                    existing.value = value
-                    existing.additional_data = additional_data
-                    existing.updated_at = datetime.utcnow()
-                    
-                    logger.info(f"Updated {indicator_type.value} for date {data_date}: {old_value} → {value}")
-                    
-                    # 중요한 변경사항인 경우 추가 로깅
-                    if self._is_significant_change(old_value, value, indicator_type):
-                        logger.warning(f"Significant change detected for {indicator_type.value} on {data_date}: "
-                                     f"{old_value:.2f} → {value:.2f} ({((value-old_value)/old_value*100):+.1f}%)")
-                else:
-                    # 새로 저장
-                    market_data = MarketData(
-                        date=data_date,
-                        indicator_type=indicator_type,
-                        value=value,
-                        additional_data=additional_data
-                    )
-                    session.add(market_data)
-                    logger.info(f"Saved new {indicator_type.value} for date {data_date}: {value}")
+    def _save_market_data_internal(self, indicator_type: MarketIndicatorType, data_date: date, 
+                                   value: float, additional_data: Optional[str], session: Session) -> bool:
+        """save_market_data의 핵심 로직. 반드시 활성 세션과 함께 호출되어야 합니다."""
+        existing = session.query(MarketData).filter(
+            MarketData.date == data_date,
+            MarketData.indicator_type == indicator_type
+        ).first()
 
-                session.commit()
+        if existing:
+            if self._is_data_identical(existing, value, additional_data, indicator_type):
                 return True
-
-        except Exception as e:
-            logger.error(f"Error saving market data: {e}", exc_info=True)
-            return False
+            
+            old_value = existing.value
+            existing.value = value
+            existing.additional_data = additional_data
+            existing.updated_at = datetime.utcnow()
+            
+            if self._is_significant_change(old_value, value, indicator_type):
+                logger.warning(f"Significant change for {indicator_type.value} on {data_date}: {old_value:.2f} → {value:.2f}")
+        else:
+            market_data = MarketData(
+                date=data_date,
+                indicator_type=indicator_type,
+                value=value,
+                additional_data=additional_data
+            )
+            session.add(market_data)
+            logger.info(f"Saved new {indicator_type.value} for date {data_date}: {value}")
+        
+        return True
 
     def _is_data_identical(self, existing: MarketData, new_value: float, new_additional_data: str = None, indicator_type: MarketIndicatorType = None) -> bool:
         """
