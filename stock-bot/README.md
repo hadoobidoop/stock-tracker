@@ -9,7 +9,7 @@
 1.  **전략의 성과는 시장 상황에 따라 크게 달라집니다:** 동일한 전략이라도 특정 종목과 기간에 따라 성과가 극명하게 갈렸습니다. 예를 들어, `CONSERVATIVE`와 `MEAN_REVERSION` 전략은 2025년 AAPL 시장에서는 손실을 기록했지만, 2024년 TSLA 시장에서는 유의미한 수익을 창출했습니다. 이는 각 시장의 특성(변동성, 추세)에 맞는 전략을 선택하는 것이 매우 중요함을 시사합니다.
 
 2.  **`MARKET_REGIME_HYBRID` 전략의 발견:**
-    *   **TSLA**와 같이 변동성이 매우 크고 추세가 자주 바뀌는 개별 주식에��는, 시장 체제를 진단하여 최적의 하위 전략을 동적으로 선택하는 **`MARKET_REGIME_HYBRID`** 전략이 **+33.22%**의 높은 수익률과 **-17.52%**의 상대적으로 낮은 최대 낙폭을 기록하며 최고의 성과를 보였습니다.
+    *   **TSLA**와 같이 변동성이 매우 크고 추세가 자주 바뀌는 개별 주식에���는, 시장 체제를 진단하여 최적의 하위 전략을 동적으로 선택하는 **`MARKET_REGIME_HYBRID`** 전략이 **+33.22%**의 높은 수익률과 **-17.52%**의 상대적으로 낮은 최대 낙폭을 기록하며 최고의 성과를 보였습니다.
     *   반면, **QQQM**과 같은 안정적인 시장 지수 ETF에서는 **`CONSERVATIVE_REVERSION_HYBRID`** 전략이 **-0.83%**의 손실과 **-3.58%**라는 경이로운 수준의 최대 낙폭을 기록하며, 수익 창출보다는 **자본 보존**에 매우 뛰어난 성능을 보였습니다.
     *   이는 "최고의 전략"이란 하나만 존재하는 것이 아니라, **투자의 목표(수익 극대화 vs 안정성)와 대상 자산의 특성에 맞는 최적의 도구를 선택해야 함**을 의미합니다.
 
@@ -38,10 +38,10 @@
     *   가장 기본적인 모드로, 내장된 전략 중 사용자가 명시적으로 선택한 하나의 전략(예: `MOMENTUM`)을 사용하여 일관된 규칙으로 분석을 수행합니다.
 
 2.  **전략 조합 모드 (Strategy Mix Mode):**
-    *   하나의 전략에만 의존하는 위험을 줄이기 위해, 여러 정적 전략을 동시에 실행하고 그 결과를 조합(앙상블)하는 모드입니다. 예를 들어, `conservative_mix`는 `CONSERVATIVE`와 `TREND_FOLLOWING` 전략이 모두 동의하는 신호만 채택���는 **투표(Voting)** 방식을 사용합니다.
+    *   하나의 전략에만 의존하는 위험을 줄이기 위해, 여러 정적 전략을 동시에 실행하고 그 결과를 조합(앙상블)하는 모드입니다. 예를 들어, `conservative_mix`는 `CONSERVATIVE`와 `TREND_FOLLOWING` 전략이 모두 동의하는 신호만 채������는 **투표(Voting)** 방식을 사용합니다.
 
-3.  **동적 전략 모드 (Dynamic Strategy Mode) - [컨셉/개발중]**
-    *   가장 진보된 모드로, 미리 정해진 규칙을 넘어 시장 상황에 실시간으로 반응하여 스스로 분석 로직을 수정합니다.
+3.  **동적 전략 모드 (Dynamic Strategy Mode):**
+    *   가장 진보된 모드로, 미리 정해진 규칙을 넘어 시장 상황에 실시간으로 반응하여 스스로 분석 로직을 수정합니다. 최근 대규모 리팩토링을 통해 구조적 안정성과 확장성을 크게 개선했습니다.
 
 ### **3. 전략 시뮬레이션 및 성과 검증 (The Backtesting Engine)**
 
@@ -75,7 +75,7 @@
 | **SCALPING** | 초단기 매매, 거래량 신호 중시 |
 | **SWING** | 며칠간의 중기적 가격 변동 활용 |
 | **MEAN_REVERSION** | 볼린저 밴드 기반 평균 회귀 경향 이용 |
-| **TREND_PULLBACK** | 상승 추세 중 눌림목 매수 타이밍 포착 |
+| **TREND_PULLBACK** | 상승 추세 중 눌림목 매수 ��이밍 포착 |
 | **VOLATILITY_BREAKOUT**| 변동성 돌파 시점을 거래량과 함께 포착 |
 | **MULTI_TIMEFRAME** | 장기(일봉)와 단기(시간봉) 추세를 함께 확인 |
 | **MACRO_DRIVEN** | VIX, 버핏 지수를 분석에 통합 |
@@ -125,15 +125,28 @@
 
 최근 코드베이스의 ��지보수성과 확장성을 높이기 위해 다음과 같은 주요 리팩토링이 진행되었습니다.
 
-#### 1. 전략 구현 모듈화 (Strategy Implementation Modularization)
+#### 1. 전략 관리 시스템 리팩토링 (Strategy Management System Refactoring)
+복잡했던 동적 전략(`DynamicCompositeStrategy`) 시스템의 코드 품질과 유지보수성을 향상시키기 위해, SOLID 원칙에 기반한 대대적인 리팩토링을 진행했습니다.
+
+-   **모디파이어(Modifier) 시스템 중앙화:**
+    -   기존의 거대한 `modifiers.py` 파일을 `base`, `market_indicator_modifier`, `registry`, `modifier_engine` 등 역할에 따라 명확히 분리했습니다.
+    -   `ModifierRegistry`를 도��하여 모든 모디파이어 클래스를 중앙에서 등록하고 관리하도록 구조를 개선했습니다.
+
+-   **`StrategyManager` 책임 분리:**
+    -   `DynamicStrategyManager`를 신설하여, 동적 전략의 생성, 관리, 실행에 대한 모든 책임을 위임했습니다.
+    -   기존 `StrategyManager`는 이제 정적 전략과 전략 믹스 관리에만 집중하고, 동적 전략 관련 처리는 `DynamicStrategyManager`에 위임하여 각 클래스의 단일 책임 원칙을 강화했습니다.
+
+-   **`StrategyFactory` 역할 강화:**
+    -   `DynamicCompositeStrategy`의 생성 및 초기화 책임을 `StrategyFactory`로 완전히 이전했습니다.
+    -   이제 팩토리는 `ModifierEngine`을 포함한 모든 의존성이 주입된, 완전히 준비된 동적 전략 인스턴스를 생성하여 반환합니다.
+
+-   **`BacktestingService` API 단순화:**
+    -   `BacktestingService`에 `run_backtest`라는 단일 공개 진입점(Entrypoint)을 구현했습니다.
+    -   기존의 여러 `run_...` 메서드들은 내부용(private)으로 변경하고, `run_backtest`가 `mode` 인자에 따라 적절한 내부 메서드를 호출하도록 라우팅 로직을 추가하여 서비스의 API를 명확하고 단순하게 만들었습니다.
+
+#### 2. 전략 구현 모듈화 (Strategy Implementation Modularization)
 - 기존의 거대했던 `strategy_implementations.py` 파일을 각 전략 클래스별로 하나의 파일로 분리하여 `domain/analysis/strategy/implementations/` 디렉토리 아래로 이동시켰습니다.
 - 이를 통해 개별 전략의 코드를 더 쉽게 찾고 수정할 수 있게 되었습니다.
-
-#### 2. 클래스 역할 및 책임 분리 (SOLID 원칙 강화)
-- `StrategyFactory`, `StrategyManager`, `StrategySelector` 클래스의 역할을 명확히 분리하여 단일 책임 원칙(SRP)을 강화했습니다.
-  - **`StrategyFactory` (생성자):** 오직 전략의 **인스턴스 생성**만을 책임집니다.
-  - **`StrategySelector` (정보 제공자/추천자):** 설정 파일을 기반으로 사용 가능한 전략의 **정보를 제공**하고, 특정 조건에 **가장 적합한 전략을 추천**하는 역할을 전담합니다.
-  - **`StrategyManager` (실행 관리자):** `Selector`의 추천을 받아, `Factory`를 통해 생성된 전략 인스턴스의 **실행과 생명주기를 관리**합니다.
 
 #### 3. 데이터 프로바이더 효율성 최적화 (Data Provider Efficiency Optimization)
 - `BuffettIndicatorProvider`의 비효율적인 로직을 대대적으로 개선했습니다. 매번 20년치 전체 데이터를 조회하던 방식에서 최근 2년치 데이터만 가져오도록 변경하고, 개별 DB 저장을 `bulk_save_objects`를 사용한 일괄 저장 방식으로 전환하여 API 및 DB 부하를 크게 줄이고 성능을 향상시켰습니다.
