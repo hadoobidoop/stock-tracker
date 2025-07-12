@@ -108,7 +108,7 @@
 `python -m domain.market_data_backfiller.backfiller --start_date 2023-01-01 --end_date 2023-12-31`
 
 **2. 특정 지표만 골라서 채우기**
-`python -m domain.market_data_backfiller.backfiller --start_date 2024-01-01 --end_date 2024-06-30 --indicators VIX DXY`
+`python -m domain.market_data_backfiller.backfiller --start_date 2024-01-01 --end_date 2024-06-30 --indicators VIX BUFFETT_INDICATOR`
 
 - 백필할 지표 목록은 `domain/market_data_backfiller/config.py` 파일의 `ENABLED_PROVIDERS` 리스트에서 기본값을 수정할 수 있습니다.
 

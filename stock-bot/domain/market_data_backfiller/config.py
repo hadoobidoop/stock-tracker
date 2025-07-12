@@ -23,6 +23,9 @@ BACKFILL_PROVIDERS_CONFIG = {
         "symbol": "^GSPC",
         "indicator_type": MarketIndicatorType.SP500_INDEX,
     },
+    "BUFFETT_INDICATOR": {
+        "provider": "BuffettBackfillProvider",
+    },
     # --- FEAR_GREED_GROUP ---
     "FEAR_GREED_INDEX":               {"provider": "FearGreedBackfillProvider", "group": "FEAR_GREED_GROUP"},
     "FEAR_GREED_JUNK_BOND_DEMAND":    {"provider": "FearGreedBackfillProvider", "group": "FEAR_GREED_GROUP"},
@@ -41,4 +44,5 @@ ENABLED_PROVIDERS = [
     "FEAR_GREED_INDEX", # 그룹에 속한 어떤 지표를 지정해도 전체 그룹이 실행됩니다.
     "PUT_CALL_RATIO",
     "SP500_INDEX",
+    "BUFFETT_INDICATOR",
 ]

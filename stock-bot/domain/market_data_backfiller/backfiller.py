@@ -7,7 +7,6 @@ from typing import List, Dict, Any, Optional
 from .config import ENABLED_PROVIDERS as DEFAULT_ENABLED_PROVIDERS, BACKFILL_PROVIDERS_CONFIG
 from .providers import *
 from infrastructure.db.repository.sql_market_data_repository import SQLMarketDataRepository
-from infrastructure.db.models.enums import MarketIndicatorType
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
@@ -34,6 +33,7 @@ class MarketDataBackfiller:
             "YahooBackfillProvider": YahooBackfillProvider,
             "FearGreedBackfillProvider": FearGreedBackfillProvider,
             "PutCallRatioBackfillProvider": PutCallRatioBackfillProvider,
+            "BuffettBackfillProvider": BuffettBackfillProvider,
         }
         
         initialized_groups = set()
