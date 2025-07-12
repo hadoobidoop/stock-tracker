@@ -112,6 +112,9 @@
 
 - 백필할 지표 목록은 `domain/market_data_backfiller/config.py` 파일의 `ENABLED_PROVIDERS` 리스트에서 기본값을 수정할 수 있습니다.
 
+#### ⚠️ 데이터베이스 스키마 동기화 (Database Schema Sync)
+새로운 시장 지표(`MarketIndicatorType`)를 코드에 추가할 경우, 데이터베이스 스키마도 함께 업데이트해야 합니다. 특히 `market_data` 테이블의 `indicator_type` `ENUM` 목록에 새로운 지표 이름을 추가��야 합니다. 스키마가 동기화되지 않으면, 백필러가 해당 지표 데이터를 저장하지 못할 수 있습니다. (e.g., `ALTER TABLE market_data MODIFY COLUMN indicator_type ENUM(...) NOT NULL;`)
+
 ## 🏗️ Architecture
 
 *   **Domain-Driven Design (DDD)**: 비즈니스 로직(`domain`)과 기술적 구현(`infrastructure`)을 명확히 분리하여 유지보수성과 확장성을 극대화했습니다.
