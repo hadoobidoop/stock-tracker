@@ -18,7 +18,10 @@ class StrategyType(Enum):
     # 확장 정적 전략들 (기존 시스템에서 이식)
     MOMENTUM = "momentum"           # 모멘텀 전략
     TREND_FOLLOWING = "trend_following"  # 추세추종 전략
+    SCALPING = "scalping"           # 스캘핑 전략
+    SWING = "swing"
     MEAN_REVERSION = "mean_reversion"
+    TREND_PULLBACK = "trend_pullback"
     MULTI_TIMEFRAME = "multi_timeframe"
     MACRO_DRIVEN = "macro_driven"
     ADAPTIVE_MOMENTUM = "adaptive_momentum"
@@ -124,6 +127,37 @@ STRATEGY_CONFIGS = {
         }
     ),
     
+    StrategyType.SCALPING: StrategyConfig(
+        name="스캘핑 전략",
+        description="빠른 진입/청산을 위한 단기 전략",
+        signal_threshold=4.0,   # 매우 낮은 임계값
+        risk_per_trade=0.01,    # 낮은 리스크
+        implementation_class="domain.analysis.strategy.implementations.scalping_strategy.ScalpingStrategy",
+        market_filters={
+            "volume_confirmation": True,
+            "volatility_filter": True
+        },
+        position_management={
+            "max_positions": 10,
+            "position_timeout_hours": 4   # 4시간만 보유
+        }
+    ),
+    
+    StrategyType.SWING: StrategyConfig(
+        name="스윙 전략",
+        description="중기 추세 변화를 포착하는 전략",
+        signal_threshold=7.0,
+        risk_per_trade=0.025,
+        implementation_class="domain.analysis.strategy.implementations.swing_strategy.SwingStrategy",
+        market_filters={
+            "trend_alignment": False
+        },
+        position_management={
+            "max_positions": 3,
+            "position_timeout_hours": 336  # 14일
+        }
+    ),
+    
     StrategyType.MEAN_REVERSION: StrategyConfig(
         name="평균 회귀 전략",
         description="과매수/과매도 후 평균으로 회귀하는 경향을 이용하는 전략",
@@ -131,6 +165,16 @@ STRATEGY_CONFIGS = {
         risk_per_trade=0.015,
         implementation_class="domain.analysis.strategy.implementations.mean_reversion_strategy.MeanReversionStrategy",
         market_filters={"trend_alignment": False},
+        position_management={"max_positions": 4, "position_timeout_hours": 120}
+    ),
+    
+    StrategyType.TREND_PULLBACK: StrategyConfig(
+        name="추세 추종 눌림목 전략",
+        description="상승 추세 중 일시적 하락(눌림목) 시 매수하는 전략",
+        signal_threshold=8.0,
+        risk_per_trade=0.02,
+        implementation_class="domain.analysis.strategy.implementations.trend_pullback_strategy.TrendPullbackStrategy",
+        market_filters={"trend_alignment": True},
         position_management={"max_positions": 4, "position_timeout_hours": 120}
     ),
     
