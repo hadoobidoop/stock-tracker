@@ -59,8 +59,9 @@ domain/
 | Volatility Breakout  | 완료                     |
 | Macro Driven         | 폐기                     |
 | Multi Timeframe      | 완료                     |
-| Quality Trend        | 예정                     |
-| Stable Value Hybrid  | 예정                     |
+| Quality Trend        | 폐기                     |
+| Stable Value Hybrid  | 폐기                     |
+| Contrarian           | 폐기                     |
 | Market Regime Hybrid | 완료                     |
 | Adaptive Momentum Hybrid | 완료                 |
 | Conservative Reversion Hybrid | 완료           |
