@@ -55,18 +55,7 @@ STRATEGY_MIXES: Dict[str, StrategyMixConfig] = {
         threshold_adjustment=1.0  # 기본 임계값
     ),
     
-    # 공격적 조합: 빠른 신호 및 변동성 포착
-    "aggressive_mix": StrategyMixConfig(
-        name="공격적 조합 (Aggressive Mix)",
-        description="모멘텀, 스캘핑, 변동성 돌파 전략을 조합하여 빠른 기회 포착",
-        mode=StrategyMixMode.WEIGHTED,
-        strategies={
-            StrategyType.MOMENTUM: 0.4,             # 40% - 모멘텀
-            StrategyType.SCALPING: 0.3,             # 30% - 초단기 신호
-            StrategyType.VOLATILITY_BREAKOUT: 0.3,  # 30% - 변동성 돌파
-        },
-        threshold_adjustment=0.8  # 임계값을 낮춰 더 많은 신호 포착
-    ),
+    # aggressive_mix는 domain.strategies.aggressive_mix.configs.aggressive_mix_config에서 관리됩니다.
     
 }
 
