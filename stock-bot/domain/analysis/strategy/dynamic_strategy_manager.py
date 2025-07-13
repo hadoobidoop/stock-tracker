@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Any
 
 from .dynamic_strategy import DynamicCompositeStrategy
 from .strategy_factory import StrategyFactory
-from ..config.dynamic_strategies import get_all_strategies
+from strategy.configs.dynamic_strategies import get_all_strategies
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
@@ -54,7 +54,7 @@ class DynamicStrategyManager:
             logger.info(f"Default dynamic strategy set to: {self.current_strategy.strategy_name}")
 
     def switch_strategy(self, name: str) -> bool:
-        """활성 동적 전략을 교체합니��."""
+        """활성 동적 전략을 교체합니다."""
         if name not in self.strategies:
             logger.warning(f"Dynamic strategy '{name}' not found.")
             return False
