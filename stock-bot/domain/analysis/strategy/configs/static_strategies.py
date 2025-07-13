@@ -278,11 +278,11 @@ STRATEGY_CONFIGS = {
     ),
 
     StrategyType.MARKET_REGIME_HYBRID: StrategyConfig(
-        name="시장 체제 적응형 하이브리드",
-        description="시장의 추세와 변동성을 진단하여 최적의 하위 전략을 동적으로 선택",
-        signal_threshold=6.0, # 하위 전략의 임계값을 따르므로, 중간값으로 설정
+        name="시장 체제 적응 하이브리드",
+        description="시장 추세/변동성에 따라 하위 전략을 동적으로 선택",
+        signal_threshold=6.0, # 하위 전략의 임계값을 따름
         risk_per_trade=0.02,
-        implementation_class="domain.analysis.strategy.implementations.market_regime_hybrid.MarketRegimeHybridStrategy",
+        implementation_class="domain.strategies.market_regime_hybrid.market_regime_hybrid_strategy.MarketRegimeHybridStrategy",
         market_filters={},
         position_management={}
     ),

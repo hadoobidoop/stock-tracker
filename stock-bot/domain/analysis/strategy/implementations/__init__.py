@@ -1,5 +1,4 @@
 from .adaptive_momentum_hybrid_strategy import AdaptiveMomentumStrategy
-from .market_regime_hybrid import MarketRegimeHybridStrategy
 from .stable_value_hybrid import StableValueHybridStrategy
 from .aggressive_strategy import AggressiveStrategy
 from .balanced_strategy import BalancedStrategy
@@ -16,7 +15,6 @@ from .volatility_breakout_strategy import VolatilityBreakoutStrategy
 
 __all__ = [
     "AdaptiveMomentumStrategy",
-    "MarketRegimeHybridStrategy",
     "StableValueHybridStrategy",
     "AggressiveStrategy",
     "BalancedStrategy",

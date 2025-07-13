@@ -62,7 +62,7 @@ domain/
 | Multi Timeframe      | 예정                     |
 | Quality Trend        | 예정                     |
 | Stable Value Hybrid  | 예정                     |
-| Market Regime Hybrid | 예정                     |
+| Market Regime Hybrid | 완료                     |
 | Adaptive Momentum Hybrid | 완료                 |
 | Conservative Reversion Hybrid | 완료           |
 | balanced_mix         | 완료 (조합)              |
@@ -206,6 +206,16 @@ domain/
 - [x] 상세 로그(info/debug) 추가 및 백테스트/실시간 분석 활용성 강화
 - [x] strategy_docs/trend_pullback_strategy.md 문서화 완료
 - [x] 커밋 완료
+
+### Market Regime Hybrid 전략
+- [x] market_regime_hybrid 폴더/구조 설계 및 생성
+- [x] 하위 전략(TrendFollowing, MeanReversion, VolatilityBreakout) 직접 참조 및 인스턴스화
+- [x] config(market_regime_hybrid_config.py) 분리 및 파라미터/가중치 관리
+- [x] 전략 본체(market_regime_hybrid_strategy.py) 완전 분리 및 경로/구조 일관화
+- [x] 팩토리/매니저 import 경로 및 implementation_class 경로 일괄 수정
+- [x] 상세 로그(info/debug) 추가 및 백테스트/실시간 분석 활용성 강화
+- [x] strategy_docs/market_regime_hybrid_strategy.md 문서화 완료
+- [x] 주석 리팩토링 및 커밋 완료
 
 ---
 
