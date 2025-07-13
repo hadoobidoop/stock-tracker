@@ -22,12 +22,12 @@ class StableValueHybridStrategy(BaseStrategy):
         super().__init__(strategy_type, config)
         from domain.analysis.strategy.strategy_factory import StrategyFactory
         self.conservative_strategy = StrategyFactory.create_static_strategy(StrategyType.CONSERVATIVE)
-        self.pullback_strategy = StrategyFactory.create_static_strategy(StrategyType.TREND_PULLBACK)
+        # TREND_PULLBACK 관련 주석, 변수, 생성, 호출 등 삭제 또는 대체
 
     def initialize(self) -> bool:
         self.is_initialized = all([
             self.conservative_strategy.initialize(),
-            self.pullback_strategy.initialize()
+            # TREND_PULLBACK 관련 주석, 변수, 생성, 호출 등 삭제 또는 대체
         ])
         return self.is_initialized
 
@@ -44,8 +44,7 @@ class StableValueHybridStrategy(BaseStrategy):
 
         conservative_result = self.conservative_strategy.analyze(df_with_indicators, ticker, market_trend,
                                                                  long_term_trend, daily_extra_indicators)
-        pullback_result = self.pullback_strategy.analyze(df_with_indicators, ticker, market_trend, long_term_trend,
-                                                         daily_extra_indicators)
+        # TREND_PULLBACK 관련 주석, 변수, 생성, 호출 등 삭제 또는 대체
 
         buy_score = 0
         sell_score = 0  # 이 전략은 매수만 고려
@@ -53,7 +52,7 @@ class StableValueHybridStrategy(BaseStrategy):
         # CONSERVATIVE 전략이 안정적인 상승 추세라고 판단할 때만,
         # TREND_PULLBACK의 눌림목 매수 신호를 채택
         if conservative_result.buy_score > conservative_result.sell_score:
-            buy_score = pullback_result.buy_score
+            buy_score = conservative_result.buy_score # TREND_PULLBACK 관련 주석, 변수, 생성, 호출 등 삭제 또는 대체
 
         # === 장기추세 가중치 적용 ===
         if long_term_trend == TrendType.BULLISH:
@@ -62,8 +61,8 @@ class StableValueHybridStrategy(BaseStrategy):
             sell_score *= 1.2
         # ============================
 
-        final_signals = conservative_result.signals_detected + pullback_result.signals_detected
-        stop_loss_price = pullback_result.stop_loss_price
+        final_signals = conservative_result.signals_detected + conservative_result.signals_detected # TREND_PULLBACK 관련 주석, 변수, 생성, 호출 등 삭제 또는 대체
+        stop_loss_price = conservative_result.stop_loss_price # TREND_PULLBACK 관련 주석, 변수, 생성, 호출 등 삭제 또는 대체
 
         has_signal = buy_score > self.config.signal_threshold
         total_score = buy_score if has_signal else 0
