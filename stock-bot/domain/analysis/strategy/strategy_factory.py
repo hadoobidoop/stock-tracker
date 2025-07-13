@@ -1,4 +1,3 @@
-import importlib
 from typing import Dict, Optional
 
 from domain.analysis.config.dynamic_strategies import get_all_strategies, get_strategy_definition, get_all_modifiers
@@ -9,7 +8,18 @@ from domain.analysis.strategy.implementations import (
     AdaptiveMomentumStrategy,
     ConservativeReversionHybridStrategy,
     MarketRegimeHybridStrategy,
-    StableValueHybridStrategy
+    StableValueHybridStrategy,
+    AggressiveStrategy,
+    BalancedStrategy,
+    ConservativeStrategy,
+    ContrarianStrategy,
+    MeanReversionStrategy,
+    MomentumStrategy,
+    ScalpingStrategy,
+    SwingStrategy,
+    TrendFollowingStrategy,
+    TrendPullbackStrategy,
+    VolatilityBreakoutStrategy
 )
 from .modifier_engine import ModifierEngine
 from .modifiers.registry import ModifierFactory
@@ -17,6 +27,24 @@ from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
 
+# 전략 타입 ↔️ 전략 클래스 매핑 딕셔너리
+STRATEGY_CLASS_MAP = {
+    StrategyType.ADAPTIVE_MOMENTUM: AdaptiveMomentumStrategy,
+    StrategyType.CONSERVATIVE_REVERSION_HYBRID: ConservativeReversionHybridStrategy,
+    StrategyType.MARKET_REGIME_HYBRID: MarketRegimeHybridStrategy,
+    StrategyType.STABLE_VALUE_HYBRID: StableValueHybridStrategy,
+    StrategyType.AGGRESSIVE: AggressiveStrategy,
+    StrategyType.BALANCED: BalancedStrategy,
+    StrategyType.CONSERVATIVE: ConservativeStrategy,
+    StrategyType.CONTRARIAN: ContrarianStrategy,
+    StrategyType.MEAN_REVERSION: MeanReversionStrategy,
+    StrategyType.MOMENTUM: MomentumStrategy,
+    StrategyType.SCALPING: ScalpingStrategy,
+    StrategyType.SWING: SwingStrategy,
+    StrategyType.TREND_FOLLOWING: TrendFollowingStrategy,
+    StrategyType.TREND_PULLBACK: TrendPullbackStrategy,
+    StrategyType.VOLATILITY_BREAKOUT: VolatilityBreakoutStrategy,
+}
 
 class StrategyFactory:
     """
@@ -35,21 +63,13 @@ class StrategyFactory:
             return None
 
         try:
-            # implementation_class 필드를 통해 동적으로 클래스를 로드하여 생성하는 방식으로 통일
-            if config.implementation_class:
-                module_path, class_name = config.implementation_class.rsplit('.', 1)
-                module = importlib.import_module(module_path)
-                strategy_class = getattr(module, class_name)
-                strategy = strategy_class(strategy_type, config)
-                logger.info(f"'{config.name}' (클래스: {class_name}) 생성 성공")
-                return strategy
-
-            # implementation_class가 없는 경우 에러 처리
-            logger.error(f"'{config.name}'에 대한 구현 클래스가 지정되지 않았습니다.")
-            return None
-
+            strategy_class = STRATEGY_CLASS_MAP.get(strategy_type)
+            if strategy_class is None:
+                logger.error(f"지원하지 않는 전략 타입입니다: {strategy_type.value}")
+                return None
+            return strategy_class(strategy_type, config)
         except Exception as e:
-            logger.error(f"정적 전략 생성 실패 {strategy_type.value}: {e}", exc_info=True)
+            logger.error(f"정적 전략 생성 실패 {strategy_type.value}: {e}")
             return None
 
     @classmethod

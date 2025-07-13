@@ -58,6 +58,12 @@ class ContrarianStrategy(BaseStrategy):
             has_signal = bool(signal_result and signal_result.get('type'))
             score = signal_result.get('score', 0)
 
+            # Contrarian 특화 점수 조정 (UniversalStrategy와 동일)
+            if market_trend == TrendType.BEARISH:
+                score *= 1.2  # 하락장에서 매수 신호 강화
+            elif market_trend == TrendType.BULLISH:
+                score *= 0.8  # 상승장에서 매수 신호 약화
+
             # 성능 지표 업데이트
             self.score_history.append(score)
             if len(self.score_history) > 100:

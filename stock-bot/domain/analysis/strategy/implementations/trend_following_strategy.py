@@ -79,7 +79,14 @@ class TrendFollowingStrategy(BaseStrategy):
             base_score = signal_result.get('score', 0)
             has_signal = bool(signal_result and signal_result.get('type'))
 
-            adjusted_score = self._adjust_score(base_score, market_trend, long_term_trend) if has_signal else 0.0
+            # TrendFollowing 특화 점수 조정 (UniversalStrategy와 동일)
+            if has_signal:
+                if market_trend == long_term_trend:
+                    adjusted_score = base_score * 1.1
+                else:
+                    adjusted_score = base_score * 0.9
+            else:
+                adjusted_score = 0.0
 
             # 성능 지표 업데이트
             self.score_history.append(adjusted_score)

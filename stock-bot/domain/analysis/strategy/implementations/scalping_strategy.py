@@ -9,6 +9,7 @@ from domain.analysis.detectors.momentum.stoch_detector import StochSignalDetecto
 from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDetector
 from domain.analysis.detectors.volume.volume_detector import VolumeSignalDetector
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
+from domain.stock.service.market_data_service import MarketDataService
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 
@@ -23,6 +24,7 @@ class ScalpingStrategy(BaseStrategy):
     def __init__(self, strategy_type: StrategyType, config: StrategyConfig):
         super().__init__(strategy_type, config)
         self.orchestrator: Optional[SignalDetectionOrchestrator] = None
+        self.market_data_service = MarketDataService()  # VIX 등 외부 마켓 데이터 활용
 
     def initialize(self) -> bool:
         try:
@@ -59,6 +61,19 @@ class ScalpingStrategy(BaseStrategy):
 
             has_signal = bool(signal_result and signal_result.get('type'))
             score = signal_result.get('score', 0)
+
+            # VIX 기반 점수 조정
+            current_date = df_with_indicators.index[-1].date()
+            vix_value = self.market_data_service.get_vix_by_date(current_date)
+            if vix_value is not None:
+                if vix_value > 25:
+                    score *= 1.2
+                    logger.debug(f"SCALPING: VIX ({vix_value:.2f}) > 25. Score adjusted by 1.2x.")
+                elif vix_value < 15:
+                    score *= 0.8
+                    logger.debug(f"SCALPING: VIX ({vix_value:.2f}) < 15. Score adjusted by 0.8x.")
+            else:
+                logger.warning(f"SCALPING: VIX data not available for {current_date}. No adjustment made.")
 
             # 성능 지표 업데이트
             self.score_history.append(score)

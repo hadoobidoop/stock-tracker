@@ -58,6 +58,10 @@ class MeanReversionStrategy(BaseStrategy):
             has_signal = bool(signal_result and signal_result.get('type'))
             score = signal_result.get('score', 0)
 
+            # MeanReversion 특화 점수 조정 (UniversalStrategy와 동일)
+            if market_trend == TrendType.NEUTRAL:
+                score *= 1.15
+
             # 성능 지표 업데이트
             self.score_history.append(score)
             if len(self.score_history) > 100:

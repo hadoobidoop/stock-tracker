@@ -58,6 +58,12 @@ class TrendPullbackStrategy(BaseStrategy):
             has_signal = bool(signal_result and signal_result.get('type'))
             score = signal_result.get('score', 0)
 
+            # TrendPullback 특화 점수 조정 (UniversalStrategy와 동일)
+            if market_trend == long_term_trend:
+                score *= 1.1
+            else:
+                score *= 0.9
+
             # 성능 지표 업데이트
             self.score_history.append(score)
             if len(self.score_history) > 100:

@@ -93,15 +93,19 @@ class StrategyManager:
         return success_count
     
     def _set_default_strategy(self):
-        """기본 전략 설정"""
-        # 기본 정적 전략 설정
+        """기본 전략을 설정하고 다른 모드는 비활성화합니다."""
+        # 1. 기본 정적 전략 설정
         if StrategyType.BALANCED in self.active_strategies:
             self.current_strategy = self.active_strategies[StrategyType.BALANCED]
         elif self.active_strategies:
             self.current_strategy = list(self.active_strategies.values())[0]
         
+        # 2. 다른 모든 모드 비활성화
+        self.dynamic_manager.current_strategy = None
+        self.current_mix_config = None
+        
         if self.current_strategy:
-            logger.info(f"기본 정적 전략 설정: {self.current_strategy.get_name()}")
+            logger.info(f"기본 전략 설정: {self.current_strategy.get_name()} (다른 모든 모드 비활성화)")
     
     def add_strategy(self, strategy_type: StrategyType, strategy: Optional[BaseStrategy] = None) -> bool:
         """전략 추가"""
