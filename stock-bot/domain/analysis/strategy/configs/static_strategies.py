@@ -84,7 +84,7 @@ STRATEGY_CONFIGS = {
     ),
     
     StrategyType.BALANCED: StrategyConfig(
-        name="균형��힌 전략",
+        name="균형잡힌 전략",
         description="다양한 신호를 균형있게 사용하는 기본 전략",
         signal_threshold=8.0,
         risk_per_trade=0.02,
@@ -258,7 +258,7 @@ STRATEGY_CONFIGS = {
         description="추세, 모멘텀, 변동성을 결합한 적응형 전략",
         signal_threshold=6.0,
         risk_per_trade=0.02,
-        implementation_class="domain.analysis.strategy.implementations.adaptive_momentum_strategy.AdaptiveMomentumStrategy",
+        implementation_class="domain.analysis.strategy.implementations.adaptive_momentum_hybrid_strategy.AdaptiveMomentumStrategy",
         market_filters={},
         position_management={}
     ),

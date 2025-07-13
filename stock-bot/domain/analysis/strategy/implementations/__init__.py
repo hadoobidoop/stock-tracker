@@ -1,4 +1,4 @@
-from .adaptive_momentum import AdaptiveMomentumStrategy
+from .adaptive_momentum_hybrid_strategy import AdaptiveMomentumStrategy
 from .conservative_reversion_hybrid import ConservativeReversionHybridStrategy
 from .market_regime_hybrid import MarketRegimeHybridStrategy
 from .stable_value_hybrid import StableValueHybridStrategy
