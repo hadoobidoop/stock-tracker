@@ -33,7 +33,7 @@ class MomentumStrategyConfig(StrategyConfig):
     score_multiplier: float = 1.0
     long_term_bullish_multiplier: float = 1.15
     long_term_bearish_multiplier: float = 0.9
-    detector_weights: Dict[str, float] = MOMENTUM_DETECTOR_WEIGHTS.copy()
+    detector_weights: Dict[str, float] = field(default_factory=lambda: MOMENTUM_DETECTOR_WEIGHTS.copy())
 
     def to_dict(self) -> Dict[str, Any]:
         return {
