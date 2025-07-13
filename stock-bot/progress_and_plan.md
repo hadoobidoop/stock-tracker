@@ -49,7 +49,7 @@ domain/
 | Aggressive           | 완료                     |
 | Balanced             | 완료                     |
 | Conservative         | 완료                     |
-| Momentum             | 예정                     |
+| Momentum             | 완료                     |
 | Mean Reversion       | 예정                     |
 | Swing                | 예정                     |
 | Trend Following      | 예정                     |
@@ -69,7 +69,7 @@ domain/
 | aggressive_mix       | 예정 (조합)              |
 | Dynamic Strategy/Manager | 예정 (동적)         |
 
-> Aggressive, Balanced, Conservative 전략만 독립 구조로 완전히 이전 완료. 나머지 전략/조합/동적 전략은 동일 방식으로 이전 예정.
+> Aggressive, Balanced, Conservative, Momentum 전략만 독립 구조로 완전히 이전 완료. 나머지 전략/조합/동적 전략은 동일 방식으로 이전 예정.
 
 ---
 
@@ -105,10 +105,10 @@ domain/
 
 ## 4. 각 전략별 진행상황 상세
 
-### Aggressive/ Balanced/ Conservative 전략
+### Aggressive/ Balanced/ Conservative/ Momentum 전략
 - 각 전략별 구현체(.py), Detector, config는 해당 전략 폴더 내에서 완전히 독자적으로 관리됨 (폴더 단위 독립성)
-- aggressive, balanced, conservative 전략은 독립 구조로 완전히 이전 완료
-- momentum, mean_reversion, swing 등 기타 전략은 추후 동일한 방식으로 이전 예정
+- aggressive, balanced, conservative, momentum 전략은 독립 구조로 완전히 이전 완료
+- mean_reversion, swing 등 기타 전략은 추후 동일한 방식으로 이전 예정
 
 ### Aggressive 전략
 - [x] AggressiveVolumeDetector, AggressiveSMADetector 등 커스텀 Detector 구현
@@ -128,6 +128,12 @@ domain/
 - [x] 커스텀 Detector 일부 구현 (ConservativeVolumeDetector, ConservativeSMADetector)
 - [x] config, 전략 구현체 일부 구현
 - [ ] 전략 본체 및 나머지 Detector 구현 필요
+
+### Momentum 전략
+- [x] Momentum 전략 폴더/구조 설계 및 생성
+- [x] 커스텀 Detector, config, 전략 구현체 구현 및 완성
+- [x] 전략 본체 및 Detector 구현 완료
+- [x] 주석/문서화/튜닝 가이드 보강 및 커밋 완료
 
 ---
 
