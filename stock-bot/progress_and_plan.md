@@ -56,7 +56,6 @@ domain/
 | Swing                | 완료                     |
 | Trend Following      | 완료                     |
 | Trend Pullback       | 완료                     |
-| Contrarian           | 예정                     |
 | Volatility Breakout  | 완료                     |
 | Macro Driven         | 폐기                     |
 | Multi Timeframe      | 완료                     |

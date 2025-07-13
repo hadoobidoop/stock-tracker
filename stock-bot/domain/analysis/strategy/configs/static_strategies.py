@@ -19,7 +19,6 @@ class StrategyType(Enum):
     # 확장 정적 전략들 (기존 시스템에서 이식)
     MOMENTUM = "momentum"           # 모멘텀 전략
     TREND_FOLLOWING = "trend_following"  # 추세추종 전략
-    CONTRARIAN = "contrarian"       # 역추세 전략
     SCALPING = "scalping"           # 스캘핑 전략
     SWING = "swing"
     MEAN_REVERSION = "mean_reversion"
@@ -141,21 +140,6 @@ STRATEGY_CONFIGS = {
         position_management={
             "max_positions": 4,
             "position_timeout_hours": 720
-        }
-    ),
-    
-    StrategyType.CONTRARIAN: StrategyConfig(
-        name="역추세 전략",
-        description="과매수/과매도 상황에서 반대 방향으로 진입하는 전략",
-        signal_threshold=8.0,
-        risk_per_trade=0.02,
-        implementation_class="domain.analysis.strategy.implementations.contrarian_strategy.ContrarianStrategy",
-        market_filters={
-            "trend_alignment": False,
-        },
-        position_management={
-            "max_positions": 3,
-            "position_timeout_hours": 168
         }
     ),
     
@@ -290,7 +274,7 @@ def get_available_strategies() -> Dict[str, List[str]]:
         "basic": ["CONSERVATIVE", "BALANCED", "AGGRESSIVE"],
         "momentum": ["MOMENTUM", "RSI_STOCH", "SCALPING"],
         "trend": ["TREND_FOLLOWING", "TREND_PULLBACK"],
-        "reversion": ["CONTRARIAN", "MEAN_REVERSION", "SWING"],
+        "reversion": ["MEAN_REVERSION", "SWING"],
         "advanced": ["VOLATILITY_BREAKOUT", "MULTI_TIMEFRAME"]
     }
 

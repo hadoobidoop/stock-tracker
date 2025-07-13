@@ -78,7 +78,6 @@
 | **AGGRESSIVE** | 적극적 거래, 약한 신호도 포착 |
 | **MOMENTUM** | RSI, Stoch 등 모멘텀 지표 중심 |
 | **TREND_FOLLOWING** | SMA, MACD 등 추세 지표 중심 |
-| **CONTRARIAN** | 과매도/과매수 구간에서의 반전 탐색 |
 | **SCALPING** | 초단기 매매, 거래량 신호 중시 |
 | **SWING** | 며칠간의 중기적 가격 변동 활용 |
 | **MEAN_REVERSION** | 볼린저 밴드 기반 평균 회귀 경향 이용 |

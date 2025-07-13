@@ -12,7 +12,7 @@ from .volatility_breakout_strategy import VolatilityBreakoutStrategy
 __all__ = [
     "AdaptiveMomentumStrategy",
     "ConservativeStrategy",
-    "ContrarianStrategy",
+    # "ContrarianStrategy",
     # "MomentumStrategy",  # 레거시 제거
     "MultiTimeframeStrategy",
     "ScalpingStrategy",
