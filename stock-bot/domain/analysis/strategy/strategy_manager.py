@@ -52,7 +52,7 @@ class StrategyManager:
     def initialize_strategies(self, strategy_types: Optional[List[StrategyType]] = None) -> bool:
         """전략들을 초기화합니다."""
         if strategy_types is None:
-            # 기본적으로 모든 ���적 전략을 로드
+            # 기본적으로 모든 정적 전략을 로드
             strategy_types = get_static_strategy_types()
         
         logger.info(f"전략 초기화 시작: {len(strategy_types)}개 정적 전략")
@@ -74,22 +74,21 @@ class StrategyManager:
     def _initialize_static_strategies(self, strategy_types: List[StrategyType]) -> int:
         """정적 전략들을 초기화"""
         success_count = 0
-        
         for strategy_type in strategy_types:
             try:
                 strategy = StrategyFactory.create_static_strategy(strategy_type)
-                
                 if strategy and strategy.initialize():
                     self.active_strategies[strategy_type] = strategy
                     success_count += 1
                     logger.info(f"정적 전략 초기화 성공: {strategy.get_name()}")
+                    logger.debug(f"[진단] 등록 성공: {strategy_type}, 현재 등록된 전략: {[k.value for k in self.active_strategies.keys()]}")
                 else:
                     logger.error(f"정적 전략 초기화 실패: {strategy_type.value}")
-                
+                    logger.debug(f"[진단] 등록 실패: {strategy_type}, 현재 등록된 전략: {[k.value for k in self.active_strategies.keys()]}")
             except Exception as e:
                 logger.error(f"정적 전략 초기화 실패 {strategy_type}: {e}")
+                logger.debug(f"[진단] 예외 발생: {strategy_type}, 현재 등록된 전략: {[k.value for k in self.active_strategies.keys()]}")
                 continue
-        
         return success_count
     
     def _set_default_strategy(self):
@@ -122,7 +121,7 @@ class StrategyManager:
     
     def set_strategy(self, strategy: Optional[BaseStrategy]):
         """
-        외부에서 생���된 전략 객체를 직접 설정합니다. (주로 동적 전략 백테스팅용)
+        외부에서 생성된 전략 객체를 직접 설정합니다. (주로 동적 전략 백테스팅용)
         """
         if strategy is None:
             # None으로 설정하면 기본 정적 전략으로 리셋

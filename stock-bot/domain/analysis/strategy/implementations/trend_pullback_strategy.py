@@ -30,7 +30,9 @@ class TrendPullbackStrategy(BaseStrategy):
                 ADXSignalDetector(weight=4.0),
                 RSISignalDetector(weight=6.0),
             ]
-            self.orchestrator = SignalDetectionOrchestrator(detectors=detectors)
+            self.orchestrator = SignalDetectionOrchestrator()
+            for detector in detectors:
+                self.orchestrator.add_detector(detector)
             self.is_initialized = True
             logger.info(f"{self.get_name()} 초기화 완료")
             return True
