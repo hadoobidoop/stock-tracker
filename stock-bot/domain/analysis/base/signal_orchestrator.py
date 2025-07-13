@@ -4,7 +4,7 @@ from datetime import datetime
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from .signal_detector import SignalDetector
-from domain.analysis.config.signal_weights import SIGNAL_THRESHOLD
+from domain.analysis.config.signals.signal_weights import SIGNAL_THRESHOLD
 from domain.analysis.models.trading_signal import (
     SignalEvidence, 
     TechnicalIndicatorEvidence,
