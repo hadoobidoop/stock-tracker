@@ -55,6 +55,13 @@ class StableValueHybridStrategy(BaseStrategy):
         if conservative_result.buy_score > conservative_result.sell_score:
             buy_score = pullback_result.buy_score
 
+        # === 장기추세 가중치 적용 ===
+        if long_term_trend == TrendType.BULLISH:
+            buy_score *= 1.2
+        elif long_term_trend == TrendType.BEARISH:
+            sell_score *= 1.2
+        # ============================
+
         final_signals = conservative_result.signals_detected + pullback_result.signals_detected
         stop_loss_price = pullback_result.stop_loss_price
 

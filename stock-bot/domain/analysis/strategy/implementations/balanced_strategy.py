@@ -88,6 +88,15 @@ class BalancedStrategy(BaseStrategy):
                     signal_result, ticker, score, df_with_indicators
                 )
 
+            # === 장기추세 가중치 적용 ===
+            buy_score = signal_result.get('buy_score', 0.0)
+            sell_score = signal_result.get('sell_score', 0.0)
+            if long_term_trend == TrendType.BULLISH:
+                buy_score *= 1.2
+            elif long_term_trend == TrendType.BEARISH:
+                sell_score *= 1.2
+            # ============================
+
             return StrategyResult(
                 strategy_name=self.get_name(),
                 strategy_type=self.strategy_type,
@@ -96,8 +105,8 @@ class BalancedStrategy(BaseStrategy):
                 signal_strength="",
                 signals_detected=signal_result.get('details', []),
                 signal=trading_signal,
-                buy_score=signal_result.get('buy_score', 0.0),
-                sell_score=signal_result.get('sell_score', 0.0),
+                buy_score=buy_score,
+                sell_score=sell_score,
                 stop_loss_price=signal_result.get('stop_loss_price')
             )
 

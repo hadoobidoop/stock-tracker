@@ -124,12 +124,7 @@ class SignalDetectionOrchestrator:
         
         latest_data = df.iloc[-1]
         
-        # 장기 추세와 일치하면 점수 가중치 부여
-        # (이 부분은 각 전략에서 직접 관리하도록 변경)
-        # if long_term_trend == TrendType.BULLISH:
-        #     buy_score *= 1.2
-        # elif long_term_trend == TrendType.BEARISH:
-        #     sell_score *= 1.2
+        # (장기 추세 가중치는 각 전략에서 직접 관리)
         
         if strong_buy_signal:
             logger.info(f"BUY SIGNAL CONFIRMED for {ticker} (Score: {buy_score:.2f}, Long-term trend: {long_term_trend})")

@@ -84,6 +84,13 @@ class MarketRegimeHybridStrategy(BaseStrategy):
             result.buy_score *= 1.2
             result.sell_score *= 1.2
             
+        # === 장기추세 가중치 적용 ===
+        if long_term_trend == TrendType.BULLISH:
+            result.buy_score *= 1.2
+        elif long_term_trend == TrendType.BEARISH:
+            result.sell_score *= 1.2
+        # ============================
+
         # 5. 최종 결과를 이 전략의 이름으로 다시 포장하여 반환
         final_signals = [f"Chosen sub-strategy: {chosen_strategy.get_name()}"] + result.signals_detected
         

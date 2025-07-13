@@ -68,6 +68,13 @@ class ConservativeReversionHybridStrategy(BaseStrategy):
             else:
                 sell_score *= 0.5
 
+        # === 장기추세 가중치 적용 ===
+        if long_term_trend == TrendType.BULLISH:
+            buy_score *= 1.2
+        elif long_term_trend == TrendType.BEARISH:
+            sell_score *= 1.2
+        # ============================
+
         final_signals = conservative_result.signals_detected + reversion_result.signals_detected
         stop_loss_price = reversion_result.stop_loss_price
 
