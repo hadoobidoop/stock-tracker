@@ -50,6 +50,8 @@ domain/
 | Balanced             | 완료                     |
 | Conservative         | 완료                     |
 | Momentum             | 완료                     |
+| Scalping             | 완료                     |
+| aggressive_mix       | 완료 (조합)              |
 | Mean Reversion       | 예정                     |
 | Swing                | 예정                     |
 | Trend Following      | 예정                     |
@@ -59,14 +61,12 @@ domain/
 | Macro Driven         | 예정                     |
 | Multi Timeframe      | 예정                     |
 | Quality Trend        | 예정                     |
-| Scalping             | 예정                     |
 | Stable Value Hybrid  | 예정                     |
 | Market Regime Hybrid | 예정                     |
 | Adaptive Momentum Hybrid | 예정                 |
 | Conservative Reversion Hybrid | 예정           |
 | balanced_mix         | 예정 (조합)              |
 | conservative_mix     | 예정 (조합)              |
-| aggressive_mix       | 예정 (조합)              |
 | Dynamic Strategy/Manager | 예정 (동적)         |
 
 > Aggressive, Balanced, Conservative, Momentum 전략 모두 독립 구조로 완전히 이전 완료. 나머지 전략/조합/동적 전략은 동일 방식으로 이전 예정.
@@ -105,10 +105,10 @@ domain/
 
 ## 4. 각 전략별 진행상황 상세
 
-### Aggressive/ Balanced/ Conservative/ Momentum 전략
-- 각 전략별 구현체(.py), Detector, config는 해당 전략 폴더 내에서 완전히 독자적으로 관리됨 (폴더 단위 독립성)
-- aggressive, balanced, conservative, momentum 전략은 독립 구조로 완전히 이전 완료
-- mean_reversion, swing 등 기타 전략은 추후 동일한 방식으로 이전 예정
+### Aggressive/ Balanced/ Conservative/ Momentum/Scalping/aggressive_mix 전략
+- 각 전략별 구현체(.py), Detector, config, (조합 전략은 실행체/config)는 해당 전략 폴더 내에서 완전히 독자적으로 관리됨 (폴더 단위 독립성)
+- aggressive, balanced, conservative, momentum, scalping, aggressive_mix 전략은 독립 구조로 완전히 이전 완료 및 문서화/주석 리팩토링까지 완료
+- mean_reversion, swing 등 기타 전략/조합/동적 전략은 추후 동일한 방식으로 이전 예정
 
 ### Aggressive 전략
 - [x] AggressiveVolumeDetector, AggressiveSMADetector 등 커스텀 Detector 구현
@@ -135,6 +135,18 @@ domain/
 - [x] Momentum 전략 폴더/구조 설계 및 생성
 - [x] 커스텀 Detector, config, 전략 구현체 구현 및 완성
 - [x] 전략 본체 및 Detector 구현 완료
+- [x] 주석/문서화/튜닝 가이드 보강 및 커밋 완료
+
+### Scalping 전략
+- [x] 패키지/구조 설계 및 생성
+- [x] Detector, config, 전략 구현체 완전 분리 및 경로/구조 일관화
+- [x] 전략 본체 및 Detector 구현 완료
+- [x] 주석/문서화/튜닝 가이드 보강 및 커밋 완료
+
+### aggressive_mix 전략 조합
+- [x] 패키지/구조 설계 및 생성
+- [x] config, 실행체(조합 전략) 완전 분리 및 경로/구조 일관화
+- [x] 기존 strategy_mixes.py에서 정의 제거 및 안내
 - [x] 주석/문서화/튜닝 가이드 보강 및 커밋 완료
 
 ---
