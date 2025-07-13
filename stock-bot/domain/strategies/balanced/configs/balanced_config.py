@@ -5,25 +5,44 @@ from domain.analysis.strategy.configs.static_strategies import StrategyConfig, S
 
 @dataclass
 class BalancedStrategyConfig(StrategyConfig):
-    """균형 전략 설정"""
+    """
+    균형 전략 설정
+    - 신호 신뢰도와 빈도의 균형, 표준적/안정적 운용을 목표로 함
+    - aggressive/conservative 대비 중립적 파라미터
+    - Detector별 가중치, 임계값, 포지션 관리 등 주요 파라미터 일괄 관리
+
+    주요 튜닝 포인트:
+        - signal_threshold: 신호 발생 기준점(기본 8.0, 낮추면 신호 빈도↑, 높이면 신뢰도↑)
+        - detector_weights: 각 Detector별 가중치(Composite > SMA/MACD > Volume/ADX > RSI)
+        - long_term_bullish_multiplier/long_term_bearish_multiplier: 장기추세 가중치(기본 1.2)
+        - score_multiplier: 점수 조정(기본 1.0, 특별한 조정 없음)
+        - max_positions/position_hold_hours: 포지션 관리(기본 4개/3일)
+    """
     
     # 기본 전략 설정 상속
-    strategy_type: StrategyType = StrategyType.BALANCED
-    signal_threshold: float = 8.0  # 기본값 유지
-    max_positions: int = 4  # 기본값 유지
-    position_hold_hours: int = 72  # 기본값 유지
-    stop_loss_percentage: float = 5.0  # 기본값 유지
-    take_profit_percentage: float = 12.0  # 기본값 유지
+    strategy_type: StrategyType = StrategyType.BALANCED  # 전략 유형(고정)
+    signal_threshold: float = 8.0  # 신호 발생 기준점(8.0)
+    max_positions: int = 4  # 최대 동시 포지션(4개)
+    position_hold_hours: int = 72  # 포지션 보유 시간(3일)
+    stop_loss_percentage: float = 5.0  # 손절 기준(5%)
+    take_profit_percentage: float = 12.0  # 익절 기준(12%)
     
     # Balanced 전략 특화 설정
-    score_multiplier: float = 1.0  # 점수 조정 없음 (균형)
-    long_term_bullish_multiplier: float = 1.2  # 장기 상승장 배수
-    long_term_bearish_multiplier: float = 1.2  # 장기 하락장 배수
+    score_multiplier: float = 1.0  # 점수 조정 없음(1.0)
+    long_term_bullish_multiplier: float = 1.2  # 장기 상승장 buy 가중치(1.2)
+    long_term_bearish_multiplier: float = 1.2  # 장기 하락장 sell 가중치(1.2)
     
     # Detector 가중치 (균형잡힌 설정)
-    detector_weights: Dict[str, float] = None
+    detector_weights: Dict[str, float] = None  # Detector별 가중치(아래 __post_init__ 참고)
     
     def __post_init__(self):
+        """
+        detector_weights 기본값 설정
+        - sma/macd: 5.0 (주력 추세/모멘텀)
+        - rsi: 3.0 (보조 모멘텀)
+        - volume/adx: 4.0 (거래량/추세강도)
+        - composite: 7.0 (MACD+Volume 컨펌, 신호 신뢰도 강화)
+        """
         if self.detector_weights is None:
             self.detector_weights = {
                 'sma': 5.0,

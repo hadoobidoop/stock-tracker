@@ -25,7 +25,24 @@ logger = get_logger(__name__)
 class BalancedStrategy(BaseStrategy):
     """
     다양한 신호를 균형있게 사용하는 기본 전략.
-    커스텀 Detector를 사용하여 안정적인 신호 감지.
+    - 커스텀 Detector(균형 SMA/Volume) + 기본 Detector(MACD, RSI, ADX) + Composite(MACD+Volume) 조합
+    - 신호/점수/근거/로깅/쿨다운/예외처리 등 robust하게 구현
+    - 장기추세(BULLISH/BEARISH) 가중치 적용
+    - score_multiplier=1.0(점수 조정 없음, 표준)
+    - 설계 의도: 신호 신뢰도와 빈도의 균형, 표준적/안정적 운용
+
+    사용법:
+        config = BalancedStrategyConfig()
+        strategy = BalancedStrategy(StrategyType.BALANCED, config)
+        strategy.initialize()
+        result = strategy.analyze(df, ticker, market_trend, long_term_trend)
+
+    주요 튜닝 포인트:
+        - signal_threshold: 신호 발생 기준점(기본 8.0)
+        - detector_weights: 각 Detector별 가중치(Composite > SMA/MACD > Volume/ADX > RSI)
+        - long_term_bullish_multiplier/long_term_bearish_multiplier: 장기추세 가중치(기본 1.2)
+        - score_multiplier: 점수 조정(기본 1.0)
+        - max_positions/position_hold_hours: 포지션 관리
     """
 
     def __init__(self, strategy_type: StrategyType, config: BalancedStrategyConfig):
@@ -34,6 +51,13 @@ class BalancedStrategy(BaseStrategy):
         self.config = config  # BalancedStrategyConfig로 타입 지정
 
     def initialize(self) -> bool:
+        """
+        Detector 조합 및 orchestrator 초기화
+        - 커스텀 Detector: BalancedSMADetector, BalancedVolumeDetector
+        - 기본 Detector: MACDSignalDetector, RSISignalDetector, ADXSignalDetector
+        - Composite Detector: MACD+Volume 컨펌(신호 신뢰도 강화)
+        - Detector별 가중치는 config.detector_weights에서 관리
+        """
         try:
             # 커스텀 Detector와 기본 Detector 조합
             detectors = [
@@ -69,6 +93,14 @@ class BalancedStrategy(BaseStrategy):
                 market_trend: TrendType = TrendType.NEUTRAL,
                 long_term_trend: TrendType = TrendType.NEUTRAL,
                 daily_extra_indicators: Optional[Dict] = None) -> StrategyResult:
+        """
+        신호 분석 및 결과 반환
+        - 쿨다운 체크, orchestrator 기반 신호/점수/근거 수집
+        - score_multiplier(1.0)로 점수 조정 없음
+        - 장기추세(BULLISH/BEARISH) 가중치 buy/sell에 적용
+        - 신호 근거, 점수, buy/sell score, stop_loss 등 StrategyResult에 기록
+        - 예외 발생 시 안전하게 실패 반환
+        """
         
         # 쿨다운 체크
         current_time = datetime.now()
@@ -151,7 +183,9 @@ class BalancedStrategy(BaseStrategy):
     def _create_trading_signal(self, signal_result: Dict, ticker: str, score: float,
                              df_with_indicators: pd.DataFrame) -> TradingSignal:
         """
-        Balanced 전략 특화 TradingSignal 객체 생성
+        TradingSignal 객체 생성 (Balanced 전략 특화)
+        - 신호 근거, 조정 내역, 필터 등 evidence 상세 기록
+        - score_adjustments, applied_filters 등 전략별 설명 포함
         """
         from domain.analysis.models.trading_signal import SignalEvidence, SignalType
 
@@ -192,7 +226,11 @@ class BalancedStrategy(BaseStrategy):
         )
 
     def get_performance_metrics(self) -> Dict[str, Any]:
-        """Balanced 전략 성능 지표 반환"""
+        """
+        Balanced 전략 성능 지표 반환
+        - 주요 파라미터, 가중치, 임계값 등 config 기반 정보 포함
+        - 전략별 튜닝/비교/모니터링에 활용
+        """
         base_metrics = super().get_performance_metrics()
         balanced_metrics = {
             'score_multiplier': self.config.score_multiplier,
