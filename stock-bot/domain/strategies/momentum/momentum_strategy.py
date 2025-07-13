@@ -21,9 +21,9 @@ from typing import Dict, Optional
 import pandas as pd
 from datetime import datetime
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
-from domain.strategies.momentum.detectors.rsi_detector import RSISignalDetector
-from domain.strategies.momentum.detectors.stoch_detector import StochSignalDetector
-from domain.strategies.momentum.detectors.rsi_stoch_detector import RSIStochDetector
+from domain.strategies.momentum.detectors.momentum_rsi_detector import RSISignalDetector
+from domain.strategies.momentum.detectors.momentum_stoch_detector import StochSignalDetector
+from domain.strategies.momentum.detectors.momentum_rsi_stoch_detector import RSIStochDetector
 from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDetector
 from domain.analysis.detectors.volume.volume_detector import VolumeSignalDetector
 from domain.strategies.momentum.configs.momentum_config import MomentumStrategyConfig
