@@ -146,21 +146,6 @@ STRATEGY_CONFIGS = {
         }
     ),
     
-    StrategyType.CONTRARIAN: StrategyConfig(
-        name="역추세 전략",
-        description="과매수/과매도 상황에서 반대 방향으로 진입하는 전략",
-        signal_threshold=8.0,
-        risk_per_trade=0.02,
-        implementation_class="domain.analysis.strategy.implementations.contrarian_strategy.ContrarianStrategy",
-        market_filters={
-            "trend_alignment": False,
-        },
-        position_management={
-            "max_positions": 3,
-            "position_timeout_hours": 168
-        }
-    ),
-    
     StrategyType.SCALPING: StrategyConfig(
         name="스캘핑 전략",
         description="빠른 진입/청산을 위한 단기 전략",
@@ -320,7 +305,7 @@ def get_available_strategies() -> Dict[str, List[str]]:
         "basic": ["CONSERVATIVE", "BALANCED", "AGGRESSIVE"],
         "momentum": ["MOMENTUM", "RSI_STOCH", "SCALPING"],
         "trend": ["TREND_FOLLOWING", "TREND_PULLBACK"],
-        "reversion": ["CONTRARIAN", "MEAN_REVERSION", "SWING"],
+        "reversion": ["MEAN_REVERSION", "SWING"],
         "advanced": ["VOLATILITY_BREAKOUT", "MULTI_TIMEFRAME", "MACRO_DRIVEN"]
     }
 
