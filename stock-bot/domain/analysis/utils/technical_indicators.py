@@ -8,7 +8,7 @@ from infrastructure.logging import get_logger
 from domain.analysis.config.technical_indicator_settings import TECHNICAL_INDICATORS
 from domain.analysis.config.technical_indicator_settings import FIBONACCI_LEVELS
 from domain.analysis.config.technical_indicator_settings import HOURLY_INDICATORS
-from domain.analysis.config.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
+from domain.analysis.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
 
 logger = get_logger(__name__)
 
