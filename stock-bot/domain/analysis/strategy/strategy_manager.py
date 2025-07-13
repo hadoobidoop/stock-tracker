@@ -12,11 +12,11 @@ from pathlib import Path
 from dataclasses import asdict
 
 from infrastructure.db.models.enums import TrendType
-from domain.analysis.config.static_strategies import (
+from strategy.configs.static_strategies import (
     StrategyType, StrategyConfig, STRATEGY_CONFIGS, get_static_strategy_types
 )
 # Static Strategy Mix 관련 설정 import
-from domain.analysis.config.strategy_mixes import (
+from strategy.configs.strategy_mixes import (
     StrategyMixMode, StrategyMixConfig, STRATEGY_MIXES
 )
 

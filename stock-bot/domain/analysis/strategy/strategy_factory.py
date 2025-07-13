@@ -1,7 +1,7 @@
 from typing import Dict, Optional
 
-from domain.analysis.config.dynamic_strategies import get_all_strategies, get_strategy_definition, get_all_modifiers
-from domain.analysis.config.static_strategies import StrategyType, StrategyConfig, get_strategy_config, \
+from strategy.configs.dynamic_strategies import get_all_strategies, get_strategy_definition, get_all_modifiers
+from strategy.configs.static_strategies import StrategyType, StrategyConfig, get_strategy_config, \
     get_static_strategy_types
 from domain.analysis.strategy.base_strategy import BaseStrategy
 from domain.analysis.strategy.implementations import (
