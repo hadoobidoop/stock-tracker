@@ -5,9 +5,9 @@ import pandas as pd
 import numpy as np
 from typing import Dict, Tuple
 from infrastructure.logging import get_logger
-from domain.analysis.config.technical_indicator_settings import TECHNICAL_INDICATORS
-from domain.analysis.config.technical_indicator_settings import FIBONACCI_LEVELS
-from domain.analysis.config.technical_indicator_settings import HOURLY_INDICATORS
+from domain.analysis.config.indicators.technical_indicator_settings import TECHNICAL_INDICATORS
+from domain.analysis.config.indicators.technical_indicator_settings import FIBONACCI_LEVELS
+from domain.analysis.config.indicators.technical_indicator_settings import HOURLY_INDICATORS
 from domain.analysis.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
 
 logger = get_logger(__name__)
