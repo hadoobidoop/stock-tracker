@@ -25,6 +25,9 @@ from domain.analysis.strategy.configs.static_strategies import StrategyConfig, S
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
+from domain.strategies.conservative.conservative_strategy import ConservativeStrategy
+from domain.strategies.mean_reversion.mean_reversion_strategy import MeanReversionStrategy
+from domain.analysis.strategy.configs.static_strategies import get_strategy_config
 
 logger = get_logger(__name__)
 
@@ -36,16 +39,9 @@ class ConservativeReversionHybridStrategy(BaseStrategy):
     - 추세 동의 시 보너스, 반대 시 페널티, 장기추세 가중치 등 적용
     """
     def __init__(self, strategy_type: StrategyType, config: StrategyConfig):
-        """
-        Args:
-            strategy_type (StrategyType): 전략 타입
-            config (StrategyConfig): 전략 설정
-        """
         super().__init__(strategy_type, config)
-        from domain.analysis.strategy.strategy_factory import StrategyFactory
-        # 하위 전략 인스턴스 생성
-        self.conservative_strategy = StrategyFactory.create_static_strategy(StrategyType.CONSERVATIVE)
-        self.mean_reversion_strategy = StrategyFactory.create_static_strategy(StrategyType.MEAN_REVERSION)
+        self.conservative_strategy = ConservativeStrategy(StrategyType.CONSERVATIVE, get_strategy_config(StrategyType.CONSERVATIVE))
+        self.mean_reversion_strategy = MeanReversionStrategy(StrategyType.MEAN_REVERSION, get_strategy_config(StrategyType.MEAN_REVERSION))
 
     def initialize(self) -> bool:
         """
