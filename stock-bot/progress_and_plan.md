@@ -1,4 +1,17 @@
-# Stock Bot 전략 시스템 리팩토링 진행상황 및 계획
+# 진행상황 및 계획 (2024-07-09 최신)
+
+## ✅ 동적 전략(Dynamic Strategy/Manager) 시스템 마이그레이션 및 문서화 완료
+
+- **폴더 구조 마이그레이션**: domain/strategies/dynamic/ 하위로 dynamic_strategy.py, dynamic_strategy_manager.py, configs/, modifiers/ 등 완전 이전
+- **import 경로 일괄 정비**: strategy_factory, strategy_manager, modifier_engine, decision_context 등 전체 코드에서 새로운 경로로 수정
+- **__init__.py 및 와일드카드 import 정리**: 불필요한 심볼 노출 제거, AttributeError/ModuleNotFoundError 방지
+- **주석/문서화**: dynamic_strategy_manager.py에 상세 주석/도큐 추가, strategy_docs/dynamic_strategy_system.md 신규 작성
+- **에러 수정**: 마이그레이션 후 발생한 모든 import/symbol 에러 해결
+- **최종 상태**: 동적 전략 시스템이 완전히 독립적이고, 정적 전략과 동일한 구조로 유지보수/확장/테스트 가능
+
+---
+
+# 이하 기존 진행상황 및 계획
 
 ---
 
