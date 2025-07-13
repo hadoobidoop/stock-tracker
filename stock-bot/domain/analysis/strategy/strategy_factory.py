@@ -13,7 +13,6 @@ from domain.analysis.strategy.implementations import (
     BalancedStrategy,
     ConservativeStrategy,
     ContrarianStrategy,
-    MeanReversionStrategy,
     MomentumStrategy,
     ScalpingStrategy,
     SwingStrategy,
@@ -24,7 +23,6 @@ from domain.strategies.trend_following.trend_following_strategy import TrendFoll
 from .modifier_engine import ModifierEngine
 from .modifiers.registry import ModifierFactory
 from infrastructure.logging import get_logger
-from domain.strategies.mean_reversion.mean_reversion_strategy import MeanReversionStrategy
 
 logger = get_logger(__name__)
 
@@ -38,7 +36,6 @@ STRATEGY_CLASS_MAP = {
     StrategyType.BALANCED: BalancedStrategy,
     StrategyType.CONSERVATIVE: ConservativeStrategy,
     StrategyType.CONTRARIAN: ContrarianStrategy,
-    StrategyType.MEAN_REVERSION: MeanReversionStrategy,
     StrategyType.MOMENTUM: MomentumStrategy,
     StrategyType.SCALPING: ScalpingStrategy,
     StrategyType.SWING: SwingStrategy,
