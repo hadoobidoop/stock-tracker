@@ -8,7 +8,7 @@ from infrastructure.db.models.enums import TrendType
 
 # 기존 호환성을 위한 import
 from domain.analysis.service.signal_detection_service import SignalDetectionService
-from domain.analysis.config.static_strategies import StrategyType, STRATEGY_CONFIGS
+from domain.analysis.strategy.configs.static_strategies import StrategyType, STRATEGY_CONFIGS
 from domain.analysis.strategy.base_strategy import StrategyResult
 
 from domain.analysis.utils import calculate_all_indicators, calculate_fibonacci_levels

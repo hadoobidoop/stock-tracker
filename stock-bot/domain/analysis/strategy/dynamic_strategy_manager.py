@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Any
 
 from .dynamic_strategy import DynamicCompositeStrategy
 from .strategy_factory import StrategyFactory
-from strategy.configs.dynamic_strategies import get_all_strategies
+from domain.analysis.strategy.configs.dynamic_strategies import get_all_strategies
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)

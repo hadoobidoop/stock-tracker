@@ -12,10 +12,10 @@ from functools import lru_cache
 from common.config.settings import (
     StrategyMode, DefaultStrategyConfig, EnvironmentConfig, get_strategy_availability
 )
-from domain.analysis.config.static_strategies import StrategyType, get_strategy_config, get_static_strategy_types
-from domain.analysis.config.dynamic_strategies import STRATEGY_DEFINITIONS
+from domain.analysis.strategy.configs.static_strategies import StrategyType, get_strategy_config, get_static_strategy_types
+from domain.analysis.strategy.configs.dynamic_strategies import STRATEGY_DEFINITIONS
 # MARKET_CONDITION_STRATEGIES를 strategy_mixes에서 직접 가져옵니다.
-from domain.analysis.config.strategy_mixes import MARKET_CONDITION_STRATEGIES
+from domain.analysis.strategy.configs.strategy_mixes import MARKET_CONDITION_STRATEGIES
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
@@ -306,7 +306,7 @@ class StrategySelector:
                 if self.get_dynamic_strategy_config(strategy_id):
                     return strategy_id, 'dynamic'
 
-        logger.warning(f"'{market_condition}'에 대한 유효한 추천 전���을 찾지 못했습니다.")
+        logger.warning(f"'{market_condition}'에 대한 유효한 추천 전략을 찾지 못했습니다.")
         return None
     
     def refresh_available_strategies(self):

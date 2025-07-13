@@ -6,7 +6,7 @@ from infrastructure.scheduler.scheduler_manager import setup_scheduler, start_sc
 
 # --- 새로운 전략 시스템 추가 ---
 from domain.analysis.service.signal_detection_service import SignalDetectionService
-from domain.analysis.config.static_strategies import StrategyType, STRATEGY_CONFIGS
+from domain.analysis.strategy.configs.static_strategies import StrategyType, STRATEGY_CONFIGS
 from domain.analysis.utils.strategy_selector import strategy_selector, list_all_strategies
 from common.config.settings import StrategyMode
 import argparse

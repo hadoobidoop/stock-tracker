@@ -19,6 +19,7 @@ from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from ..config import StrategyType
+from domain.analysis.strategy.configs.static_strategies import StrategyConfig
 
 logger = get_logger(__name__)
 
@@ -40,7 +41,6 @@ class DynamicCompositeStrategy(BaseStrategy):
         self.modifier_engine = modifier_engine
         
         # BaseStrategy 초기화를 위한 더미 config 생성
-        from domain.analysis.config.static_strategies import StrategyConfig
         dummy_config = StrategyConfig(
             name=self.strategy_name,
             description=self.strategy_config.get("description", ""),

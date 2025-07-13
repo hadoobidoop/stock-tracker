@@ -17,7 +17,7 @@ class StrategyMode(Enum):
 def get_available_static_strategies() -> List[str]:
     """동적으로 사용 가능한 정적 전략 목록 조회"""
     try:
-        from domain.analysis.config.static_strategies import get_static_strategy_types
+        from domain.analysis.strategy.configs.static_strategies import get_static_strategy_types
         return [st.value.upper() for st in get_static_strategy_types()]
     except ImportError:
         # 폴백: 기본 전략들만
@@ -27,7 +27,7 @@ def get_available_static_strategies() -> List[str]:
 def get_available_dynamic_strategies() -> List[str]:
     """동적으로 사용 가능한 동적 전략 목록 조회"""
     try:
-        from domain.analysis.config.dynamic_strategies import get_all_strategies
+        from domain.analysis.strategy.configs.dynamic_strategies import get_all_strategies
         return list(get_all_strategies().keys())
     except ImportError:
         # 폴백: 기본 동적 전략들만

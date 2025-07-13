@@ -11,7 +11,7 @@ from domain.analysis.repository.analysis_repository import MarketDataRepository
 from infrastructure.db.repository.sql_market_data_repository import SQLMarketDataRepository
 
 # 새로운 전략 시스템 import
-from domain.analysis.config.static_strategies import StrategyType, STRATEGY_CONFIGS
+from domain.analysis.strategy.configs.static_strategies import StrategyType, STRATEGY_CONFIGS
 from domain.analysis.strategy.strategy_manager import StrategyManager
 
 from ..engine.backtesting_engine import BacktestingEngine
@@ -166,7 +166,7 @@ class BacktestingService:
         pass
 
     def _create_comparison_report(self, all_results: Dict[str, BacktestResult]) -> Dict[str, Any]:
-        """여��� 백테스트 결과로부터 비교 리포트를 생성합니다."""
+        """여러 백테스트 결과로부터 비교 리포트를 생성합니다."""
         strategy_analysis = {}
         best_strategy, best_sharpe = None, float('-inf')
 

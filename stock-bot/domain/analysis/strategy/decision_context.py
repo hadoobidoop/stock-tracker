@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 import copy
 
-from domain.analysis.config.dynamic_strategies import ModifierActionType
+from domain.analysis.strategy.configs.dynamic_strategies import ModifierActionType
 from domain.analysis.models.trading_signal import SignalType
 from infrastructure.logging import get_logger
 

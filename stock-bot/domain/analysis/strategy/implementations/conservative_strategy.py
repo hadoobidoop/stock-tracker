@@ -3,7 +3,7 @@ from typing import Dict, Optional
 import pandas as pd
 
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
-from strategy.configs.static_strategies import StrategyConfig, StrategyType
+from domain.analysis.strategy.configs.static_strategies import StrategyConfig, StrategyType
 from domain.analysis.detectors.composite.composite_detector import CompositeSignalDetector
 from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDetector
 from domain.analysis.detectors.trend_following.sma_detector import SMASignalDetector

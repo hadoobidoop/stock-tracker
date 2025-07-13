@@ -1,0 +1,1 @@
+from domain.analysis.strategy.configs.static_strategies import StrategyType 

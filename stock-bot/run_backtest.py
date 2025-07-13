@@ -36,7 +36,7 @@ sys.path.insert(0, str(project_root))
 
 from infrastructure.logging import get_logger
 from domain.backtesting.service.backtesting_service import BacktestingService
-from domain.analysis.config.static_strategies import StrategyType
+from domain.analysis.strategy.configs.static_strategies import StrategyType
 
 # 거시지표 분석 기능 추가
 from domain.analysis.utils.market_indicators import get_market_indicator_analysis
