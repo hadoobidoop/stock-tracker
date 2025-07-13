@@ -211,7 +211,7 @@ STRATEGY_CONFIGS = {
         description="상승 추세 중 일시적 하락(눌림목) 시 매수하는 전략",
         signal_threshold=8.0,
         risk_per_trade=0.02,
-        implementation_class="domain.analysis.strategy.implementations.trend_pullback_strategy.TrendPullbackStrategy",
+        implementation_class="domain.strategies.trend_pullback.trend_pullback_strategy.TrendPullbackStrategy",
         market_filters={"trend_alignment": True},
         position_management={"max_positions": 4, "position_timeout_hours": 120}
     ),

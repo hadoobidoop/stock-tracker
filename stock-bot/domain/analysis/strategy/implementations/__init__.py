@@ -11,7 +11,6 @@ from .multi_timeframe_strategy import MultiTimeframeStrategy
 from domain.strategies.scalping.scalping_strategy import ScalpingStrategy
 from .swing_strategy import SwingStrategy
 from domain.strategies.trend_following.trend_following_strategy import TrendFollowingStrategy
-from .trend_pullback_strategy import TrendPullbackStrategy
 from .volatility_breakout_strategy import VolatilityBreakoutStrategy
 
 
@@ -29,6 +28,5 @@ __all__ = [
     "ScalpingStrategy",
     "SwingStrategy",
     "TrendFollowingStrategy",
-    "TrendPullbackStrategy",
     "VolatilityBreakoutStrategy",
 ]

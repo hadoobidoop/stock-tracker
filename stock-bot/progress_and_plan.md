@@ -55,7 +55,7 @@ domain/
 | Mean Reversion       | 완료                     |
 | Swing                | 예정                     |
 | Trend Following      | 예정                     |
-| Trend Pullback       | 예정                     |
+| Trend Pullback       | 완료                     |
 | Contrarian           | 예정                     |
 | Volatility Breakout  | 완료                     |
 | Macro Driven         | 예정                     |
@@ -196,6 +196,16 @@ domain/
 - [x] 주석/문서화/튜닝 가이드 보강 및 커밋 완료
 - [x] 하위 strategies 폴더 연동 구조 반영
 - [x] 문서화/주석 리팩토링 완료
+
+### Trend Pullback 전략
+- [x] trend_pullback 폴더/구조 설계 및 생성
+- [x] 커스텀 Detector(TrendPullbackSMADetector, TrendPullbackADXDetector, TrendPullbackRSIDetector) 구현 및 분리
+- [x] config(trend_pullback_config.py) 분리 및 가중치/파라미터 관리
+- [x] 전략 본체(trend_pullback_strategy.py) 완전 분리 및 경로/구조 일관화
+- [x] 팩토리/매니저 import 경로 및 implementation_class 경로 일괄 수정
+- [x] 상세 로그(info/debug) 추가 및 백테스트/실시간 분석 활용성 강화
+- [x] strategy_docs/trend_pullback_strategy.md 문서화 완료
+- [x] 커밋 완료
 
 ---
 

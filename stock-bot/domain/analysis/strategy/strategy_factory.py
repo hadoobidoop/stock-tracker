@@ -20,6 +20,7 @@ from domain.analysis.strategy.implementations import (
     VolatilityBreakoutStrategy
 )
 from domain.strategies.trend_following.trend_following_strategy import TrendFollowingStrategy
+from domain.strategies.trend_pullback.trend_pullback_strategy import TrendPullbackStrategy
 from .modifier_engine import ModifierEngine
 from .modifiers.registry import ModifierFactory
 from infrastructure.logging import get_logger

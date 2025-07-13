@@ -1,60 +1,38 @@
-# -*- coding: utf-8 -*-
-"""
-Volatility Breakout 전략 (변동성 돌파)
---------------------------------------
-- 완전 독립 패키지 구조(domain/strategies/volatility_breakout/)에서 관리
-- Detector, config, 전략 본체가 모두 폴더 내에서 독립적으로 관리됨
-- 볼린저밴드(BB) breakout, ADX, 거래량 신호를 조합하여 변동성 응축 후 돌파 구간을 포착
-- 각 Detector는 커스텀 래퍼 클래스로 분리되어 유지보수/확장에 용이
-- config 분리로 파라미터/가중치 조정이 용이
-
-사용 예시:
-    from domain.strategies.volatility_breakout.volatility_breakout_strategy import VolatilityBreakoutStrategy
-    strategy = VolatilityBreakoutStrategy(config)
-    ...
-"""
-
 from typing import Dict, Optional
 
 import pandas as pd
 
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
+from domain.analysis.strategy.configs.static_strategies import StrategyConfig, StrategyType
+from .detectors.trend_pullback_sma_detector import TrendPullbackSMADetector
+from .detectors.trend_pullback_adx_detector import TrendPullbackADXDetector
+from .detectors.trend_pullback_rsi_detector import TrendPullbackRSIDetector
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
-
-# Volatility Breakout 전략 본체
-from domain.strategies.volatility_breakout.detectors.volatility_breakout_bb_detector import VolatilityBreakoutBBDetector
-from domain.strategies.volatility_breakout.detectors.volatility_breakout_adx_detector import VolatilityBreakoutADXDetector
-from domain.strategies.volatility_breakout.detectors.volatility_breakout_volume_detector import VolatilityBreakoutVolumeDetector
-from domain.analysis.strategy.base_strategy import BaseStrategy
+from .configs.trend_pullback_config import SMA_WEIGHT, ADX_WEIGHT, RSI_WEIGHT
 
 logger = get_logger(__name__)
 
 
-class VolatilityBreakoutStrategy(BaseStrategy):
+class TrendPullbackStrategy(BaseStrategy):
     """
-    Volatility Breakout 전략 (볼린저밴드 돌파 + ADX + 거래량)
-    - Detector, config 모두 폴더 내에서 독립 관리
-    - 변동성 응축(squeeze) 후 상단/하단 돌파 및 거래량 급증 구간을 포착
-    - 각 Detector별 신호 근거(TechnicalIndicatorEvidence)를 상세 기록
+    상승 추세 중 일시적 하락(눌림목) 시 매수하는 전략.
     """
-    def __init__(self, config=None):
-        """
-        Volatility Breakout 전략 인스턴스 생성
-        :param config: Detector 가중치, 파라미터 등 설정(dict 또는 config 객체)
-        """
-        super().__init__(config)
-        self.detectors = [
-            VolatilityBreakoutBBDetector(weight=7.0, detector_type="breakout"),
-            VolatilityBreakoutADXDetector(weight=4.0),
-            VolatilityBreakoutVolumeDetector(weight=5.0),
-        ]
+
+    def __init__(self, strategy_type: StrategyType, config: StrategyConfig):
+        super().__init__(strategy_type, config)
+        self.orchestrator: Optional[SignalDetectionOrchestrator] = None
 
     def initialize(self) -> bool:
         try:
+            detectors = [
+                TrendPullbackSMADetector(weight=SMA_WEIGHT),
+                TrendPullbackADXDetector(weight=ADX_WEIGHT),
+                TrendPullbackRSIDetector(weight=RSI_WEIGHT),
+            ]
             self.orchestrator = SignalDetectionOrchestrator()
-            for detector in self.detectors:
+            for detector in detectors:
                 self.orchestrator.add_detector(detector)
             self.is_initialized = True
             logger.info(f"{self.get_name()} 초기화 완료")
@@ -75,6 +53,8 @@ class VolatilityBreakoutStrategy(BaseStrategy):
 
         self.last_analysis_time = pd.Timestamp.now(tz='UTC')
 
+        logger.debug(f"[TrendPullback] 분석 시작 | ticker={ticker} | market_trend={market_trend} | long_term_trend={long_term_trend}")
+
         try:
             signal_result = self.orchestrator.detect_signals(
                 df_with_indicators, ticker, market_trend, long_term_trend, daily_extra_indicators or {}
@@ -82,6 +62,14 @@ class VolatilityBreakoutStrategy(BaseStrategy):
 
             has_signal = bool(signal_result and signal_result.get('type'))
             score = signal_result.get('score', 0)
+
+            # TrendPullback 특화 점수 조정 (UniversalStrategy와 동일)
+            if market_trend == long_term_trend:
+                score *= 1.1
+                logger.debug(f"[TrendPullback] 시장/장기 추세 일치: score 1.1배 적용")
+            else:
+                score *= 0.9
+                logger.debug(f"[TrendPullback] 시장/장기 추세 불일치: score 0.9배 적용")
 
             # 성능 지표 업데이트
             self.score_history.append(score)
@@ -97,14 +85,11 @@ class VolatilityBreakoutStrategy(BaseStrategy):
                     signal_result, ticker, score, df_with_indicators
                 )
 
-            # === 장기추세 가중치 적용 ===
-            buy_score = signal_result.get('buy_score', 0.0)
-            sell_score = signal_result.get('sell_score', 0.0)
-            if long_term_trend == TrendType.BULLISH:
-                buy_score *= 1.2
-            elif long_term_trend == TrendType.BEARISH:
-                sell_score *= 1.2
-            # ============================
+            logger.info(
+                f"[TrendPullback] 분석결과 | ticker={ticker} | has_signal={has_signal} | score={score:.2f} | "
+                f"buy_score={signal_result.get('buy_score', 0.0):.2f} | sell_score={signal_result.get('sell_score', 0.0):.2f} | "
+                f"signal_details={signal_result.get('details', [])}"
+            )
 
             return StrategyResult(
                 strategy_name=self.get_name(),
@@ -114,8 +99,8 @@ class VolatilityBreakoutStrategy(BaseStrategy):
                 signal_strength="",
                 signals_detected=signal_result.get('details', []),
                 signal=trading_signal,
-                buy_score=buy_score,
-                sell_score=sell_score,
+                buy_score=signal_result.get('buy_score', 0.0),
+                sell_score=signal_result.get('sell_score', 0.0),
                 stop_loss_price=signal_result.get('stop_loss_price')
             )
 
