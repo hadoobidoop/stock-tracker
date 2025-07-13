@@ -4,9 +4,9 @@ from domain.analysis.strategy.configs.dynamic_strategies import get_all_strategi
 from domain.analysis.strategy.configs.static_strategies import StrategyType, StrategyConfig, get_strategy_config, \
     get_static_strategy_types
 from domain.analysis.strategy.base_strategy import BaseStrategy
+from domain.strategies.conservative_reversion_hybrid import ConservativeReversionHybridStrategy
 from domain.analysis.strategy.implementations import (
     AdaptiveMomentumStrategy,
-    ConservativeReversionHybridStrategy,
     MarketRegimeHybridStrategy,
     StableValueHybridStrategy,
     AggressiveStrategy,

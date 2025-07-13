@@ -272,7 +272,7 @@ STRATEGY_CONFIGS = {
         description="보수적 추세 확인 후 평균 회귀로 진입하는 전략",
         signal_threshold=6.0, # 임계값을 약간 낮춰 더 많은 기회 포착
         risk_per_trade=0.015,
-        implementation_class="domain.analysis.strategy.implementations.conservative_reversion_hybrid.ConservativeReversionHybridStrategy",
+        implementation_class="domain.strategies.conservative_reversion_hybrid.conservative_reversion_hybrid_strategy.ConservativeReversionHybridStrategy",
         market_filters={},
         position_management={}
     ),
