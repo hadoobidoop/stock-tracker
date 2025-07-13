@@ -12,16 +12,19 @@ from enum import Enum
 class StrategyType(Enum):
     """전략 타입 정의 (확장 버전)"""
     # 기본 3가지 전략
+    CONSERVATIVE = "conservative"    # 보수적 전략
     BALANCED = "balanced"           # 균형잡힌 전략 (기본)
     AGGRESSIVE = "aggressive"       # 공격적 전략
     
     # 확장 정적 전략들 (기존 시스템에서 이식)
     MOMENTUM = "momentum"           # 모멘텀 전략
     TREND_FOLLOWING = "trend_following"  # 추세추종 전략
+    CONTRARIAN = "contrarian"       # 역추세 전략
     SCALPING = "scalping"           # 스캘핑 전략
     SWING = "swing"
     MEAN_REVERSION = "mean_reversion"
     TREND_PULLBACK = "trend_pullback"
+    VOLATILITY_BREAKOUT = "volatility_breakout"
     MULTI_TIMEFRAME = "multi_timeframe"
     MACRO_DRIVEN = "macro_driven"
     ADAPTIVE_MOMENTUM = "adaptive_momentum"
@@ -64,6 +67,22 @@ class StrategyConfig:
 
 STRATEGY_CONFIGS = {
     # === 기본 3가지 전략 ===
+    StrategyType.CONSERVATIVE: StrategyConfig(
+        name="보수적 전략",
+        description="높은 신뢰도의 강한 신호만 사용하는 안전한 전략",
+        signal_threshold=12.0,  # 높은 임계값
+        risk_per_trade=0.01,    # 1% 리스크
+        implementation_class="domain.analysis.strategy.implementations.conservative_strategy.ConservativeStrategy",
+        market_filters={
+            "trend_alignment": True,
+            "volume_confirmation": True
+        },
+        position_management={
+            "max_positions": 3,
+            "position_timeout_hours": 672  # 28일
+        }
+    ),
+    
     StrategyType.BALANCED: StrategyConfig(
         name="균형잡힌 전략",
         description="다양한 신호를 균형있게 사용하는 기본 전략",
@@ -178,6 +197,16 @@ STRATEGY_CONFIGS = {
         position_management={"max_positions": 4, "position_timeout_hours": 120}
     ),
     
+    StrategyType.VOLATILITY_BREAKOUT: StrategyConfig(
+        name="변동성 돌파 전략",
+        description="변동성 응축 후 폭발하는 시점을 포착하는 전략",
+        signal_threshold=6.0,
+        risk_per_trade=0.025,
+        implementation_class="domain.analysis.strategy.implementations.volatility_breakout_strategy.VolatilityBreakoutStrategy",
+        market_filters={"volume_confirmation": True},
+        position_management={"max_positions": 3, "position_timeout_hours": 48}
+    ),
+    
     StrategyType.MULTI_TIMEFRAME: StrategyConfig(
         name="다중 시간대 확인 전략",
         description="장기 추세(일봉)와 단기(시간봉) 진입 신호를 함께 확인하는 전략",
@@ -273,11 +302,11 @@ def get_static_strategy_types() -> List[StrategyType]:
 def get_available_strategies() -> Dict[str, List[str]]:
     """사용 가능한 전략들을 카테고리별로 반환"""
     return {
-        "basic": ["BALANCED", "AGGRESSIVE"],
+        "basic": ["CONSERVATIVE", "BALANCED", "AGGRESSIVE"],
         "momentum": ["MOMENTUM", "RSI_STOCH", "SCALPING"],
         "trend": ["TREND_FOLLOWING", "TREND_PULLBACK"],
         "reversion": ["MEAN_REVERSION", "SWING"],
-        "advanced": ["MULTI_TIMEFRAME", "MACRO_DRIVEN"]
+        "advanced": ["VOLATILITY_BREAKOUT", "MULTI_TIMEFRAME", "MACRO_DRIVEN"]
     }
 
 

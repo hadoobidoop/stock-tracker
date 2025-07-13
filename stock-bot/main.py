@@ -29,7 +29,7 @@ def parse_arguments():
         available_strategies = [st.lower() for st in get_available_static_strategies()]
     except ImportError:
         # 폴백: 기본 전략들
-        available_strategies = ['momentum', 'balanced_mix', 'conservative_mix', 'aggressive_mix']
+        available_strategies = ['conservative', 'balanced', 'aggressive']
     
     parser.add_argument('--strategy', 
                        choices=available_strategies,
