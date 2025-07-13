@@ -9,6 +9,7 @@ from .mean_reversion_strategy import MeanReversionStrategy
 from .momentum_strategy import MomentumStrategy
 from .multi_timeframe_strategy import MultiTimeframeStrategy
 from .trend_following_strategy import TrendFollowingStrategy
+from .trend_pullback_strategy import TrendPullbackStrategy
 from .volatility_breakout_strategy import VolatilityBreakoutStrategy
 
 
@@ -24,5 +25,6 @@ __all__ = [
     "MomentumStrategy",
     "MultiTimeframeStrategy",
     "TrendFollowingStrategy",
+    "TrendPullbackStrategy",
     "VolatilityBreakoutStrategy",
 ]

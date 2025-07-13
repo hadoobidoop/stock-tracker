@@ -19,6 +19,7 @@ class StrategyType(Enum):
     MOMENTUM = "momentum"           # 모멘텀 전략
     TREND_FOLLOWING = "trend_following"  # 추세추종 전략
     MEAN_REVERSION = "mean_reversion"
+    TREND_PULLBACK = "trend_pullback"
     MULTI_TIMEFRAME = "multi_timeframe"
     MACRO_DRIVEN = "macro_driven"
     ADAPTIVE_MOMENTUM = "adaptive_momentum"
@@ -131,6 +132,16 @@ STRATEGY_CONFIGS = {
         risk_per_trade=0.015,
         implementation_class="domain.analysis.strategy.implementations.mean_reversion_strategy.MeanReversionStrategy",
         market_filters={"trend_alignment": False},
+        position_management={"max_positions": 4, "position_timeout_hours": 120}
+    ),
+    
+    StrategyType.TREND_PULLBACK: StrategyConfig(
+        name="추세 추종 눌림목 전략",
+        description="상승 추세 중 일시적 하락(눌림목) 시 매수하는 전략",
+        signal_threshold=8.0,
+        risk_per_trade=0.02,
+        implementation_class="domain.analysis.strategy.implementations.trend_pullback_strategy.TrendPullbackStrategy",
+        market_filters={"trend_alignment": True},
         position_management={"max_positions": 4, "position_timeout_hours": 120}
     ),
     

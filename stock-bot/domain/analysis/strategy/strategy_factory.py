@@ -15,6 +15,7 @@ from domain.analysis.strategy.implementations import (
     MeanReversionStrategy,
     MomentumStrategy,
     TrendFollowingStrategy,
+    TrendPullbackStrategy,
     VolatilityBreakoutStrategy
 )
 from .modifier_engine import ModifierEngine
@@ -35,6 +36,7 @@ STRATEGY_CLASS_MAP = {
     StrategyType.MEAN_REVERSION: MeanReversionStrategy,
     StrategyType.MOMENTUM: MomentumStrategy,
     StrategyType.TREND_FOLLOWING: TrendFollowingStrategy,
+    StrategyType.TREND_PULLBACK: TrendPullbackStrategy,
     StrategyType.VOLATILITY_BREAKOUT: VolatilityBreakoutStrategy,
 }
 
