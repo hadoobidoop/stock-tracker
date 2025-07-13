@@ -11,16 +11,16 @@ from domain.analysis.strategy.implementations import (
     StableValueHybridStrategy,
     AggressiveStrategy,
     BalancedStrategy,
+    ConservativeStrategy,
     ContrarianStrategy,
     MeanReversionStrategy,
     MomentumStrategy,
     ScalpingStrategy,
     SwingStrategy,
-    TrendFollowingStrategy,
     TrendPullbackStrategy,
     VolatilityBreakoutStrategy
 )
-from domain.strategies.conservative.conservative_strategy import ConservativeStrategy
+from domain.strategies.trend_following.trend_following_strategy import TrendFollowingStrategy
 from .modifier_engine import ModifierEngine
 from .modifiers.registry import ModifierFactory
 from infrastructure.logging import get_logger

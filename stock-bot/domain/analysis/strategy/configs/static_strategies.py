@@ -135,7 +135,7 @@ STRATEGY_CONFIGS = {
         description="SMA, MACD, ADX 등 추세 지표 중심 전략",
         signal_threshold=7.0,
         risk_per_trade=0.02,
-        implementation_class="domain.analysis.strategy.implementations.trend_following_strategy.TrendFollowingStrategy",
+        implementation_class="domain.strategies.trend_following.trend_following_strategy.TrendFollowingStrategy",
         market_filters={
             "trend_alignment": True,
             "trend_strength": True

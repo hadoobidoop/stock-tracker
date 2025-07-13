@@ -5,10 +5,10 @@ import pandas as pd
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.strategy.configs.static_strategies import StrategyConfig, StrategyType
 from domain.analysis.detectors.composite.composite_detector import CompositeSignalDetector
-from domain.analysis.detectors.trend_following.adx_detector import ADXSignalDetector
-from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDetector
-from domain.analysis.detectors.trend_following.sma_detector import SMASignalDetector
-from domain.analysis.detectors.volume.volume_detector import VolumeSignalDetector
+from .detectors.trend_following_adx_detector import ADXSignalDetector
+from .detectors.trend_following_macd_detector import MACDSignalDetector
+from .detectors.trend_following_sma_detector import SMASignalDetector
+from .detectors.trend_following_volume_detector import VolumeSignalDetector
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
@@ -18,8 +18,27 @@ logger = get_logger(__name__)
 
 class TrendFollowingStrategy(BaseStrategy):
     """
-    SMA, MACD, ADX 등 추세 지표를 중심으로 신호를 감지하는 전략.
-    모든 로직이 이 클래스 내에 캡슐화되어 있습니다.
+    Trend Following(추세추종) 전략 - SMA, MACD, ADX 등 추세 지표 기반
+
+    [구조 및 특징]
+    - 커스텀 Detector: trend_following_sma_detector, trend_following_macd_detector, trend_following_adx_detector, trend_following_volume_detector
+    - Composite Detector: MACD+Volume 컨펌(신호 신뢰도 강화)
+    - Detector별 가중치는 코드 내에서 직접 관리(예: SMA 7.0, MACD 6.0 등)
+    - 시장/장기 추세 일치(trend_alignment) 필터 적용 가능
+    - 점수는 시장/장기 추세 일치 여부에 따라 가중치 조정
+
+    [주요 파라미터]
+    - signal_threshold: 신호 발생 기준점(기본 7.0)
+    - detector별 가중치: SMA(7.0), MACD(6.0), ADX(6.0), Volume(4.0), Composite(8.0)
+    - trend_alignment: 시장/장기 추세 일치 필터(설정에서 on/off)
+
+    [사용 예시]
+        strategy = TrendFollowingStrategy(StrategyType.TREND_FOLLOWING, config)
+        strategy.initialize()
+        result = strategy.analyze(df, ticker, market_trend, long_term_trend)
+
+    [반환값]
+    - StrategyResult: 신호 발생 여부, 점수, 근거, buy/sell score, stop_loss 등 포함
     """
 
     def __init__(self, strategy_type: StrategyType, config: StrategyConfig):
@@ -28,7 +47,10 @@ class TrendFollowingStrategy(BaseStrategy):
 
     def initialize(self) -> bool:
         """
-        추세추종 전략에 필요한 SignalDetector와 Orchestrator를 생성하고 초기화합니다.
+        Trend Following 전략의 Detector 조합 및 orchestrator 초기화
+        - 커스텀 Detector: trend_following_sma_detector, trend_following_macd_detector, trend_following_adx_detector, trend_following_volume_detector
+        - Composite Detector: MACD+Volume 컨펌(신호 신뢰도 강화)
+        - Detector별 가중치는 코드 내에서 직접 관리
         """
         try:
             # 설정 파일에 정의된 detector들을 코드로 직접 생성
@@ -65,7 +87,11 @@ class TrendFollowingStrategy(BaseStrategy):
                 long_term_trend: TrendType = TrendType.NEUTRAL,
                 daily_extra_indicators: Optional[Dict] = None) -> StrategyResult:
         """
-        내부 오케스트레이터를 사용하여 추세 신호를 분석합니다.
+        Trend Following 전략의 신호 분석 및 결과 반환
+        - 내부 orchestrator 기반 신호/점수/근거 수집
+        - 시장/장기 추세 일치 여부에 따라 점수 가중치 조정
+        - 신호 근거, 점수, buy/sell score, stop_loss 등 StrategyResult에 기록
+        - 예외 발생 시 안전하게 실패 반환
         """
         if not self.is_initialized or not self.orchestrator:
             raise RuntimeError(f"{self.get_name()}이(가) 초기화되지 않았습니다.")
@@ -129,7 +155,8 @@ class TrendFollowingStrategy(BaseStrategy):
 
     def _adjust_score(self, base_score: float, market_trend: TrendType, long_term_trend: TrendType) -> float:
         """
-        추세추종 전략에 특화된 점수 조정 로직.
+        Trend Following 전략에 특화된 점수 조정 로직
+        - 시장/장기 추세 일치 시 가중치 부여, 불일치 시 점수 감소 또는 무효화
         """
         adjusted_score = base_score
 

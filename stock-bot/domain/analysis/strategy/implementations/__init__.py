@@ -12,7 +12,7 @@ from .momentum_strategy import MomentumStrategy
 from .multi_timeframe_strategy import MultiTimeframeStrategy
 from .scalping_strategy import ScalpingStrategy
 from .swing_strategy import SwingStrategy
-from .trend_following_strategy import TrendFollowingStrategy
+from domain.strategies.trend_following.trend_following_strategy import TrendFollowingStrategy
 from .trend_pullback_strategy import TrendPullbackStrategy
 from .volatility_breakout_strategy import VolatilityBreakoutStrategy
 
