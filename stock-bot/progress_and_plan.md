@@ -59,7 +59,7 @@ domain/
 | Contrarian           | 예정                     |
 | Volatility Breakout  | 완료                     |
 | Macro Driven         | 폐기                     |
-| Multi Timeframe      | 예정                     |
+| Multi Timeframe      | 완료                     |
 | Quality Trend        | 예정                     |
 | Stable Value Hybrid  | 예정                     |
 | Market Regime Hybrid | 완료                     |
@@ -105,9 +105,9 @@ domain/
 
 ## 4. 각 전략별 진행상황 상세
 
-### Aggressive/ Balanced/ Conservative/ Momentum/Scalping/aggressive_mix/conservative_mix/mean_reversion/balanced_mix/conservative_reversion_hybrid 전략
+### Aggressive/ Balanced/ Conservative/ Momentum/Scalping/aggressive_mix/conservative_mix/mean_reversion/balanced_mix/conservative_reversion_hybrid, swing, multi_timeframe 전략
 - 각 전략별 구현체(.py), Detector, config, (조합 전략은 실행체/config)는 해당 전략 폴더 내에서 완전히 독자적으로 관리됨 (폴더 단위 독립성)
-- aggressive, balanced, conservative, momentum, scalping, aggressive_mix, conservative_mix, mean_reversion, balanced_mix, conservative_reversion_hybrid, swing 전략은 독립 구조로 완전히 이전 완료 및 문서화/주석 리팩토링까지 완료
+- aggressive, balanced, conservative, momentum, scalping, aggressive_mix, conservative_mix, mean_reversion, balanced_mix, conservative_reversion_hybrid, swing, multi_timeframe 전략은 독립 구조로 완전히 이전 완료 및 문서화/주석 리팩토링까지 완료
 - swing 등 기타 전략/조합/동적 전략은 추후 동일한 방식으로 이전 예정
 
 ### Aggressive 전략
