@@ -1,3 +1,30 @@
+# StrategyManager 역할 분리 및 strategy 폴더 폐기 리팩토링 진행상황 (2024-07-09)
+
+## 🎯 목표
+- StrategyManager의 과도한 역할을 Static/Mix/Dynamic 매니저로 분리
+- 오케스트레이터(StrategyOrchestrator) 도입으로 각 매니저 위임 구조 확립
+- domain/analysis/strategy/ 폴더 완전 폐기 및 코드 일관성 확보
+
+## 🛠️ 단계별 플랜
+1. StaticStrategyManager, StrategyMixManager 클래스 설계/생성
+2. 기존 strategy_manager.py에서 정적/믹스 관련 메서드 분리 및 이관
+3. StrategyOrchestrator(혹은 StrategySystem) 구현 및 통합
+4. 기존 strategy_manager.py, strategy_factory.py, base_strategy.py 등 역할별로 이동/정리
+5. domain/analysis/strategy/ 폴더 완전 삭제
+6. 전체 import 경로 일괄 정비 및 테스트
+
+## 📈 현재 상태
+- 분리/이관 설계 논의 중 (2024-07-09)
+- Static/Mix 매니저 설계 및 구현 예정
+
+## ✅ 완료 기준
+- Static/Mix/Dynamic 매니저가 각 역할을 독립적으로 수행
+- 오케스트레이터가 외부 인터페이스를 단일화
+- strategy 폴더 완전 삭제 및 레거시 코드 제거
+- 전체 테스트 통과 및 문서화
+
+---
+
 # 진행상황 및 계획 (2024-07-09 최신)
 
 ## ✅ 동적 전략(Dynamic Strategy/Manager) 시스템 마이그레이션 및 문서화 완료

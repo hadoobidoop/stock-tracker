@@ -147,3 +147,47 @@ domain/
 - 캐시/상태 관리 일원화로 동시성/성능 개선
 - 예외/로깅/폴백 일관성 확보
 - 실시간 신호 감지 시스템의 확장성/안정성/성능 극대화 
+
+### [1단계] 주요 파일/클래스 역할 목록화 (2024-07-09)
+
+| 파일명 | 주요 역할 |
+|--------|-----------------------------------------------------------------------------------------------------------------------------------|
+| strategy_manager.py | 정적/믹스/동적 전략 전체 관리, 전략 초기화/전환/분석/조합, 오케스트레이션, 동적 전략 위임(DynamicStrategyManager) |
+| strategy_factory.py | 정적/동적 전략 인스턴스 생성, config 기반 팩토리, 의존성 주입, 전략 지원 여부 확인, 전략 목록 반환 등 |
+| static_strategies.py | StrategyType Enum, StrategyConfig/DetectorConfig dataclass, 각 전략별 config, 전략 config 조회 함수 등 |
+| strategy_mixes.py | StrategyMixMode Enum, StrategyMixConfig dataclass, 전략 믹스 config(현재는 각 믹스 폴더에서 관리), 시장상황별 권장 믹스, 조회 함수 등 |
+| service/signal_detection_service.py | 신호 감지 서비스, 전략 매니저(StrategyManager) 기반 신호 분석/전략 전환/조합, 지표 캐시, 동적 전략/믹스 지원 |
+| run_backtest.py | 백테스팅 실행 스크립트, 다양한 전략/조합/비교/자동선택 백테스트, 결과 요약/저장/출력 |
+
+#### 역할 요약 상세
+- **strategy_manager.py**: 정적/믹스/동적 전략의 초기화, 등록, 교체, 분석 실행, 결과 조합 등 모든 전략 관련 오케스트레이션을 담당하며, 동적 전략 관리는 DynamicStrategyManager에 위임함.
+- **strategy_factory.py**: 정적/동적 전략 인스턴스 생성의 통합 팩토리로, 전략 타입 ↔️ 전략 클래스 매핑 및 config 기반 생성, 의존성 주입, 여러 전략 동시 생성, 지원 여부 확인 등 부가 기능 제공.
+- **static_strategies.py**: 모든 정적 전략의 타입(StrategyType Enum), 각 전략/탐지기의 설정 구조(dataclass), 실제 config, 전략 config 조회/목록 반환 함수 등 제공.
+- **strategy_mixes.py**: 전략 조합 방식(Enum), 조합 설정(dataclass), 시장 상황별 권장 믹스, 믹스 config(현재는 각 믹스 폴더에서 관리), 조회 함수 등 제공. 
+
+#### 역할 요약 상세 (추가)
+- **service/signal_detection_service.py**: StrategyManager를 활용해 신호 감지, 전략 전환, 믹스/동적 전략 지원, 지표 프리컴퓨팅/캐시, 신호 분석 결과 반환 등 실시간/배치 신호 분석의 핵심 서비스 역할.
+- **run_backtest.py**: 다양한 전략/조합/비교/자동선택 모드로 백테스트를 실행하고, 결과를 요약/출력/저장하는 엔트리포인트 스크립트. 실험/비교/리포트 자동화에 활용됨. 
+
+### [1단계] 매니저/서비스/오케스트레이터 책임/인터페이스 설계 (2024-07-09)
+
+| 클래스/서비스명                | 주요 책임/역할                                                                                   | 주요 메서드/인터페이스(예상)                       |
+|-------------------------------|--------------------------------------------------------------------------------------------------|---------------------------------------------------|
+| StaticStrategyManager         | 정적 전략(Static) 관리, 초기화, 분석, 등록/제거, 상태 관리                                        | initialize(), analyze(), add_strategy(), ...      |
+| StrategyMixManager            | 믹스 전략(Mix) 관리, 조합 실행, 결과 통합, 믹스 config 관리                                       | set_mix(), analyze_mix(), get_mix_config(), ...   |
+| DynamicStrategyManager        | 동적 전략(Dynamic) 관리, 실시간 가중치 조정, 전략 전환, 상태 관리                                 | initialize(), switch_strategy(), analyze(), ...   |
+| Orchestrator (예: SignalDetectionOrchestrator) | 각 매니저/서비스 위임, 전체 실행 흐름 제어, 신호/전략 조율                                      | add_manager(), run(), get_results(), ...          |
+| DataPreparationService        | 데이터 로딩, 캐싱, 전처리, 지표 계산 등 데이터 준비 전담                                          | load_data(), compute_indicators(), ...            |
+| StrategyExecutionService      | 전략 실행(정적/동적/믹스), 신호 감지, 전략별 분석 실행                                           | execute_strategy(), execute_mix(), ...            |
+| SignalPersistenceService      | 신호/지표 저장, DB 연동, 결과 기록                                                               | save_signal(), save_indicator(), ...              |
+| SignalDetectionService        | StrategyManager 기반 신호 감지, 전략 전환/조합, 지표 캐시, 동적 전략/믹스 지원                   | initialize(), analyze_with_current_strategy(), ...|
+
+#### 역할/인터페이스 상세 설명
+- **StaticStrategyManager**: 정적 전략만을 관리하며, 전략의 초기화, 분석, 추가/제거, 상태 조회 등 책임.
+- **StrategyMixManager**: 여러 정적 전략을 조합(가중치, 투표 등)하여 믹스 전략을 실행, 믹스 config 관리.
+- **DynamicStrategyManager**: 동적 전략(시장 상황/지표 기반 실시간 가중치 조정) 관리, 전략 전환, 분석 실행.
+- **Orchestrator**: 각 매니저/서비스를 조합하여 전체 신호 감지/전략 실행 흐름을 제어, 결과 통합.
+- **DataPreparationService**: 데이터 로딩, 전처리, 지표 계산 등 데이터 준비만 전담.
+- **StrategyExecutionService**: 전략 실행(정적/동적/믹스) 및 신호 감지, 분석 실행.
+- **SignalPersistenceService**: 신호/지표/분석 결과의 저장, DB 연동, 기록 관리.
+- **SignalDetectionService**: StrategyManager를 활용한 신호 감지, 전략 전환/조합, 지표 캐시, 실시간/배치 신호 분석의 핵심 서비스. 
