@@ -166,7 +166,7 @@ STRATEGY_CONFIGS = {
         description="빠른 진입/청산을 위한 단기 전략",
         signal_threshold=4.0,   # 매우 낮은 임계값
         risk_per_trade=0.01,    # 낮은 리스크
-        implementation_class="domain.analysis.strategy.implementations.scalping_strategy.ScalpingStrategy",
+        implementation_class="domain.strategies.scalping.scalping_strategy.ScalpingStrategy",
         market_filters={
             "volume_confirmation": True,
             "volatility_filter": True
