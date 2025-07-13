@@ -1,35 +1,34 @@
-# MultiTimeframeStrategy
-# =====================
+# MultiTimeframeStrategy (다중 시간대 전략)
+# ======================================
 # - 장기(일봉)와 단기(시간봉) 신호를 동시에 확인하여 신뢰도 높은 진입/청산 신호를 포착하는 전략
-# - 각 Detector(MACD, Stoch, RSI)는 별도 래퍼 클래스로 분리되어 유지보수/확장에 용이
-# - 모든 전략 파라미터(config)는 configs/multi_timeframe_config.py에서 관리
-# - 커스텀 Detector 추가, 신호 컨펌 로직 확장, 파라미터 튜닝 등 다양한 확장성 제공
+# - 모든 전략 파라미터(config)는 configs/multi_timeframe_config.py에서 관리하며, Detector 가중치·임계값·포지션 관리 등 확장/튜닝이 용이함
+# - 복합 Detector(MultiTimeframeCompositeDetector) 단일 조합 구조로, 일봉/시간봉 데이터 동시 분석 및 컨센서스 기반 신호 산출
+# - 각 Detector(MACD, Stoch, RSI)는 별도 래퍼 클래스로 분리되어 향후 오버라이드/확장에 용이함
+# - 확장 포인트: detectors/ 하위에 커스텀 Detector 추가, config에서 동적 조합, 신호 컨펌/복합 판단 로직(CompositeDetector 등) 확장 가능
 #
-# 주요 파라미터(config):
+# [주요 파라미터(config)]
 #   - signal_threshold: 신호 발생 임계값(9.0)
 #   - risk_per_trade: 거래당 리스크 비율(0.02)
-#   - detector_weights: MACD(5.0), Stoch(5.0), RSI(4.0)
+#   - detector_weights: 복합 Detector 가중치(7.0)
 #   - market_filters: 다중 시간대 컨펌 여부
-#   - position_management: 최대 3개 포지션, 21일 보유
+#   - position_management: 최대 3개 포지션, 21일(504시간) 보유
 #
-# 사용 예시:
+# [사용 예시]
 #   from domain.strategies.multi_timeframe.multi_timeframe_strategy import MultiTimeframeStrategy
 #   strategy = MultiTimeframeStrategy()
 #   strategy.initialize()
 #   result = strategy.analyze(df, ticker, market_trend, long_term_trend, daily_extra_indicators)
 #
-# 확장 포인트:
-#   - detectors/ 하위에 커스텀 Detector 추가 및 config에서 동적 조합
-#   - 신호 컨펌/복합 판단 로직(CompositeDetector 등) 추가
+# [확장/유지보수 포인트]
+#   - detectors/ 하위에 커스텀 Detector 추가 및 config에서 동적 조합 가능
+#   - 신호 컨펌/복합 판단 로직(CompositeDetector 등) 확장 가능
 #   - config 파라미터만 수정해 전략 튜닝 가능
 
 from typing import Dict, Optional
 import pandas as pd
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from .configs.multi_timeframe_config import MULTI_TIMEFRAME_CONFIG
-from .detectors.multi_timeframe_macd_detector import MultiTimeframeMACDDetector
-from .detectors.multi_timeframe_stoch_detector import MultiTimeframeStochDetector
-from .detectors.multi_timeframe_rsi_detector import MultiTimeframeRSIDetector
+from domain.analysis.detectors.composite.multi_timeframe_composite_detector import MultiTimeframeCompositeDetector
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
@@ -40,27 +39,9 @@ class MultiTimeframeStrategy(BaseStrategy):
     """
     [다중 시간대 전략]
     - 장기(일봉)와 단기(시간봉) 신호를 동시에 확인하여 신뢰도 높은 진입/청산 신호를 포착
-    - MACD, Stoch, RSI Detector를 별도 래퍼로 분리하여 유지보수/확장성 강화
+    - 복합 Detector(MultiTimeframeCompositeDetector) 단일 조합 구조로, 일봉/시간봉 데이터 동시 분석 및 컨센서스 기반 신호 산출
     - 모든 파라미터/가중치는 configs/multi_timeframe_config.py에서 관리
-    - 커스텀 Detector, 신호 컨펌 로직, 파라미터 튜닝 등 다양한 확장성 제공
-
-    주요 파라미터(config):
-        - signal_threshold: 신호 발생 임계값(9.0)
-        - risk_per_trade: 거래당 리스크 비율(0.02)
-        - detector_weights: MACD(5.0), Stoch(5.0), RSI(4.0)
-        - market_filters: 다중 시간대 컨펌 여부
-        - position_management: 최대 3개 포지션, 21일 보유
-
-    사용 예시:
-        from domain.strategies.multi_timeframe.multi_timeframe_strategy import MultiTimeframeStrategy
-        strategy = MultiTimeframeStrategy()
-        strategy.initialize()
-        result = strategy.analyze(df, ticker, market_trend, long_term_trend, daily_extra_indicators)
-
-    확장 포인트:
-        - detectors/ 하위에 커스텀 Detector 추가 및 config에서 동적 조합
-        - 신호 컨펌/복합 판단 로직(CompositeDetector 등) 추가
-        - config 파라미터만 수정해 전략 튜닝 가능
+    - 확장: detectors/ 하위에 커스텀 Detector 추가, config에서 동적 조합, 신호 컨펌/복합 판단 로직 확장 가능
     """
     def __init__(self, config=None):
         """
@@ -76,16 +57,16 @@ class MultiTimeframeStrategy(BaseStrategy):
     def initialize(self) -> bool:
         """
         Detector 조합 및 orchestrator 초기화
-        - MACD, Stoch, RSI Detector를 래퍼 클래스로 조합
+        - 복합 Detector(MultiTimeframeCompositeDetector) 단일 조합 구조
         - 각 Detector의 가중치는 config["detector_weights"]에서 관리
         Returns:
             bool: 초기화 성공 여부
+        Raises:
+            Exception: Detector/Orchestrator 생성 실패 시 False 반환 및 로그 기록
         """
         try:
             detectors = [
-                MultiTimeframeMACDDetector(weight=self.config["detector_weights"]["macd"]),
-                MultiTimeframeStochDetector(weight=self.config["detector_weights"]["stoch"]),
-                MultiTimeframeRSIDetector(weight=self.config["detector_weights"]["rsi"]),
+                MultiTimeframeCompositeDetector(weight=self.config["detector_weights"].get("composite", 7.0))
             ]
             self.orchestrator = SignalDetectionOrchestrator(detectors=detectors)
             self.is_initialized = True
@@ -112,6 +93,8 @@ class MultiTimeframeStrategy(BaseStrategy):
             daily_extra_indicators (dict, optional): 일봉 등 추가 지표
         Returns:
             StrategyResult: 분석 결과(신호, 점수, 근거 등)
+        Raises:
+            RuntimeError: 초기화 미완료 시 예외 발생
         """
         if not self.is_initialized or not self.orchestrator:
             raise RuntimeError(f"{self.get_name()}이(가) 초기화되지 않았습니다.")
