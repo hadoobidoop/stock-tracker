@@ -7,7 +7,6 @@ from .balanced_strategy import BalancedStrategy
 from domain.strategies.conservative.conservative_strategy import ConservativeStrategy
 from .contrarian_strategy import ContrarianStrategy
 from .macro_driven_strategy import MacroDrivenStrategy
-from .mean_reversion_strategy import MeanReversionStrategy
 from .momentum_strategy import MomentumStrategy
 from .multi_timeframe_strategy import MultiTimeframeStrategy
 from domain.strategies.scalping.scalping_strategy import ScalpingStrategy
@@ -27,7 +26,6 @@ __all__ = [
     "ConservativeStrategy",
     "ContrarianStrategy",
     "MacroDrivenStrategy",
-    "MeanReversionStrategy",
     "MomentumStrategy",
     "MultiTimeframeStrategy",
     "ScalpingStrategy",

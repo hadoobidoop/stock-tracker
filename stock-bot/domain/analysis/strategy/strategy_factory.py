@@ -24,6 +24,7 @@ from domain.strategies.trend_following.trend_following_strategy import TrendFoll
 from .modifier_engine import ModifierEngine
 from .modifiers.registry import ModifierFactory
 from infrastructure.logging import get_logger
+from domain.strategies.mean_reversion.mean_reversion_strategy import MeanReversionStrategy
 
 logger = get_logger(__name__)
 
