@@ -30,7 +30,6 @@ class StrategyType(Enum):
     ADAPTIVE_MOMENTUM = "adaptive_momentum"
     CONSERVATIVE_REVERSION_HYBRID = "conservative_reversion_hybrid"
     MARKET_REGIME_HYBRID = "market_regime_hybrid"
-    STABLE_VALUE_HYBRID = "stable_value_hybrid"
     DYNAMIC_WEIGHT = "dynamic_weight" # 동적 전략을 위한 플레이스홀더
 
 
@@ -261,16 +260,6 @@ STRATEGY_CONFIGS = {
         signal_threshold=6.0, # 하위 전략의 임계값을 따름
         risk_per_trade=0.02,
         implementation_class="domain.strategies.market_regime_hybrid.market_regime_hybrid_strategy.MarketRegimeHybridStrategy",
-        market_filters={},
-        position_management={}
-    ),
-
-    StrategyType.STABLE_VALUE_HYBRID: StrategyConfig(
-        name="안정 가치 하이브리드",
-        description="안정적인 추세에서 눌림목을 공략하는 우량주 특화 전략",
-        signal_threshold=8.0, # 눌림목 전략의 임계값을 따름
-        risk_per_trade=0.015,
-        implementation_class="domain.analysis.strategy.implementations.stable_value_hybrid.StableValueHybridStrategy",
         market_filters={},
         position_management={}
     )

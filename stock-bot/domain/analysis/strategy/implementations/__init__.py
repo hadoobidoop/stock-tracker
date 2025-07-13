@@ -1,5 +1,4 @@
 from .adaptive_momentum_hybrid_strategy import AdaptiveMomentumStrategy
-from .stable_value_hybrid import StableValueHybridStrategy
 from domain.strategies.conservative.conservative_strategy import ConservativeStrategy
 from .contrarian_strategy import ContrarianStrategy
 # from .momentum_strategy import MomentumStrategy  # 레거시 제거
@@ -12,7 +11,6 @@ from .volatility_breakout_strategy import VolatilityBreakoutStrategy
 
 __all__ = [
     "AdaptiveMomentumStrategy",
-    "StableValueHybridStrategy",
     "ConservativeStrategy",
     "ContrarianStrategy",
     # "MomentumStrategy",  # 레거시 제거

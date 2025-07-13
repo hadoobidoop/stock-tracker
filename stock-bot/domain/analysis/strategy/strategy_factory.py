@@ -12,7 +12,6 @@ from domain.strategies.balanced.balanced_strategy import BalancedStrategy
 from domain.strategies.momentum.momentum_strategy import MomentumStrategy
 from domain.strategies.volatility_breakout.volatility_breakout_strategy import VolatilityBreakoutStrategy
 from domain.analysis.strategy.implementations import (
-    StableValueHybridStrategy,
     ConservativeStrategy,
     ContrarianStrategy,
     ScalpingStrategy
@@ -31,7 +30,6 @@ STRATEGY_CLASS_MAP = {
     StrategyType.ADAPTIVE_MOMENTUM: AdaptiveMomentumStrategy,
     StrategyType.CONSERVATIVE_REVERSION_HYBRID: ConservativeReversionHybridStrategy,
     StrategyType.MARKET_REGIME_HYBRID: MarketRegimeHybridStrategy,
-    StrategyType.STABLE_VALUE_HYBRID: StableValueHybridStrategy,
     StrategyType.AGGRESSIVE: AggressiveStrategy,
     StrategyType.BALANCED: BalancedStrategy,
     StrategyType.CONSERVATIVE: ConservativeStrategy,
