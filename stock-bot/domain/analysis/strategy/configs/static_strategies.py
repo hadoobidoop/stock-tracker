@@ -27,7 +27,6 @@ class StrategyType(Enum):
     TREND_PULLBACK = "trend_pullback"
     VOLATILITY_BREAKOUT = "volatility_breakout"
     MULTI_TIMEFRAME = "multi_timeframe"
-    MACRO_DRIVEN = "macro_driven"
     ADAPTIVE_MOMENTUM = "adaptive_momentum"
     CONSERVATIVE_REVERSION_HYBRID = "conservative_reversion_hybrid"
     MARKET_REGIME_HYBRID = "market_regime_hybrid"
@@ -236,27 +235,6 @@ STRATEGY_CONFIGS = {
         position_management={"max_positions": 3, "position_timeout_hours": 504}
     ),
     
-    StrategyType.MACRO_DRIVEN: StrategyConfig(
-        name="거시지표 기반 전략",
-        description="VIX와 버핏지수 등 거시경제 지표를 기술적 분석과 결합한 전략",
-        signal_threshold=7.0,
-        risk_per_trade=0.015,
-        implementation_class="domain.analysis.strategy.implementations.macro_driven_strategy.MacroDrivenStrategy",
-        market_filters={
-            "macro_sentiment_filter": True,
-            "macro_signal_threshold": 3.0,
-            "vix_analysis_enabled": True,
-            "buffett_analysis_enabled": True,
-            "dynamic_risk_adjustment": True
-        },
-        position_management={
-            "max_positions": 4, 
-            "position_timeout_hours": 720,
-            "stop_loss_percent": 0.05,
-            "take_profit_percent": 0.12
-        }
-    ),
-
     StrategyType.ADAPTIVE_MOMENTUM: StrategyConfig(
         name="적응형 모멘텀",
         description="추세, 모멘텀, 변동성을 결합한 적응형 전략",
@@ -325,7 +303,7 @@ def get_available_strategies() -> Dict[str, List[str]]:
         "momentum": ["MOMENTUM", "RSI_STOCH", "SCALPING"],
         "trend": ["TREND_FOLLOWING", "TREND_PULLBACK"],
         "reversion": ["CONTRARIAN", "MEAN_REVERSION", "SWING"],
-        "advanced": ["VOLATILITY_BREAKOUT", "MULTI_TIMEFRAME", "MACRO_DRIVEN"]
+        "advanced": ["VOLATILITY_BREAKOUT", "MULTI_TIMEFRAME"]
     }
 
 
