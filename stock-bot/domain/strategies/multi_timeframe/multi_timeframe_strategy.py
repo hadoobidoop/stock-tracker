@@ -94,4 +94,4 @@ class MultiTimeframeStrategy(BaseStrategy):
                 total_score=0.0,
                 signal_strength="WEAK",
                 signals_detected=[],
-            )
+            ) 
