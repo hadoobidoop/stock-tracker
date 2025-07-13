@@ -1,8 +1,6 @@
 from typing import Dict, List, Tuple
 import pandas as pd
-from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
-from ...base.signal_detector import SignalDetector
 
 logger = get_logger(__name__)
 
