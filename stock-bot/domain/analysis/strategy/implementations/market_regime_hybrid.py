@@ -3,7 +3,7 @@ from typing import Dict
 import pandas as pd
 
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
-from domain.analysis.config.static_strategies import StrategyConfig, StrategyType
+from domain.analysis.strategy.configs.static_strategies import StrategyConfig, StrategyType
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
 from domain.stock.service.market_data_service import MarketDataService
 from infrastructure.db.models.enums import TrendType
