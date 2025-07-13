@@ -31,19 +31,7 @@ class StrategyMixConfig:
 # 전략 조합 정의
 STRATEGY_MIXES: Dict[str, StrategyMixConfig] = {
     
-    # 보수적 조합: 안정적인 추세 추종
-    "conservative_mix": StrategyMixConfig(
-        name="보수적 조합 (Conservative Mix)",
-        description="여러 추세 및 품질 기반 전략들의 만장일치로 안정적인 신호 생성",
-        mode=StrategyMixMode.VOTING,
-        strategies={
-            StrategyType.CONSERVATIVE: 1.0,
-            StrategyType.TREND_FOLLOWING: 1.0,
-        },
-        threshold_adjustment=1.2  # 임계값을 높여 더 엄격한 신호 필터링
-    ),
-
-    # 균형 조합: 추세와 평균 회귀의 조화
+    # balanced_mix: 기존과 동일
     "balanced_mix": StrategyMixConfig(
         name="균형 조합 (Balanced Mix)",
         description="추세추종 전략과 평균 회귀 전략을 조합하여 다양한 시장 상황에 대응",
@@ -56,6 +44,7 @@ STRATEGY_MIXES: Dict[str, StrategyMixConfig] = {
     ),
     
     # aggressive_mix는 domain.strategies.aggressive_mix.configs.aggressive_mix_config에서 관리됩니다.
+    # conservative_mix는 domain.strategies.conservative_mix.configs.conservative_mix_config에서 관리됩니다.
     
 }
 

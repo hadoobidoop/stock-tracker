@@ -19,6 +19,8 @@ from domain.analysis.strategy.configs.static_strategies import (
 from domain.analysis.strategy.configs.strategy_mixes import (
     StrategyMixMode, StrategyMixConfig, STRATEGY_MIXES
 )
+from domain.strategies.aggressive_mix.configs.aggressive_mix_config import AGGRESSIVE_MIX_CONFIG
+from domain.strategies.conservative_mix.configs.conservative_mix_config import CONSERVATIVE_MIX_CONFIG
 
 from .base_strategy import BaseStrategy, StrategyResult
 from .strategy_factory import StrategyFactory
@@ -161,12 +163,21 @@ class StrategyManager:
         return True
     
     def set_strategy_mix(self, mix_name: str) -> bool:
-        """전략 조합을 설정합니다."""
-        mix_config = STRATEGY_MIXES.get(mix_name)
+        """
+        Static Strategy Mix(조합) 설정
+        Args:
+            mix_name (str): 'balanced_mix', 'aggressive_mix', 'conservative_mix' 등
+        Returns:
+            bool: 성공 여부
+        """
+        if mix_name == "aggressive_mix":
+            mix_config = AGGRESSIVE_MIX_CONFIG
+        elif mix_name == "conservative_mix":
+            mix_config = CONSERVATIVE_MIX_CONFIG
+        else:
+            mix_config = STRATEGY_MIXES.get(mix_name)
         if not mix_config:
-            logger.warning(f"전략 조합 설정을 찾을 수 없음: {mix_name}")
             return False
-
         self.current_mix_config = mix_config
         self.current_strategy = None  # 단일 전략 비활성화
         self.dynamic_manager.current_strategy = None  # 동적 전략 비활성화
