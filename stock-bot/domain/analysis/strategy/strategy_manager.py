@@ -21,6 +21,7 @@ from domain.analysis.strategy.configs.strategy_mixes import (
 )
 from domain.strategies.aggressive_mix.configs.aggressive_mix_config import AGGRESSIVE_MIX_CONFIG
 from domain.strategies.conservative_mix.configs.conservative_mix_config import CONSERVATIVE_MIX_CONFIG
+from domain.strategies.balanced_mix.configs.balanced_mix_config import BALANCED_MIX_CONFIG
 
 from .base_strategy import BaseStrategy, StrategyResult
 from .strategy_factory import StrategyFactory
@@ -174,6 +175,8 @@ class StrategyManager:
             mix_config = AGGRESSIVE_MIX_CONFIG
         elif mix_name == "conservative_mix":
             mix_config = CONSERVATIVE_MIX_CONFIG
+        elif mix_name == "balanced_mix":
+            mix_config = BALANCED_MIX_CONFIG
         else:
             mix_config = STRATEGY_MIXES.get(mix_name)
         if not mix_config:

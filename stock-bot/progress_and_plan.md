@@ -65,7 +65,7 @@ domain/
 | Market Regime Hybrid | 예정                     |
 | Adaptive Momentum Hybrid | 예정                 |
 | Conservative Reversion Hybrid | 예정           |
-| balanced_mix         | 예정 (조합)              |
+| balanced_mix         | 완료 (조합)              |
 | conservative_mix     | 예정 (조합)              |
 | Dynamic Strategy/Manager | 예정 (동적)         |
 
@@ -105,9 +105,9 @@ domain/
 
 ## 4. 각 전략별 진행상황 상세
 
-### Aggressive/ Balanced/ Conservative/ Momentum/Scalping/aggressive_mix/conservative_mix/mean_reversion 전략
+### Aggressive/ Balanced/ Conservative/ Momentum/Scalping/aggressive_mix/conservative_mix/mean_reversion/balanced_mix 전략
 - 각 전략별 구현체(.py), Detector, config, (조합 전략은 실행체/config)는 해당 전략 폴더 내에서 완전히 독자적으로 관리됨 (폴더 단위 독립성)
-- aggressive, balanced, conservative, momentum, scalping, aggressive_mix, conservative_mix, mean_reversion 전략은 독립 구조로 완전히 이전 완료 및 문서화/주석 리팩토링까지 완료
+- aggressive, balanced, conservative, momentum, scalping, aggressive_mix, conservative_mix, mean_reversion, balanced_mix 전략은 독립 구조로 완전히 이전 완료 및 문서화/주석 리팩토링까지 완료
 - swing 등 기타 전략/조합/동적 전략은 추후 동일한 방식으로 이전 예정
 
 ### Aggressive 전략
@@ -162,6 +162,14 @@ domain/
 - [x] 팩토리/매니저 import 경로 및 implementation_class 경로 일괄 수정
 - [x] Detector 가중치/파라미터 config화 및 동적 생성 구조 반영
 - [x] 주석/문서화/튜닝 가이드/strategy_docs 최신화 및 커밋 완료
+
+### balanced_mix 전략 조합
+- [x] balanced_mix 폴더/구조 설계 및 생성
+- [x] config, 실행체(조합 전략) 완전 분리 및 경로/구조 일관화
+- [x] 기존 strategy_mixes.py에서 정의 제거 및 안내
+- [x] StrategyManager에서 import 경로 분기 처리 및 일관화
+- [x] 주석/문서화/튜닝 가이드 보강 및 커밋 완료
+- [x] strategy_docs/balanced_mix_strategy.md 문서화 완료
 
 ---
 

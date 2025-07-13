@@ -17,7 +17,6 @@ class StrategyMixMode(Enum):
     VOTING = "voting"        # 투표 기반 조합 (과반수)
     ENSEMBLE = "ensemble"    # 앙상블 조합 (신뢰도 기반)
 
-
 @dataclass
 class StrategyMixConfig:
     """전략 조합 설정"""
@@ -30,24 +29,10 @@ class StrategyMixConfig:
     
 # 전략 조합 정의
 STRATEGY_MIXES: Dict[str, StrategyMixConfig] = {
-    
-    # balanced_mix: 기존과 동일
-    "balanced_mix": StrategyMixConfig(
-        name="균형 조합 (Balanced Mix)",
-        description="추세추종 전략과 평균 회귀 전략을 조합하여 다양한 시장 상황에 대응",
-        mode=StrategyMixMode.WEIGHTED,
-        strategies={
-            StrategyType.TREND_FOLLOWING: 0.5,  # 50% - 추세 추종
-            StrategyType.MEAN_REVERSION: 0.5,   # 50% - 평균 회귀
-        },
-        threshold_adjustment=1.0  # 기본 임계값
-    ),
-    
     # aggressive_mix는 domain.strategies.aggressive_mix.configs.aggressive_mix_config에서 관리됩니다.
     # conservative_mix는 domain.strategies.conservative_mix.configs.conservative_mix_config에서 관리됩니다.
-    
+    # balanced_mix는 domain.strategies.balanced_mix.configs.balanced_mix_config에서 관리됩니다.
 }
-
 
 # 시장 상황별 권장 전략 조합
 MARKET_CONDITION_STRATEGIES: Dict[str, Dict[str, str]] = {
@@ -77,7 +62,6 @@ MARKET_CONDITION_STRATEGIES: Dict[str, Dict[str, str]] = {
         "fallback": "conservative_mix"
     }
 }
-
 
 def get_strategy_mix_config(mix_name: str) -> StrategyMixConfig:
     """전략 조합 설정 조회"""
