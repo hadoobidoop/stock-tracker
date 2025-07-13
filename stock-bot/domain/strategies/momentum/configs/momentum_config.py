@@ -1,6 +1,15 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, Any
 from domain.analysis.strategy.configs.static_strategies import StrategyConfig, StrategyType
+
+# Detector weights constant
+MOMENTUM_DETECTOR_WEIGHTS = {
+    'rsi': 6.0,
+    'stoch': 5.0,
+    'macd': 4.0,
+    'volume': 3.0,
+    'composite': 8.0
+}
 
 @dataclass
 class MomentumStrategyConfig(StrategyConfig):
@@ -24,17 +33,7 @@ class MomentumStrategyConfig(StrategyConfig):
     score_multiplier: float = 1.0
     long_term_bullish_multiplier: float = 1.15
     long_term_bearish_multiplier: float = 0.9
-    detector_weights: Dict[str, float] = None
-
-    def __post_init__(self):
-        if self.detector_weights is None:
-            self.detector_weights = {
-                'rsi': 6.0,
-                'stoch': 5.0,
-                'macd': 4.0,
-                'volume': 3.0,
-                'composite': 8.0
-            }
+    detector_weights: Dict[str, float] = MOMENTUM_DETECTOR_WEIGHTS.copy()
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -62,7 +61,5 @@ class MomentumStrategyConfig(StrategyConfig):
             score_multiplier=data.get('score_multiplier', 1.0),
             long_term_bullish_multiplier=data.get('long_term_bullish_multiplier', 1.15),
             long_term_bearish_multiplier=data.get('long_term_bearish_multiplier', 0.9),
-            detector_weights=data.get('detector_weights', {
-                'rsi': 6.0, 'stoch': 5.0, 'macd': 4.0, 'volume': 3.0, 'composite': 8.0
-            })
+            detector_weights=data.get('detector_weights', MOMENTUM_DETECTOR_WEIGHTS)
         ) 
