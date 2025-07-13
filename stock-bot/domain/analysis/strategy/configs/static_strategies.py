@@ -221,7 +221,7 @@ STRATEGY_CONFIGS = {
         description="변동성 응축 후 폭발하는 시점을 포착하는 전략",
         signal_threshold=6.0,
         risk_per_trade=0.025,
-        implementation_class="domain.analysis.strategy.implementations.volatility_breakout_strategy.VolatilityBreakoutStrategy",
+        implementation_class="domain.strategies.volatility_breakout.volatility_breakout_strategy.VolatilityBreakoutStrategy",
         market_filters={"volume_confirmation": True},
         position_management={"max_positions": 3, "position_timeout_hours": 48}
     ),

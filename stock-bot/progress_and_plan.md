@@ -57,7 +57,7 @@ domain/
 | Trend Following      | 예정                     |
 | Trend Pullback       | 예정                     |
 | Contrarian           | 예정                     |
-| Volatility Breakout  | 예정                     |
+| Volatility Breakout  | 완료                     |
 | Macro Driven         | 예정                     |
 | Multi Timeframe      | 예정                     |
 | Quality Trend        | 예정                     |
@@ -178,6 +178,16 @@ domain/
 - [x] 기존 레거시 파일 삭제
 - [x] 주석/문서화/튜닝 가이드 보강 및 커밋 완료
 - [x] strategy_docs/conservative_reversion_hybrid_strategy.md 문서화 완료
+
+### Volatility Breakout 전략
+- [x] 패키지/구조 설계 및 생성
+- [x] 커스텀 Detector, config, 전략 구현체 구조 설계 및 일부 구현
+- [x] 커스텀 Detector 구현 (VolatilityBreakoutVolumeDetector, VolatilityBreakoutSMADetector)
+- [x] config, 전략 본체 구현 및 이전
+- [x] 팩토리/매니저 import 경로 및 implementation_class 경로 일괄 수정
+- [x] 전략/디텍터/설정 주석 리팩토링 및 가독성 개선
+- [x] 커밋 완료
+- [x] 문서화/주석 리팩토링 완료
 
 ---
 
