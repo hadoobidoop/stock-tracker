@@ -54,7 +54,7 @@ domain/
 | aggressive_mix       | 완료 (조합)              |
 | Mean Reversion       | 완료                     |
 | Swing                | 예정                     |
-| Trend Following      | 예정                     |
+| Trend Following      | 완료                     |
 | Trend Pullback       | 완료                     |
 | Contrarian           | 예정                     |
 | Volatility Breakout  | 완료                     |
@@ -205,6 +205,16 @@ domain/
 - [x] 팩토리/매니저 import 경로 및 implementation_class 경로 일괄 수정
 - [x] 상세 로그(info/debug) 추가 및 백테스트/실시간 분석 활용성 강화
 - [x] strategy_docs/trend_pullback_strategy.md 문서화 완료
+- [x] 커밋 완료
+
+### Trend Following 전략
+- [x] trend_following 폴더/구조 설계 및 생성
+- [x] 커스텀 Detector(TrendFollowingSMADetector, TrendFollowingMACDDetector, TrendFollowingADXDetector, TrendFollowingVolumeDetector) 구현 및 분리
+- [x] config(trend_following_config.py) 분리 및 가중치/파라미터 관리
+- [x] 전략 본체(trend_following_strategy.py) 완전 분리 및 경로/구조 일관화
+- [x] 팩토리/매니저 import 경로 및 implementation_class 경로 일괄 수정
+- [x] 상세 로그(info/debug) 추가 및 백테스트/실시간 분석 활용성 강화
+- [x] strategy_docs/trend_following_strategy.md 문서화 완료(필요시)
 - [x] 커밋 완료
 
 ### Market Regime Hybrid 전략

@@ -12,6 +12,7 @@ from .detectors.trend_following_volume_detector import VolumeSignalDetector
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
+from .configs.trend_following_config import SMA_WEIGHT, MACD_WEIGHT, ADX_WEIGHT, VOLUME_WEIGHT
 
 logger = get_logger(__name__)
 
@@ -55,10 +56,10 @@ class TrendFollowingStrategy(BaseStrategy):
         try:
             # 설정 파일에 정의된 detector들을 코드로 직접 생성
             detectors = [
-                SMASignalDetector(weight=7.0),
-                MACDSignalDetector(weight=6.0),
-                ADXSignalDetector(weight=6.0),
-                VolumeSignalDetector(weight=4.0),
+                SMASignalDetector(weight=SMA_WEIGHT),
+                MACDSignalDetector(weight=MACD_WEIGHT),
+                ADXSignalDetector(weight=ADX_WEIGHT),
+                VolumeSignalDetector(weight=VOLUME_WEIGHT),
                 CompositeSignalDetector(
                     detectors=[
                         MACDSignalDetector(weight=0),  # 가중치는 CompositeDetector에서 관리
