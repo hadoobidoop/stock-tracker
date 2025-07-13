@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Tuple
 import pandas as pd
 from infrastructure.db.models.enums import TrendType
-from domain.analysis.config.signal_adjustment_factors import SIGNAL_ADJUSTMENT_FACTORS_BY_TREND
+from domain.analysis.config.signals.signal_adjustment_factors import SIGNAL_ADJUSTMENT_FACTORS_BY_TREND
 
 
 class SignalDetector(ABC):
