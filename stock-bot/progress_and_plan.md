@@ -63,7 +63,7 @@ domain/
 | Quality Trend        | 예정                     |
 | Stable Value Hybrid  | 예정                     |
 | Market Regime Hybrid | 예정                     |
-| Adaptive Momentum Hybrid | 예정                 |
+| Adaptive Momentum Hybrid | 완료                 |
 | Conservative Reversion Hybrid | 완료           |
 | balanced_mix         | 완료 (조합)              |
 | conservative_mix     | 완료 (조합)              |
@@ -187,6 +187,14 @@ domain/
 - [x] 팩토리/매니저 import 경로 및 implementation_class 경로 일괄 수정
 - [x] 전략/디텍터/설정 주석 리팩토링 및 가독성 개선
 - [x] 커밋 완료
+- [x] 문서화/주석 리팩토링 완료
+
+### Adaptive Momentum Hybrid 전략
+- [x] 폴더/구조 설계 및 생성
+- [x] 커스텀 Detector, config, 전략 구현체 구현 및 완성
+- [x] 전략 본체 및 Detector 구현 완료
+- [x] 주석/문서화/튜닝 가이드 보강 및 커밋 완료
+- [x] 하위 strategies 폴더 연동 구조 반영
 - [x] 문서화/주석 리팩토링 완료
 
 ---

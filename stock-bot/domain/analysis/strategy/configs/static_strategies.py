@@ -262,7 +262,7 @@ STRATEGY_CONFIGS = {
         description="추세, 모멘텀, 변동성을 결합한 적응형 전략",
         signal_threshold=6.0,
         risk_per_trade=0.02,
-        implementation_class="domain.analysis.strategy.implementations.adaptive_momentum_hybrid_strategy.AdaptiveMomentumStrategy",
+        implementation_class="domain.strategies.adaptive_momentum_hybrid.adaptive_momentum_hybrid_strategy.AdaptiveMomentumStrategy",
         market_filters={},
         position_management={}
     ),
