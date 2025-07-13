@@ -28,7 +28,7 @@ from domain.strategies.balanced_mix.configs.balanced_mix_config import BALANCED_
 
 from .base_strategy import BaseStrategy, StrategyResult
 from .strategy_factory import StrategyFactory
-from .dynamic_strategy_manager import DynamicStrategyManager
+from domain.strategies.dynamic.dynamic_strategy_manager import DynamicStrategyManager
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
@@ -138,7 +138,7 @@ class StrategyManager:
             return
 
         # 전략의 종류에 따라 적절한 매니저에 할당
-        from .dynamic_strategy import DynamicCompositeStrategy
+        from domain.strategies.dynamic.dynamic_strategy import DynamicCompositeStrategy
         if isinstance(strategy, DynamicCompositeStrategy):
             self.dynamic_manager.current_strategy = strategy
             self.current_strategy = None

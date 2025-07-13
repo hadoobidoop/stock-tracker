@@ -3,8 +3,8 @@ from typing import Dict, Any
 import pandas as pd
 
 from .decision_context import DecisionContext
-from .modifiers.base import BaseModifier
-from domain.analysis.strategy.configs.dynamic_strategies import ModifierActionType
+from domain.strategies.dynamic.modifiers.base import BaseModifier
+from domain.strategies.dynamic.configs.dynamic_strategies import ModifierActionType
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)

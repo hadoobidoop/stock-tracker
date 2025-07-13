@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any
 import pandas as pd
 
-from ..decision_context import DecisionContext
+from domain.analysis.strategy.decision_context import DecisionContext
 from ..configs.dynamic_strategies import ModifierDefinition
 from infrastructure.logging import get_logger
 

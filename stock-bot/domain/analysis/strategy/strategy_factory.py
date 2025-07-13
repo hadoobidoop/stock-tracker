@@ -1,6 +1,6 @@
 from typing import Dict, Optional
 
-from domain.analysis.strategy.configs.dynamic_strategies import get_all_strategies, get_strategy_definition, get_all_modifiers
+from domain.strategies.dynamic.configs.dynamic_strategies import get_all_strategies, get_strategy_definition, get_all_modifiers
 from domain.analysis.strategy.configs.static_strategies import StrategyType, StrategyConfig, get_strategy_config, \
     get_static_strategy_types
 from domain.analysis.strategy.base_strategy import BaseStrategy
@@ -18,7 +18,8 @@ from domain.strategies.trend_following.trend_following_strategy import TrendFoll
 from domain.strategies.trend_pullback.trend_pullback_strategy import TrendPullbackStrategy
 from domain.strategies.mean_reversion.mean_reversion_strategy import MeanReversionStrategy
 from .modifier_engine import ModifierEngine
-from .modifiers.registry import ModifierFactory
+from domain.strategies.dynamic.dynamic_strategy import DynamicCompositeStrategy
+from domain.strategies.dynamic.modifiers.registry import ModifierFactory
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
@@ -70,8 +71,6 @@ class StrategyFactory:
     def create_dynamic_strategy(cls, strategy_name: str) -> Optional[BaseStrategy]:
         """동적 전략 인스턴스 생성 및 의존성 주입"""
         try:
-            from .dynamic_strategy import DynamicCompositeStrategy
-            
             strategy_config = get_strategy_definition(strategy_name)
             if not strategy_config:
                 logger.error(f"Dynamic strategy definition not found: {strategy_name}")
