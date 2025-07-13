@@ -19,21 +19,31 @@ class MomentumStrategyConfig(StrategyConfig):
     - 주요 파라미터, 가중치, 임계값 등 관리
 
     주요 튜닝 포인트:
+        - name: 전략 이름(설명용)
+        - description: 전략 설명(문서/로그용)
         - signal_threshold: 신호 발생 기준점(기본 6.0)
+        - risk_per_trade: 트레이드당 리스크 비율(0.025=2.5%)
         - detector_weights: 각 Detector별 가중치(RSI > Stoch > MACD > Volume > Composite)
         - score_multiplier: 점수 조정(기본 1.0)
         - max_positions/position_hold_hours: 포지션 관리(4개/24시간)
+        - long_term_bullish_multiplier: 장기 상승장 가중치(1.15)
+        - long_term_bearish_multiplier: 장기 하락장 가중치(0.9)
+        - stop_loss_percentage: 손절 비율(5%)
+        - take_profit_percentage: 익절 비율(10%)
     """
-    strategy_type: StrategyType = StrategyType.MOMENTUM
-    signal_threshold: float = 6.0
-    max_positions: int = 4
-    position_hold_hours: int = 24
-    stop_loss_percentage: float = 5.0
-    take_profit_percentage: float = 10.0
-    score_multiplier: float = 1.0
-    long_term_bullish_multiplier: float = 1.15
-    long_term_bearish_multiplier: float = 0.9
-    detector_weights: Dict[str, float] = field(default_factory=lambda: MOMENTUM_DETECTOR_WEIGHTS.copy())
+    name: str  # 전략 이름(설명용)
+    description: str  # 전략 설명(문서/로그용)
+    signal_threshold: float  # 신호 발생 기준점(기본 6.0)
+    risk_per_trade: float  # 트레이드당 리스크 비율(0.025=2.5%)
+    strategy_type: StrategyType = StrategyType.MOMENTUM  # 전략 타입(고정)
+    max_positions: int = 4  # 최대 동시 포지션 수
+    position_hold_hours: int = 24  # 포지션 최대 보유 시간(시간 단위)
+    stop_loss_percentage: float = 5.0  # 손절 비율(%)
+    take_profit_percentage: float = 10.0  # 익절 비율(%)
+    score_multiplier: float = 1.0  # 점수 조정 계수(기본 1.0)
+    long_term_bullish_multiplier: float = 1.15  # 장기 상승장 가중치
+    long_term_bearish_multiplier: float = 0.9  # 장기 하락장 가중치
+    detector_weights: Dict[str, float] = field(default_factory=lambda: MOMENTUM_DETECTOR_WEIGHTS.copy())  # Detector별 가중치
 
     def to_dict(self) -> Dict[str, Any]:
         return {

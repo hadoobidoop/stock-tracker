@@ -3,7 +3,7 @@ from .stable_value_hybrid import StableValueHybridStrategy
 from domain.strategies.conservative.conservative_strategy import ConservativeStrategy
 from .contrarian_strategy import ContrarianStrategy
 from .macro_driven_strategy import MacroDrivenStrategy
-from .momentum_strategy import MomentumStrategy
+# from .momentum_strategy import MomentumStrategy  # 레거시 제거
 from .multi_timeframe_strategy import MultiTimeframeStrategy
 from domain.strategies.scalping.scalping_strategy import ScalpingStrategy
 from .swing_strategy import SwingStrategy
@@ -17,10 +17,10 @@ __all__ = [
     "ConservativeStrategy",
     "ContrarianStrategy",
     "MacroDrivenStrategy",
-    "MomentumStrategy",
+    # "MomentumStrategy",  # 레거시 제거
     "MultiTimeframeStrategy",
     "ScalpingStrategy",
-    "SwingStrategy",
+    # "SwingStrategy",  # 레거시 제거
     "TrendFollowingStrategy",
     "VolatilityBreakoutStrategy",
 ]

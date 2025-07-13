@@ -121,7 +121,7 @@ STRATEGY_CONFIGS = {
         description="RSI, 스토캐스틱 등 모멘텀 지표 중심 전략",
         signal_threshold=6.0,
         risk_per_trade=0.025,
-        implementation_class="domain.analysis.strategy.implementations.momentum_strategy.MomentumStrategy",
+        implementation_class="domain.strategies.momentum.momentum_strategy.MomentumStrategy",
         market_filters={
             "momentum_confirmation": True
         },
@@ -183,7 +183,7 @@ STRATEGY_CONFIGS = {
         description="중기 추세 변화를 포착하는 전략",
         signal_threshold=7.0,
         risk_per_trade=0.025,
-        implementation_class="domain.analysis.strategy.implementations.swing_strategy.SwingStrategy",
+        implementation_class="domain.strategies.swing.swing_strategy.SwingStrategy",
         market_filters={
             "trend_alignment": False
         },

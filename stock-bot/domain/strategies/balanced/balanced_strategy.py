@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 import pandas as pd
 from datetime import datetime
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator

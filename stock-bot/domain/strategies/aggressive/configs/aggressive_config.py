@@ -1,38 +1,50 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, Any
 from domain.analysis.strategy.configs.static_strategies import StrategyConfig, StrategyType
 
 
 @dataclass
 class AggressiveStrategyConfig(StrategyConfig):
-    """공격적 전략 설정"""
-    
-    # 기본 전략 설정 상속
-    strategy_type: StrategyType = StrategyType.AGGRESSIVE
-    signal_threshold: float = 5.0  # 낮은 임계값 (기본 8.0 → 5.0)
-    max_positions: int = 8  # 더 많은 포지션 (기본 4 → 8)
-    position_hold_hours: int = 48  # 더 짧은 보유 기간 (기본 72 → 48)
-    stop_loss_percentage: float = 5.0  # 기본값 유지
-    take_profit_percentage: float = 12.0  # 기본값 유지
-    
-    # Aggressive 전략 특화 설정
-    score_multiplier: float = 1.2  # 점수 조정 (기본 × 1.2)
-    long_term_bullish_multiplier: float = 1.3  # 장기 상승장 배수 (기본 1.2 → 1.3)
-    long_term_bearish_multiplier: float = 1.2  # 장기 하락장 배수
-    
-    # Detector 가중치 (높은 가중치)
-    detector_weights: Dict[str, float] = None
+    """
+    공격적 전략 설정
+    - 낮은 임계값, 높은 포지션 수, 빠른 진입/청산을 특징으로 함
+    - Detector별 가중치, 점수 배수, 장기추세 가중치 등 세부 파라미터 조정 가능
+    주요 필드:
+        - name: 전략 이름(설명용)
+        - description: 전략 설명(문서/로그용)
+        - signal_threshold: 신호 발생 기준점(기본 5.0)
+        - risk_per_trade: 트레이드당 리스크 비율(0.03=3%)
+        - detector_weights: 각 Detector별 가중치
+        - score_multiplier: 점수 조정(기본 1.2)
+        - max_positions/position_hold_hours: 포지션 관리(8개/48시간)
+        - long_term_bullish_multiplier: 장기 상승장 가중치(1.3)
+        - long_term_bearish_multiplier: 장기 하락장 가중치(1.2)
+        - stop_loss_percentage: 손절 비율(5%)
+        - take_profit_percentage: 익절 비율(12%)
+    """
+    name: str  # 전략 이름(설명용)
+    description: str  # 전략 설명(문서/로그용)
+    signal_threshold: float  # 신호 발생 기준점(기본 5.0)
+    risk_per_trade: float  # 트레이드당 리스크 비율(0.03=3%)
+    strategy_type: StrategyType = StrategyType.AGGRESSIVE  # 전략 타입(고정)
+    max_positions: int = 8  # 최대 동시 포지션 수
+    position_hold_hours: int = 48  # 포지션 최대 보유 시간(시간 단위)
+    stop_loss_percentage: float = 5.0  # 손절 비율(%)
+    take_profit_percentage: float = 12.0  # 익절 비율(%)
+    score_multiplier: float = 1.2  # 점수 조정 계수(기본 1.2)
+    long_term_bullish_multiplier: float = 1.3  # 장기 상승장 가중치
+    long_term_bearish_multiplier: float = 1.2  # 장기 하락장 가중치
+    detector_weights: Dict[str, float] = field(default_factory=lambda: {
+        'sma': 4.0,
+        'macd': 4.0,
+        'rsi': 3.0,
+        'stoch': 3.0,
+        'volume': 3.0,
+        'adx': 3.0
+    })  # Detector별 가중치
     
     def __post_init__(self):
-        if self.detector_weights is None:
-            self.detector_weights = {
-                'sma': 4.0,
-                'macd': 4.0,
-                'rsi': 3.0,
-                'stoch': 3.0,
-                'volume': 3.0,
-                'adx': 3.0
-            }
+        pass  # detector_weights는 default_factory로 처리하므로 별도 초기화 불필요
     
     def to_dict(self) -> Dict[str, Any]:
         """설정을 딕셔너리로 변환"""

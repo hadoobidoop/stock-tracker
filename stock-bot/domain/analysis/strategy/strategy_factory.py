@@ -6,19 +6,18 @@ from domain.analysis.strategy.configs.static_strategies import StrategyType, Str
 from domain.analysis.strategy.base_strategy import BaseStrategy
 from domain.strategies.conservative_reversion_hybrid import ConservativeReversionHybridStrategy
 from domain.strategies.adaptive_momentum_hybrid.adaptive_momentum_hybrid_strategy import AdaptiveMomentumStrategy
+from domain.strategies.market_regime_hybrid.market_regime_hybrid_strategy import MarketRegimeHybridStrategy
+from domain.strategies.aggressive.aggressive_strategy import AggressiveStrategy
+from domain.strategies.balanced.balanced_strategy import BalancedStrategy
+from domain.strategies.momentum.momentum_strategy import MomentumStrategy
+from domain.strategies.volatility_breakout.volatility_breakout_strategy import VolatilityBreakoutStrategy
 from domain.analysis.strategy.implementations import (
-    MarketRegimeHybridStrategy,
     StableValueHybridStrategy,
-    AggressiveStrategy,
-    BalancedStrategy,
     ConservativeStrategy,
     ContrarianStrategy,
-    MomentumStrategy,
-    ScalpingStrategy,
-    SwingStrategy,
-    TrendPullbackStrategy,
-    VolatilityBreakoutStrategy
+    ScalpingStrategy
 )
+from domain.strategies.swing.swing_strategy import SwingStrategy
 from domain.strategies.trend_following.trend_following_strategy import TrendFollowingStrategy
 from domain.strategies.trend_pullback.trend_pullback_strategy import TrendPullbackStrategy
 from .modifier_engine import ModifierEngine

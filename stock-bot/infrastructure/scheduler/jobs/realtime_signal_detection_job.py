@@ -1,7 +1,5 @@
 from datetime import datetime, date
 from typing import Dict, List, Optional
-import pandas as pd
-import asyncio
 import sys
 from pathlib import Path
 
@@ -23,7 +21,6 @@ from common.config.settings import StrategyMode
 from domain.analysis.utils import (
     calculate_all_indicators,
     calculate_fibonacci_levels,
-    calculate_multi_timeframe_indicators,
     validate_multi_timeframe_data,
     get_trend_direction_multi_timeframe
 )
@@ -32,12 +29,8 @@ from domain.analysis.repository.trading_signal_repository import TradingSignalRe
 from domain.stock.service.stock_analysis_service import StockAnalysisService
 from domain.stock.repository.stock_repository import StockRepository
 from infrastructure.db.repository.sql_stock_repository import SQLStockRepository
-from domain.analysis.config.signals.signal_weights import SIGNAL_WEIGHTS, SIGNAL_THRESHOLD
-from domain.analysis.config.signals.signal_adjustment_factors import SIGNAL_ADJUSTMENT_FACTORS_BY_TREND
+from domain.analysis.config.signals.signal_weights import  SIGNAL_THRESHOLD
 from domain.analysis.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
-from domain.analysis.config.signals.prediction_signal_settings import (
-    DAILY_PREDICTION_HOUR_ET, DAILY_PREDICTION_MINUTE_ET, PREDICTION_ATR_MULTIPLIER_FOR_RANGE, PREDICTION_SIGNAL_WEIGHTS, PREDICTION_THRESHOLD
-)
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 
 logger = get_logger(__name__)
