@@ -1,44 +1,49 @@
-# -*- coding: utf-8 -*-
-"""
-보수적 전략 구현체
-- 커스텀 Detector(ConservativeSMADetector, ConservativeVolumeDetector) + 기본 Detector(MACD) + Composite(컨펌)
-- 신호/점수/근거/로깅/쿨다운/예외처리 등 robust하게 구현
-- 설계 의도: 신뢰도 최우선, 신호 빈도 최소화
-
-사용법:
-    config = ConservativeStrategyConfig()
-    strategy = ConservativeStrategy(StrategyType.CONSERVATIVE, config)
-    strategy.initialize()
-    result = strategy.analyze(df, ticker, market_trend, long_term_trend)
-
-주요 튜닝 포인트:
-    - signal_threshold: 신호 발생 기준점(기본 12.0)
-    - detector_weights: 각 Detector별 가중치(Composite > SMA/MACD > Volume)
-    - score_multiplier: 점수 조정(기본 0.8, 매우 보수적)
-    - max_positions/position_hold_hours: 포지션 관리(2개/5일)
-"""
 from typing import Dict, Optional
+
 import pandas as pd
-from datetime import datetime
+
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
-from domain.strategies.conservative.detectors.conservative_sma_detector import ConservativeSMADetector
-from domain.strategies.conservative.detectors.conservative_volume_detector import ConservativeVolumeDetector
-from domain.strategies.conservative.configs.conservative_config import ConservativeStrategyConfig
-from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDetector
+from domain.analysis.strategy.configs.static_strategies import StrategyConfig, StrategyType
 from domain.analysis.detectors.composite.composite_detector import CompositeSignalDetector
+from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDetector
+from domain.analysis.detectors.trend_following.sma_detector import SMASignalDetector
+from domain.analysis.detectors.volume.volume_detector import VolumeSignalDetector
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
-from domain.analysis.strategy.configs.static_strategies import StrategyType
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
+from .detectors.conservative_sma_detector import ConservativeSMADetector
+from .detectors.conservative_volume_detector import ConservativeVolumeDetector
+from .configs.conservative_config import ConservativeStrategyConfig
 
 logger = get_logger(__name__)
 
+
 class ConservativeStrategy(BaseStrategy):
     """
-    매우 보수적 신호만 사용하는 전략
-    - 커스텀 Detector(ConservativeSMADetector, ConservativeVolumeDetector) + 기본 Detector(MACD) + Composite(컨펌)
-    - 신호/점수/근거/로깅/쿨다운/예외처리 등 robust하게 구현
-    - 설계 의도: 신뢰도 최우선, 신호 빈도 최소화
+    Conservative(보수적) 전략 - 신뢰도 최우선, 신호 빈도 최소화
+
+    [구조 및 특징]
+    - 커스텀 Detector: ConservativeSMADetector, ConservativeVolumeDetector
+    - 기본 Detector: MACDSignalDetector
+    - Composite Detector: MACD+Volume 컨펌(신호 신뢰도 강화)
+    - Detector별 가중치는 config.detector_weights에서 관리
+    - 점수는 score_multiplier(기본 0.8)로 20% 감소(매우 보수적)
+    - 장기추세(BULLISH/BEARISH) 가중치 적용
+
+    [주요 파라미터]
+    - signal_threshold: 신호 발생 기준점(기본 12.0)
+    - detector_weights: 각 Detector별 가중치(Composite > SMA/MACD > Volume)
+    - score_multiplier: 점수 조정(기본 0.8)
+    - max_positions/position_hold_hours: 포지션 관리(2개/5일)
+
+    [사용 예시]
+        config = ConservativeStrategyConfig()
+        strategy = ConservativeStrategy(StrategyType.CONSERVATIVE, config)
+        strategy.initialize()
+        result = strategy.analyze(df, ticker, market_trend, long_term_trend)
+
+    [반환값]
+    - StrategyResult: 신호 발생 여부, 점수, 근거, buy/sell score, stop_loss 등 포함
     """
     def __init__(self, strategy_type: StrategyType, config: ConservativeStrategyConfig):
         super().__init__(strategy_type, config)
@@ -47,7 +52,7 @@ class ConservativeStrategy(BaseStrategy):
 
     def initialize(self) -> bool:
         """
-        Detector 조합 및 orchestrator 초기화
+        Conservative 전략의 Detector 조합 및 orchestrator 초기화
         - 커스텀 Detector: ConservativeSMADetector, ConservativeVolumeDetector
         - 기본 Detector: MACDSignalDetector
         - Composite Detector: MACD+Volume 컨펌(신호 신뢰도 강화)
@@ -86,13 +91,13 @@ class ConservativeStrategy(BaseStrategy):
                 long_term_trend: TrendType = TrendType.NEUTRAL,
                 daily_extra_indicators: Optional[Dict] = None) -> StrategyResult:
         """
-        신호 분석 및 결과 반환
+        Conservative 전략의 신호 분석 및 결과 반환
         - 쿨다운 체크, orchestrator 기반 신호/점수/근거 수집
         - score_multiplier(0.8)로 점수 20% 감소(매우 보수적)
         - 신호 근거, 점수, buy/sell score, stop_loss 등 StrategyResult에 기록
         - 예외 발생 시 안전하게 실패 반환
         """
-        current_time = datetime.now()
+        current_time = pd.Timestamp.now(tz='UTC')
         if not self.can_generate_signal(current_time):
             logger.debug(f"{self.get_name()} 쿨다운 중 - 신호 생성 스킵")
             return StrategyResult(
@@ -157,4 +162,4 @@ class ConservativeStrategy(BaseStrategy):
                 total_score=0.0,
                 signal_strength="WEAK",
                 signals_detected=[],
-            ) 
+            )

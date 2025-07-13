@@ -69,7 +69,7 @@ domain/
 | aggressive_mix       | 예정 (조합)              |
 | Dynamic Strategy/Manager | 예정 (동적)         |
 
-> Aggressive, Balanced, Conservative, Momentum 전략만 독립 구조로 완전히 이전 완료. 나머지 전략/조합/동적 전략은 동일 방식으로 이전 예정.
+> Aggressive, Balanced, Conservative, Momentum 전략 모두 독립 구조로 완전히 이전 완료. 나머지 전략/조합/동적 전략은 동일 방식으로 이전 예정.
 
 ---
 
@@ -125,9 +125,11 @@ domain/
 
 ### Conservative 전략
 - [x] 패키지/구조 설계 및 생성
-- [x] 커스텀 Detector 일부 구현 (ConservativeVolumeDetector, ConservativeSMADetector)
-- [x] config, 전략 구현체 일부 구현
-- [ ] 전략 본체 및 나머지 Detector 구현 필요
+- [x] 커스텀 Detector 구현 (ConservativeVolumeDetector, ConservativeSMADetector)
+- [x] config, 전략 본체 구현 및 이전
+- [x] 팩토리/매니저 import 경로 및 implementation_class 경로 일괄 수정
+- [x] 전략/디텍터/설정 주석 리팩토링 및 가독성 개선
+- [x] 커밋 완료
 
 ### Momentum 전략
 - [x] Momentum 전략 폴더/구조 설계 및 생성
@@ -139,11 +141,11 @@ domain/
 
 ## 5. 향후 TODO 및 관리 팁
 
-- [ ] Conservative 전략의 나머지 Detector 및 전략 본체 구현
 - [ ] 모든 전략에 대해 단위/통합 테스트 작성 및 검증
 - [ ] 신호 근거, 점수, 전략별 동작에 대한 리포트/로그 체계화
 - [ ] 문서화(README, 구조/확장법, 예시 등) 및 자동화 스크립트 추가
 - [ ] 신규 전략/Detector 추가 시, 기존 구조/패턴을 준수하여 일관성 유지
+- [ ] 레거시 코드(domain/analysis/strategy/implementations 등) 일괄 삭제 및 정리 (전략별 폴더 독립화 100% 완료 후)
 
 ---
 

@@ -72,7 +72,7 @@ STRATEGY_CONFIGS = {
         description="높은 신뢰도의 강한 신호만 사용하는 안전한 전략",
         signal_threshold=12.0,  # 높은 임계값
         risk_per_trade=0.01,    # 1% 리스크
-        implementation_class="domain.analysis.strategy.implementations.conservative_strategy.ConservativeStrategy",
+        implementation_class="domain.strategies.conservative.conservative_strategy.ConservativeStrategy",
         market_filters={
             "trend_alignment": True,
             "volume_confirmation": True

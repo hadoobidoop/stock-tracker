@@ -4,7 +4,7 @@ from .market_regime_hybrid import MarketRegimeHybridStrategy
 from .stable_value_hybrid import StableValueHybridStrategy
 from .aggressive_strategy import AggressiveStrategy
 from .balanced_strategy import BalancedStrategy
-from .conservative_strategy import ConservativeStrategy
+from domain.strategies.conservative.conservative_strategy import ConservativeStrategy
 from .contrarian_strategy import ContrarianStrategy
 from .macro_driven_strategy import MacroDrivenStrategy
 from .mean_reversion_strategy import MeanReversionStrategy
