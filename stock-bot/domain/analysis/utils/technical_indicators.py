@@ -267,20 +267,20 @@ def calculate_daily_indicators(df: pd.DataFrame) -> pd.DataFrame:
 def calculate_hourly_indicators(df: pd.DataFrame) -> pd.DataFrame:
     """시간봉 기반 단기 신호 지표를 계산합니다."""
     try:
-        from domain.analysis.config.indicators import HOURLY_TECHNICAL_INDICATORS
+        from domain.analysis.config.indicators import HOURLY_INDICATORS
         
         df = df.copy()
         
         # 설정값 가져오기
-        sma_periods = HOURLY_TECHNICAL_INDICATORS["SMA_PERIODS"]
-        rsi_period = HOURLY_TECHNICAL_INDICATORS["RSI_PERIOD"]
-        macd_fast = HOURLY_TECHNICAL_INDICATORS["MACD_FAST"]
-        macd_slow = HOURLY_TECHNICAL_INDICATORS["MACD_SLOW"]
-        macd_signal = HOURLY_TECHNICAL_INDICATORS["MACD_SIGNAL"]
-        stoch_k_period = HOURLY_TECHNICAL_INDICATORS["STOCH_K_PERIOD"]
-        stoch_d_period = HOURLY_TECHNICAL_INDICATORS["STOCH_D_PERIOD"]
-        atr_period = HOURLY_TECHNICAL_INDICATORS["ATR_PERIOD"]
-        volume_sma_period = HOURLY_TECHNICAL_INDICATORS["VOLUME_SMA_PERIOD"]
+        sma_periods = HOURLY_INDICATORS["SMA_PERIODS"]
+        rsi_period = HOURLY_INDICATORS["RSI_PERIOD"]
+        macd_fast = HOURLY_INDICATORS["MACD_FAST"]
+        macd_slow = HOURLY_INDICATORS["MACD_SLOW"]
+        macd_signal = HOURLY_INDICATORS["MACD_SIGNAL"]
+        stoch_k_period = HOURLY_INDICATORS["STOCH_K_PERIOD"]
+        stoch_d_period = HOURLY_INDICATORS["STOCH_D_PERIOD"]
+        atr_period = HOURLY_INDICATORS["ATR_PERIOD"]
+        volume_sma_period = HOURLY_INDICATORS["VOLUME_SMA_PERIOD"]
         
         # 단기 신호 지표들 계산
         df = calculate_sma(df, sma_periods)
