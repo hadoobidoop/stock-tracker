@@ -4,7 +4,7 @@ from typing import Dict, Any
 import pandas as pd
 
 from ..decision_context import DecisionContext
-from ...config.dynamic_strategies import ModifierDefinition
+from ..configs.dynamic_strategies import ModifierDefinition
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
