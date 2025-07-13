@@ -208,47 +208,6 @@ STRATEGY_DEFINITIONS = {
             "market_in_downtrend",      # priority 60
             "low_volatility_consolidation" # priority 70
         ]
-    },
-
-    "conservative_dynamic_strategy": {
-        "description": "보수적 성향의 동적 전략 - 더 제한적인 모디파이어 적용",
-        "signal_threshold": 10.0,  # 높은 임계값
-        "risk_per_trade": 0.015,
-        "detectors": {
-            "sma": {"weight": 0.4},    # 추세 추종 중심
-            "macd": {"weight": 0.35},
-            "rsi": {"weight": 0.15},
-            "adx": {"weight": 0.1}
-        },
-        "modifiers": [
-            "extreme_fear_filter",
-            "vix_filter",
-            "market_in_uptrend",
-            "market_in_downtrend",
-            "low_volatility_consolidation"
-        ]
-    },
-
-    "aggressive_dynamic_strategy": {
-        "description": "공격적 성향의 동적 전략 - 더 많은 조정 허용",
-        "signal_threshold": 6.0,   # 낮은 임계값
-        "risk_per_trade": 0.03,
-        "detectors": {
-            "rsi": {"weight": 0.35},   # 모멘텀 중심
-            "stoch": {"weight": 0.25},
-            "macd": {"weight": 0.25},
-            "sma": {"weight": 0.15}
-        },
-        "modifiers": [
-            "extreme_fear_filter",
-            "fear_greed_extreme_greed",
-            "fear_greed_extreme_fear", 
-            "dollar_strength_mode",
-            "yield_curve_inversion",
-            "vix_high_volatility_mode",
-            "market_in_uptrend",
-            "market_in_downtrend"
-        ]
     }
 }
 
