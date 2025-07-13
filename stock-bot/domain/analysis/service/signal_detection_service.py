@@ -10,7 +10,7 @@ from datetime import datetime
 import pandas as pd
 
 from infrastructure.db.models.enums import TrendType
-from domain.analysis.config.static_strategies import StrategyType
+from strategy.configs.static_strategies import StrategyType
 from domain.analysis.strategy.strategy_manager import StrategyManager
 from domain.analysis.strategy.base_strategy import StrategyResult
 from infrastructure.logging import get_logger
