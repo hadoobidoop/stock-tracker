@@ -4,7 +4,7 @@ import pandas as pd
 
 from .decision_context import DecisionContext
 from .modifiers.base import BaseModifier
-from ..config.dynamic_strategies import ModifierActionType
+from ..configs.dynamic_strategies import ModifierActionType
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)

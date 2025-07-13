@@ -5,7 +5,7 @@ import pandas as pd
 
 from .base import BaseModifier
 from ..decision_context import DecisionContext
-from ...config.dynamic_strategies import ModifierDefinition, ModifierActionType
+from ..configs.dynamic_strategies import ModifierDefinition, ModifierActionType
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
