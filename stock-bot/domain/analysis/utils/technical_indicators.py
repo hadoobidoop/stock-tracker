@@ -9,6 +9,10 @@ from domain.analysis.config.indicators.technical_indicator_settings import TECHN
 from domain.analysis.config.indicators.technical_indicator_settings import FIBONACCI_LEVELS
 from domain.analysis.config.indicators.technical_indicator_settings import HOURLY_INDICATORS
 from domain.analysis.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
+from domain.analysis.utils.multi_timeframe import (
+    validate_multi_timeframe_data,
+    get_trend_direction_multi_timeframe,
+)
 
 logger = get_logger(__name__)
 
@@ -321,95 +325,4 @@ def calculate_multi_timeframe_indicators(daily_df: pd.DataFrame, hourly_df: pd.D
         return result
     except Exception as e:
         logger.error(f"Error calculating multi-timeframe indicators: {e}")
-        return {'daily': pd.DataFrame(), 'hourly': pd.DataFrame()}
-
-
-def get_trend_direction_multi_timeframe(daily_indicators: pd.DataFrame, hourly_indicators: pd.DataFrame) -> Dict[str, str]:
-    """
-    다중 시간대 추세 방향을 분석합니다.
-    
-    Returns:
-        Dict: {'daily_trend': '상승/하락/중립', 'hourly_trend': '상승/하락/중립', 'consensus': '일치/불일치'}
-    """
-    try:
-        result = {
-            'daily_trend': 'NEUTRAL',
-            'hourly_trend': 'NEUTRAL',
-            'consensus': 'NEUTRAL'
-        }
-        
-        # 일봉 추세 (SMA_50 기준, 1% 차이로 완화)
-        if not daily_indicators.empty and 'SMA_50' in daily_indicators.columns:
-            latest_close = daily_indicators.iloc[-1]['Close']
-            latest_sma50 = daily_indicators.iloc[-1]['SMA_50']
-            
-            if not pd.isna(latest_sma50):
-                if latest_close > latest_sma50 * 1.01:  # 1% 이상 위
-                    result['daily_trend'] = 'BULLISH'
-                elif latest_close < latest_sma50 * 0.99:  # 1% 이상 아래
-                    result['daily_trend'] = 'BEARISH'
-        
-        # 시간봉 추세 (SMA_20 및 추가 지표 활용)
-        if not hourly_indicators.empty and 'SMA_20' in hourly_indicators.columns:
-            latest_close = hourly_indicators.iloc[-1]['Close']
-            latest_sma20 = hourly_indicators.iloc[-1]['SMA_20']
-            
-            if not pd.isna(latest_sma20):
-                # RSI를 추가 지표로 활용
-                rsi_14 = hourly_indicators.iloc[-1].get('RSI_14', 50)
-                
-                if latest_close > latest_sma20:
-                    if rsi_14 > 50:  # RSI가 50 이상이면 상승 추세 확인
-                        result['hourly_trend'] = 'BULLISH'
-                elif latest_close < latest_sma20:
-                    if rsi_14 < 50:  # RSI가 50 미만이면 하락 추세 확인
-                        result['hourly_trend'] = 'BEARISH'
-        
-        # 컨센서스 판단 (하나라도 강한 신호가 있으면 반영)
-        if result['daily_trend'] == result['hourly_trend']:
-            result['consensus'] = result['daily_trend']
-        elif result['daily_trend'] != 'NEUTRAL':
-            result['consensus'] = result['daily_trend']  # 일봉 우선
-        elif result['hourly_trend'] != 'NEUTRAL':
-            result['consensus'] = result['hourly_trend']  # 시간봉 차선
-        else:
-            result['consensus'] = 'NEUTRAL'
-        
-        return result
-    except Exception as e:
-        logger.error(f"Error analyzing multi-timeframe trend: {e}")
-        return {'daily_trend': 'NEUTRAL', 'hourly_trend': 'NEUTRAL', 'consensus': 'NEUTRAL'}
-
-
-def validate_multi_timeframe_data(daily_df: pd.DataFrame, hourly_df: pd.DataFrame) -> Dict[str, bool]:
-    """
-    다중 시간대 데이터의 유효성을 검증합니다.
-    
-    Returns:
-        Dict: {'daily_valid': bool, 'hourly_valid': bool, 'sufficient_for_analysis': bool}
-    """
-    try:
-        
-        # 설정에서 최소 요구사항 가져오기
-        min_daily_length = REALTIME_SIGNAL_DETECTION["MIN_DAILY_DATA_LENGTH"]  # 120개
-        min_hourly_length = REALTIME_SIGNAL_DETECTION["MIN_HOURLY_DATA_LENGTH"]  # 30개 (수정됨)
-        
-        daily_valid = not daily_df.empty and len(daily_df) >= min_daily_length
-        hourly_valid = not hourly_df.empty and len(hourly_df) >= min_hourly_length
-        
-        return {
-            'daily_valid': daily_valid,
-            'hourly_valid': hourly_valid,
-            'sufficient_for_analysis': daily_valid and hourly_valid,
-            'daily_length': len(daily_df) if not daily_df.empty else 0,
-            'hourly_length': len(hourly_df) if not hourly_df.empty else 0
-        }
-    except Exception as e:
-        logger.error(f"Error validating multi-timeframe data: {e}")
-        return {
-            'daily_valid': False,
-            'hourly_valid': False,
-            'sufficient_for_analysis': False,
-            'daily_length': 0,
-            'hourly_length': 0
-        } 
+        return {'daily': pd.DataFrame(), 'hourly': pd.DataFrame()} 

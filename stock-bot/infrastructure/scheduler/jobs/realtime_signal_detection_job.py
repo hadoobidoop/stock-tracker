@@ -32,6 +32,11 @@ from infrastructure.db.repository.sql_stock_repository import SQLStockRepository
 from domain.analysis.config.signals.signal_weights import  SIGNAL_THRESHOLD
 from domain.analysis.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
+from domain.analysis.utils.multi_timeframe import (
+    _apply_multi_timeframe_filter,
+    validate_multi_timeframe_data,
+    get_trend_direction_multi_timeframe,
+)
 
 logger = get_logger(__name__)
 
@@ -615,71 +620,6 @@ def realtime_signal_detection_job():
             logger.warning(f"Failed to get strategy performance summary: {e}")
 
     logger.info("JOB END: Real-time signal detection job completed successfully.")
-
-
-def _apply_multi_timeframe_filter(signal_result: Dict, multi_timeframe_analysis: Dict) -> Dict:
-    """
-    다중 시간대 분석 결과를 바탕으로 신호를 필터링합니다.
-    
-    Args:
-        signal_result: 기존 신호 감지 결과
-        multi_timeframe_analysis: 다중 시간대 분석 결과
-    
-    Returns:
-        Dict: 필터링된 신호 결과 (조건에 맞지 않으면 빈 딕셔너리)
-    """
-    try:
-        if not signal_result or not multi_timeframe_analysis:
-            return signal_result
-
-        signal_type = signal_result.get('type')
-        consensus = multi_timeframe_analysis.get('consensus', 'NEUTRAL')
-        daily_trend = multi_timeframe_analysis.get('daily_trend', 'NEUTRAL')
-        hourly_trend = multi_timeframe_analysis.get('hourly_trend', 'NEUTRAL')
-
-        # 매수 신호 필터링
-        if signal_type == 'BUY':
-            # 강한 매수 조건: 일봉과 시간봉 모두 상승
-            if consensus == 'BULLISH':
-                signal_result['score'] = int(signal_result['score'] * 1.2)  # 신뢰도 증가
-                signal_result['details'].append("다중시간대 상승 확인으로 신호 강화")
-                return signal_result
-
-            # 약한 매수 조건: 시간봉만 상승 (일봉 중립)
-            elif hourly_trend == 'BULLISH' and daily_trend == 'NEUTRAL':
-                signal_result['score'] = int(signal_result['score'] * 0.9)  # 약간 감소
-                signal_result['details'].append("단기 상승 신호 (장기 추세 중립)")
-                return signal_result
-
-            # 위험한 매수: 일봉 하락 중 시간봉 상승 (거짓 신호 가능성)
-            elif daily_trend == 'BEARISH':
-                logger.warning(f"Filtered out BUY signal due to bearish daily trend")
-                return {}  # 신호 거부
-
-        # 매도 신호 필터링
-        elif signal_type == 'SELL':
-            # 강한 매도 조건: 일봉과 시간봉 모두 하락
-            if consensus == 'BEARISH':
-                signal_result['score'] = int(signal_result['score'] * 1.2)  # 신뢰도 증가
-                signal_result['details'].append("다중시간대 하락 확인으로 신호 강화")
-                return signal_result
-
-            # 약한 매도 조건: 시간봉만 하락 (일봉 중립)
-            elif hourly_trend == 'BEARISH' and daily_trend == 'NEUTRAL':
-                signal_result['score'] = int(signal_result['score'] * 0.9)  # 약간 감소
-                signal_result['details'].append("단기 하락 신호 (장기 추세 중립)")
-                return signal_result
-
-            # 위험한 매도: 일봉 상승 중 시간봉 하락 (거짓 신호 가능성)
-            elif daily_trend == 'BULLISH':
-                logger.warning(f"Filtered out SELL signal due to bullish daily trend")
-                return {}  # 신호 거부
-
-        return signal_result
-
-    except Exception as e:
-        logger.error(f"Error in multi-timeframe filter: {e}")
-        return signal_result  # 에러 발생시 원본 신호 반환
 
 
 if __name__ == "__main__":

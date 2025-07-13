@@ -19,6 +19,12 @@ from .technical_indicators import (
     validate_multi_timeframe_data
 )
 
+from .multi_timeframe import (
+    _apply_multi_timeframe_filter,
+    validate_multi_timeframe_data,
+    get_trend_direction_multi_timeframe,
+)
+
 __all__ = [
     'calculate_all_indicators',
     'calculate_sma',
@@ -36,4 +42,10 @@ __all__ = [
     'calculate_multi_timeframe_indicators',
     'get_trend_direction_multi_timeframe',
     'validate_multi_timeframe_data'
+]
+
+__all__ += [
+    '_apply_multi_timeframe_filter',
+    'validate_multi_timeframe_data',
+    'get_trend_direction_multi_timeframe',
 ] 
