@@ -1,7 +1,7 @@
 """
 conservative_mix 전략 조합 config
 
-- CONSERVATIVE, QUALITY_TREND, SWING 전략을 투표 기반(과반수 동의)으로 조합
+- CONSERVATIVE, SWING 전략을 투표 기반(과반수 동의)으로 조합
 - mode: StrategyMixMode.VOTING (투표 기반)
 - strategies: 각 하위 전략별 가중치(동등, 1.0)
 - threshold_adjustment: 1.2 (기본 임계값 8.0 → 9.6)
@@ -31,7 +31,6 @@ CONSERVATIVE_MIX_CONFIG = ConservativeMixConfig(
     mode=StrategyMixMode.VOTING,
     strategies={
         StrategyType.CONSERVATIVE: 1.0,
-        StrategyType.QUALITY_TREND: 1.0,
         StrategyType.SWING: 1.0,
     },
     threshold_adjustment=1.2

@@ -7,7 +7,7 @@
 **conservative_mix**는 보수적, 고신뢰도, 스윙 전략을 조합하여 매우 안정적이고 신뢰도 높은 신호만을 생성하는 정적 전략 조합입니다.
 
 - **조합 방식**: 투표 기반(VOTING, 과반수 동의)
-- **구성 전략**: CONSERVATIVE, QUALITY_TREND, SWING (각 1.0, 동등 가중치)
+- **구성 전략**: CONSERVATIVE, SWING (각 1.0, 동등 가중치)
 - **임계값 조정**: 1.2 (기본 임계값 8.0 → 9.6)
 - **폴더 구조**: `domain/strategies/conservative_mix/` (구현체, config 완전 독립)
 
@@ -16,7 +16,7 @@
 ## 2. 신호 생성 로직
 
 1. **하위 전략 실행**
-   - CONSERVATIVE, QUALITY_TREND, SWING 전략을 각각 독립적으로 실행하여 결과(점수, 근거 등)를 수집합니다.
+   - CONSERVATIVE, SWING 전략을 각각 독립적으로 실행하여 결과(점수, 근거 등)를 수집합니다.
 
 2. **투표 기반 조합**
    - 각 전략의 점수가 (임계값 9.6 이상)일 때만 신호로 인정
@@ -33,7 +33,7 @@
 ## 3. 주요 파라미터 및 설정
 
 - **mode**: `StrategyMixMode.VOTING`
-- **strategies**: `{StrategyType.CONSERVATIVE: 1.0, StrategyType.QUALITY_TREND: 1.0, StrategyType.SWING: 1.0}`
+- **strategies**: `{StrategyType.CONSERVATIVE: 1.0, StrategyType.SWING: 1.0}`
 - **threshold_adjustment**: `1.2` (임계값 8.0 × 1.2 = 9.6)
 - **config 위치**: `domain/strategies/conservative_mix/configs/conservative_mix_config.py`
 
@@ -48,13 +48,11 @@ from domain.analysis.strategy.configs.static_strategies import StrategyType
 
 # 하위 전략 인스턴스 준비 (예시)
 conservative = ...  # ConservativeStrategy 인스턴스
-quality_trend = ... # QualityTrendStrategy 인스턴스
 swing = ...        # SwingStrategy 인스턴스
 
 mix_strategy = ConservativeMixStrategy()
 mix_strategy.register_sub_strategies({
     StrategyType.CONSERVATIVE: conservative,
-    StrategyType.QUALITY_TREND: quality_trend,
     StrategyType.SWING: swing
 })
 

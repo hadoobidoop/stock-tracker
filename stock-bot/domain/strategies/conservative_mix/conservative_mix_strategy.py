@@ -1,7 +1,7 @@
 """
 conservative_mix 전략 조합 실행체 (독립 패키지)
 
-- CONSERVATIVE, QUALITY_TREND, SWING 전략을 투표 기반(과반수 동의)으로 조합
+- CONSERVATIVE, SWING 전략을 투표 기반(과반수 동의)으로 조합
 - 각 하위 전략의 analyze 결과(점수, 근거 등)를 투표 방식으로 최종 신호 산출
 - 임계값 조정(threshold_adjustment=1.2, 기본 8.0 → 9.6)
 - 신호 발생 시 동의한 하위 전략의 evidence만 통합하여 반환
@@ -10,7 +10,6 @@ conservative_mix 전략 조합 실행체 (독립 패키지)
     mix_strategy = ConservativeMixStrategy()
     mix_strategy.register_sub_strategies({
         StrategyType.CONSERVATIVE: conservative,
-        StrategyType.QUALITY_TREND: quality_trend,
         StrategyType.SWING: swing
     })
     result = mix_strategy.analyze(df, ticker, market_trend, long_term_trend)
@@ -41,7 +40,7 @@ logger = get_logger(__name__)
 class ConservativeMixStrategy(BaseStrategy):
     """
     conservative_mix 전략 조합 실행체
-    - CONSERVATIVE, QUALITY_TREND, SWING 전략을 투표 기반(과반수 동의)으로 조합
+    - CONSERVATIVE, SWING 전략을 투표 기반(과반수 동의)으로 조합
     - 각 전략의 analyze 결과를 받아 투표, 임계값 조정, 근거 통합 등 수행
     """
     def __init__(self, config: Optional[ConservativeMixConfig] = None):

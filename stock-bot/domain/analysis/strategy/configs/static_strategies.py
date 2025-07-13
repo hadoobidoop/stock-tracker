@@ -15,7 +15,6 @@ class StrategyType(Enum):
     CONSERVATIVE = "conservative"    # 보수적 전략
     BALANCED = "balanced"           # 균형잡힌 전략 (기본)
     AGGRESSIVE = "aggressive"       # 공격적 전략
-    QUALITY_TREND = "quality_trend" # 고신뢰도 복합 추세 전략
     
     # 확장 정적 전략들 (기존 시스템에서 이식)
     MOMENTUM = "momentum"           # 모멘텀 전략
