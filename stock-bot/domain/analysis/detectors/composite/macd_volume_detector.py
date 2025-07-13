@@ -3,7 +3,8 @@ import pandas as pd
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from ...base.signal_detector import SignalDetector
-from domain.analysis.config.signals import SIGNAL_WEIGHTS, VOLUME_SURGE_FACTOR
+from domain.analysis.config.signal_weights import SIGNAL_WEIGHTS
+from domain.analysis.config.realtime_signal_settings import VOLUME_SURGE_FACTOR
 
 logger = get_logger(__name__)
 

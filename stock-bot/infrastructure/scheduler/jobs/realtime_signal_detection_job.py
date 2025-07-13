@@ -32,9 +32,11 @@ from domain.analysis.repository.trading_signal_repository import TradingSignalRe
 from domain.stock.service.stock_analysis_service import StockAnalysisService
 from domain.stock.repository.stock_repository import StockRepository
 from infrastructure.db.repository.sql_stock_repository import SQLStockRepository
-from domain.analysis.config.signals import (
-    SIGNAL_THRESHOLD,
-    REALTIME_SIGNAL_DETECTION
+from domain.analysis.config.signal_weights import SIGNAL_WEIGHTS, SIGNAL_THRESHOLD
+from domain.analysis.config.signal_adjustment_factors import SIGNAL_ADJUSTMENT_FACTORS_BY_TREND
+from domain.analysis.config.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
+from domain.analysis.config.prediction_signal_settings import (
+    DAILY_PREDICTION_HOUR_ET, DAILY_PREDICTION_MINUTE_ET, PREDICTION_ATR_MULTIPLIER_FOR_RANGE, PREDICTION_SIGNAL_WEIGHTS, PREDICTION_THRESHOLD
 )
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 
@@ -241,7 +243,6 @@ class RealtimeSignalDetectionJob:
                 result = self.signal_detection_service.detect_signals(
                     df_with_indicators=df_with_indicators,
                     ticker=ticker,
-                    strategy_type=strategy_type_enum,
                     market_trend=market_trend,
                     long_term_trend=long_term_trend
                 )

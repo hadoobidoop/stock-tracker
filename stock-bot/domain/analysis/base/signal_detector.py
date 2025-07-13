@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Tuple
 import pandas as pd
 from infrastructure.db.models.enums import TrendType
+from domain.analysis.config.signal_adjustment_factors import SIGNAL_ADJUSTMENT_FACTORS_BY_TREND
 
 
 class SignalDetector(ABC):
@@ -33,7 +34,6 @@ class SignalDetector(ABC):
     
     def get_adjustment_factor(self, market_trend: TrendType, factor_type: str) -> float:
         """시장 추세에 따른 조정 계수를 반환합니다."""
-        from domain.analysis.config.signals import SIGNAL_ADJUSTMENT_FACTORS_BY_TREND
         
         adjustment_factors = SIGNAL_ADJUSTMENT_FACTORS_BY_TREND.get(market_trend.value, {})
         return adjustment_factors.get(factor_type, 1.0)

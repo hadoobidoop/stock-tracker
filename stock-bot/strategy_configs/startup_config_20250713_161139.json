@@ -1,0 +1,211 @@
+{
+  "conservative": {
+    "name": "보수적 전략",
+    "description": "높은 신뢰도의 강한 신호만 사용하는 안전한 전략",
+    "signal_threshold": 12.0,
+    "risk_per_trade": 0.01,
+    "implementation_class": "domain.analysis.strategy.implementations.conservative_strategy.ConservativeStrategy",
+    "detectors": [],
+    "market_filters": {
+      "trend_alignment": true,
+      "volume_confirmation": true
+    },
+    "position_management": {
+      "max_positions": 3,
+      "position_timeout_hours": 672
+    }
+  },
+  "balanced": {
+    "name": "균형��힌 전략",
+    "description": "다양한 신호를 균형있게 사용하는 기본 전략",
+    "signal_threshold": 8.0,
+    "risk_per_trade": 0.02,
+    "implementation_class": "domain.analysis.strategy.implementations.balanced_strategy.BalancedStrategy",
+    "detectors": [],
+    "market_filters": {
+      "trend_alignment": false
+    },
+    "position_management": {
+      "max_positions": 5,
+      "position_timeout_hours": 504
+    }
+  },
+  "aggressive": {
+    "name": "공격적 전략",
+    "description": "낮은 임계값으로 많은 거래 기회를 포착하는 전략",
+    "signal_threshold": 5.0,
+    "risk_per_trade": 0.03,
+    "implementation_class": "domain.analysis.strategy.implementations.aggressive_strategy.AggressiveStrategy",
+    "detectors": [],
+    "market_filters": {
+      "trend_alignment": false,
+      "volume_confirmation": false
+    },
+    "position_management": {
+      "max_positions": 8,
+      "position_timeout_hours": 336
+    }
+  },
+  "momentum": {
+    "name": "모멘텀 전략",
+    "description": "RSI, 스토캐스틱 등 모멘텀 지표 중심 전략",
+    "signal_threshold": 6.0,
+    "risk_per_trade": 0.025,
+    "implementation_class": "domain.analysis.strategy.implementations.momentum_strategy.MomentumStrategy",
+    "detectors": [],
+    "market_filters": {
+      "momentum_confirmation": true
+    },
+    "position_management": {
+      "max_positions": 4,
+      "position_timeout_hours": 336
+    }
+  },
+  "trend_following": {
+    "name": "추세추종 전략",
+    "description": "SMA, MACD, ADX 등 추세 지표 중심 전략",
+    "signal_threshold": 7.0,
+    "risk_per_trade": 0.02,
+    "implementation_class": "domain.analysis.strategy.implementations.trend_following_strategy.TrendFollowingStrategy",
+    "detectors": [],
+    "market_filters": {
+      "trend_alignment": true,
+      "trend_strength": true
+    },
+    "position_management": {
+      "max_positions": 4,
+      "position_timeout_hours": 720
+    }
+  },
+  "contrarian": {
+    "name": "역추세 전략",
+    "description": "과매수/과매도 상황에서 반대 방향으로 진입하는 전략",
+    "signal_threshold": 8.0,
+    "risk_per_trade": 0.02,
+    "implementation_class": "domain.analysis.strategy.implementations.contrarian_strategy.ContrarianStrategy",
+    "detectors": [],
+    "market_filters": {
+      "trend_alignment": false
+    },
+    "position_management": {
+      "max_positions": 3,
+      "position_timeout_hours": 168
+    }
+  },
+  "scalping": {
+    "name": "스캘핑 전략",
+    "description": "빠른 진입/청산을 위한 단기 전략",
+    "signal_threshold": 4.0,
+    "risk_per_trade": 0.01,
+    "implementation_class": "domain.analysis.strategy.implementations.scalping_strategy.ScalpingStrategy",
+    "detectors": [],
+    "market_filters": {
+      "volume_confirmation": true,
+      "volatility_filter": true
+    },
+    "position_management": {
+      "max_positions": 10,
+      "position_timeout_hours": 4
+    }
+  },
+  "swing": {
+    "name": "스윙 전략",
+    "description": "중기 추세 변화를 포착하는 전략",
+    "signal_threshold": 7.0,
+    "risk_per_trade": 0.025,
+    "implementation_class": "domain.analysis.strategy.implementations.swing_strategy.SwingStrategy",
+    "detectors": [],
+    "market_filters": {
+      "trend_alignment": false
+    },
+    "position_management": {
+      "max_positions": 3,
+      "position_timeout_hours": 336
+    }
+  },
+  "mean_reversion": {
+    "name": "평균 회귀 전략",
+    "description": "과매수/과매도 후 평균으로 회귀하는 경향을 이용하는 전략",
+    "signal_threshold": 7.0,
+    "risk_per_trade": 0.015,
+    "implementation_class": "domain.analysis.strategy.implementations.mean_reversion_strategy.MeanReversionStrategy",
+    "detectors": [],
+    "market_filters": {
+      "trend_alignment": false
+    },
+    "position_management": {
+      "max_positions": 4,
+      "position_timeout_hours": 120
+    }
+  },
+  "trend_pullback": {
+    "name": "추세 추종 눌림목 전략",
+    "description": "상승 추세 중 일시적 하락(눌림목) 시 매수하는 전략",
+    "signal_threshold": 8.0,
+    "risk_per_trade": 0.02,
+    "implementation_class": "domain.analysis.strategy.implementations.trend_pullback_strategy.TrendPullbackStrategy",
+    "detectors": [],
+    "market_filters": {
+      "trend_alignment": true
+    },
+    "position_management": {
+      "max_positions": 4,
+      "position_timeout_hours": 120
+    }
+  },
+  "volatility_breakout": {
+    "name": "변동성 돌파 전략",
+    "description": "변동성 응축 후 폭발하는 시점을 포착하는 전략",
+    "signal_threshold": 6.0,
+    "risk_per_trade": 0.025,
+    "implementation_class": "domain.analysis.strategy.implementations.volatility_breakout_strategy.VolatilityBreakoutStrategy",
+    "detectors": [],
+    "market_filters": {
+      "volume_confirmation": true
+    },
+    "position_management": {
+      "max_positions": 3,
+      "position_timeout_hours": 48
+    }
+  },
+  "adaptive_momentum": {
+    "name": "적응형 모멘텀",
+    "description": "추세, 모멘텀, 변동성을 결합한 적응형 전략",
+    "signal_threshold": 6.0,
+    "risk_per_trade": 0.02,
+    "implementation_class": "domain.analysis.strategy.implementations.adaptive_momentum_strategy.AdaptiveMomentumStrategy",
+    "detectors": [],
+    "market_filters": {},
+    "position_management": {}
+  },
+  "conservative_reversion_hybrid": {
+    "name": "보수적 평균 회귀 하이브리드",
+    "description": "보수적 추세 확인 후 평균 회귀로 진입하는 전략",
+    "signal_threshold": 6.0,
+    "risk_per_trade": 0.015,
+    "implementation_class": "domain.analysis.strategy.implementations.conservative_reversion_hybrid.ConservativeReversionHybridStrategy",
+    "detectors": [],
+    "market_filters": {},
+    "position_management": {}
+  },
+  "market_regime_hybrid": {
+    "name": "시장 체제 적응형 하이브리드",
+    "description": "시장의 추세와 변동성을 진단하여 최적의 하위 전략을 동적으로 선택",
+    "signal_threshold": 6.0,
+    "risk_per_trade": 0.02,
+    "implementation_class": "domain.analysis.strategy.implementations.market_regime_hybrid.MarketRegimeHybridStrategy",
+    "detectors": [],
+    "market_filters": {},
+    "position_management": {}
+  },
+  "stable_value_hybrid": {
+    "name": "안정 가치 하이브리드",
+    "description": "안정적인 추세에서 눌림목을 공략하는 우량주 특화 전략",
+    "signal_threshold": 8.0,
+    "risk_per_trade": 0.015,
+    "implementation_class": "domain.analysis.strategy.implementations.stable_value_hybrid.StableValueHybridStrategy",
+    "detectors": [],
+    "market_filters": {},
+    "position_management": {}
+  }
+}

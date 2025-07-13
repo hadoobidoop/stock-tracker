@@ -8,7 +8,7 @@ from typing import Dict, Any
 from dataclasses import dataclass
 from enum import Enum
 
-from domain.analysis.config.static_strategies import StrategyType
+from .static_strategies import StrategyType
 
 
 class StrategyMixMode(Enum):

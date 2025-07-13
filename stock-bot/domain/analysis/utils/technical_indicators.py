@@ -5,6 +5,10 @@ import pandas as pd
 import numpy as np
 from typing import Dict, Tuple
 from infrastructure.logging import get_logger
+from domain.analysis.config.technical_indicator_settings import TECHNICAL_INDICATORS
+from domain.analysis.config.technical_indicator_settings import FIBONACCI_LEVELS
+from domain.analysis.config.technical_indicator_settings import HOURLY_INDICATORS
+from domain.analysis.config.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
 
 logger = get_logger(__name__)
 
@@ -158,8 +162,6 @@ def calculate_keltner_channels(df: pd.DataFrame, period: int = 20, atr_multiplie
 def calculate_all_indicators(df: pd.DataFrame) -> pd.DataFrame:
     """모든 기술적 지표를 계산합니다."""
     try:
-        from domain.analysis.config.indicators import TECHNICAL_INDICATORS
-        
         df = df.copy()
         
         # 설정값 가져오기
@@ -198,8 +200,6 @@ def calculate_all_indicators(df: pd.DataFrame) -> pd.DataFrame:
 def calculate_fibonacci_levels(df: pd.DataFrame) -> Dict[str, float]:
     """피보나치 레벨을 계산합니다."""
     try:
-        from domain.analysis.config.indicators import FIBONACCI_LEVELS
-        
         # 설정값 가져오기
         levels = FIBONACCI_LEVELS["LEVELS"]
         lookback_days = FIBONACCI_LEVELS["LOOKBACK_DAYS"]
@@ -267,8 +267,6 @@ def calculate_daily_indicators(df: pd.DataFrame) -> pd.DataFrame:
 def calculate_hourly_indicators(df: pd.DataFrame) -> pd.DataFrame:
     """시간봉 기반 단기 신호 지표를 계산합니다."""
     try:
-        from domain.analysis.config.indicators import HOURLY_INDICATORS
-        
         df = df.copy()
         
         # 설정값 가져오기
@@ -391,7 +389,6 @@ def validate_multi_timeframe_data(daily_df: pd.DataFrame, hourly_df: pd.DataFram
         Dict: {'daily_valid': bool, 'hourly_valid': bool, 'sufficient_for_analysis': bool}
     """
     try:
-        from domain.analysis.config.signals import REALTIME_SIGNAL_DETECTION
         
         # 설정에서 최소 요구사항 가져오기
         min_daily_length = REALTIME_SIGNAL_DETECTION["MIN_DAILY_DATA_LENGTH"]  # 120개
