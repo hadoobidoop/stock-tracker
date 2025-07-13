@@ -58,9 +58,6 @@ class StrategyConfig:
     position_management: Dict[str, Any] = field(default_factory=dict)
 
 
-# ====================
-# --- 확장된 정적 전략 설정 ---
-# ====================
 
 STRATEGY_CONFIGS = {
     # === 기본 3가지 전략 ===

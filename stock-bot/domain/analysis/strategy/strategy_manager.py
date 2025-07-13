@@ -2,6 +2,9 @@
 전략 매니저 - 여러 전략을 관리하고 동적으로 교체할 수 있는 시스템
 
 이 모듈은 사용자가 원하는 "갈아끼우며 사용할 수 있는" 전략 시스템을 제공합니다.
+
+# 모든 전략은 domain/strategies/전략명/ 하위에서 독립적으로 관리됩니다.
+# 레거시 domain/analysis/strategy/implementations/ 경로는 더 이상 사용하지 않습니다.
 """
 
 from typing import Dict, List, Optional, Any, Tuple, Union

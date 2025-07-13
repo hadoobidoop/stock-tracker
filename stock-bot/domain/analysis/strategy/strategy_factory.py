@@ -4,21 +4,19 @@ from domain.analysis.strategy.configs.dynamic_strategies import get_all_strategi
 from domain.analysis.strategy.configs.static_strategies import StrategyType, StrategyConfig, get_strategy_config, \
     get_static_strategy_types
 from domain.analysis.strategy.base_strategy import BaseStrategy
-from domain.strategies.conservative_reversion_hybrid import ConservativeReversionHybridStrategy
+from domain.strategies.conservative_reversion_hybrid.conservative_reversion_hybrid_strategy import ConservativeReversionHybridStrategy
 from domain.strategies.adaptive_momentum_hybrid.adaptive_momentum_hybrid_strategy import AdaptiveMomentumStrategy
 from domain.strategies.market_regime_hybrid.market_regime_hybrid_strategy import MarketRegimeHybridStrategy
 from domain.strategies.aggressive.aggressive_strategy import AggressiveStrategy
 from domain.strategies.balanced.balanced_strategy import BalancedStrategy
 from domain.strategies.momentum.momentum_strategy import MomentumStrategy
 from domain.strategies.volatility_breakout.volatility_breakout_strategy import VolatilityBreakoutStrategy
-from domain.analysis.strategy.implementations import (
-    ConservativeStrategy,
-    ContrarianStrategy,
-    ScalpingStrategy
-)
+from domain.strategies.conservative.conservative_strategy import ConservativeStrategy
+from domain.strategies.scalping.scalping_strategy import ScalpingStrategy
 from domain.strategies.swing.swing_strategy import SwingStrategy
 from domain.strategies.trend_following.trend_following_strategy import TrendFollowingStrategy
 from domain.strategies.trend_pullback.trend_pullback_strategy import TrendPullbackStrategy
+from domain.strategies.mean_reversion.mean_reversion_strategy import MeanReversionStrategy
 from .modifier_engine import ModifierEngine
 from .modifiers.registry import ModifierFactory
 from infrastructure.logging import get_logger
@@ -33,12 +31,12 @@ STRATEGY_CLASS_MAP = {
     StrategyType.AGGRESSIVE: AggressiveStrategy,
     StrategyType.BALANCED: BalancedStrategy,
     StrategyType.CONSERVATIVE: ConservativeStrategy,
-    StrategyType.CONTRARIAN: ContrarianStrategy,
     StrategyType.MOMENTUM: MomentumStrategy,
     StrategyType.SCALPING: ScalpingStrategy,
     StrategyType.SWING: SwingStrategy,
     StrategyType.TREND_FOLLOWING: TrendFollowingStrategy,
     StrategyType.TREND_PULLBACK: TrendPullbackStrategy,
+    StrategyType.MEAN_REVERSION: MeanReversionStrategy,
     StrategyType.VOLATILITY_BREAKOUT: VolatilityBreakoutStrategy,
 }
 
