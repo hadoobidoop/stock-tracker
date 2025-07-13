@@ -6,7 +6,7 @@ from domain.analysis.strategy.configs.static_strategies import StrategyConfig, S
 @dataclass
 class ConservativeStrategyConfig(StrategyConfig):
     """보수적 전략 설정"""
-    
+    risk_per_trade: float = 0.01  # ← 기본값 명시
     # 기본 전략 설정 상속
     strategy_type: StrategyType = StrategyType.CONSERVATIVE
     signal_threshold: float = 12.0  # 높은 임계값 (기본 8.0 → 12.0)
