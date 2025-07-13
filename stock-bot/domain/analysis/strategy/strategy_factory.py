@@ -1,3 +1,4 @@
+import importlib
 from typing import Dict, Optional
 
 from domain.analysis.config.dynamic_strategies import get_all_strategies, get_strategy_definition, get_all_modifiers
@@ -8,8 +9,7 @@ from domain.analysis.strategy.implementations import (
     AdaptiveMomentumStrategy,
     ConservativeReversionHybridStrategy,
     MarketRegimeHybridStrategy,
-    StableValueHybridStrategy,
-    UniversalStrategy
+    StableValueHybridStrategy
 )
 from .modifier_engine import ModifierEngine
 from .modifiers.registry import ModifierFactory
@@ -26,7 +26,7 @@ class StrategyFactory:
     @classmethod
     def create_static_strategy(cls, strategy_type: StrategyType,
                                config: Optional[StrategyConfig] = None) -> Optional[BaseStrategy]:
-        """정적 ���략 인스턴스 생성"""
+        """정적 전략 인스턴스 생성"""
         if config is None:
             config = get_strategy_config(strategy_type)
 
@@ -35,21 +35,21 @@ class StrategyFactory:
             return None
 
         try:
-            if strategy_type == StrategyType.ADAPTIVE_MOMENTUM:
-                return AdaptiveMomentumStrategy(strategy_type, config)
-            if strategy_type == StrategyType.CONSERVATIVE_REVERSION_HYBRID:
-                return ConservativeReversionHybridStrategy(strategy_type, config)
-            if strategy_type == StrategyType.MARKET_REGIME_HYBRID:
-                return MarketRegimeHybridStrategy(strategy_type, config)
-            if strategy_type == StrategyType.STABLE_VALUE_HYBRID:
-                return StableValueHybridStrategy(strategy_type, config)
+            # implementation_class 필드를 통해 동적으로 클래스를 로드하여 생성하는 방식으로 통일
+            if config.implementation_class:
+                module_path, class_name = config.implementation_class.rsplit('.', 1)
+                module = importlib.import_module(module_path)
+                strategy_class = getattr(module, class_name)
+                strategy = strategy_class(strategy_type, config)
+                logger.info(f"'{config.name}' (클래스: {class_name}) 생성 성공")
+                return strategy
 
-            strategy = UniversalStrategy(strategy_type, config)
-            logger.info(f"정적 전략 생성 성공: {strategy_type.value}")
-            return strategy
+            # implementation_class가 없는 경우 에러 처리
+            logger.error(f"'{config.name}'에 대한 구현 클래스가 지정되지 않았습니다.")
+            return None
 
         except Exception as e:
-            logger.error(f"정적 전략 생성 실패 {strategy_type.value}: {e}")
+            logger.error(f"정적 전략 생성 실패 {strategy_type.value}: {e}", exc_info=True)
             return None
 
     @classmethod

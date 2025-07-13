@@ -4,8 +4,8 @@
 기존 정적 전략들을 모두 유지하면서 동적 전략 시스템과 호환되도록 구성
 """
 
-from typing import Dict, Any, List
-from dataclasses import dataclass
+from typing import Dict, Any, List, Optional
+from dataclasses import dataclass, field
 from enum import Enum
 
 
@@ -55,15 +55,10 @@ class StrategyConfig:
     description: str
     signal_threshold: float
     risk_per_trade: float
-    detectors: List[DetectorConfig]
-    market_filters: Dict[str, Any] = None
-    position_management: Dict[str, Any] = None
-    
-    def __post_init__(self):
-        if self.market_filters is None:
-            self.market_filters = {}
-        if self.position_management is None:
-            self.position_management = {}
+    implementation_class: Optional[str] = None  # 구현 클래스 경로
+    detectors: List[DetectorConfig] = field(default_factory=list)  # 이제 선택 사항
+    market_filters: Dict[str, Any] = field(default_factory=dict)
+    position_management: Dict[str, Any] = field(default_factory=dict)
 
 
 # ====================
@@ -77,16 +72,7 @@ STRATEGY_CONFIGS = {
         description="높은 신뢰도의 강한 신호만 사용하는 안전한 전략",
         signal_threshold=12.0,  # 높은 임계값
         risk_per_trade=0.01,    # 1% 리스크
-        detectors=[
-            DetectorConfig("SMASignalDetector", weight=7.5),
-            DetectorConfig("MACDSignalDetector", weight=7.5),
-            DetectorConfig("VolumeSignalDetector", weight=6.0),
-            DetectorConfig("CompositeSignalDetector", weight=10.0, parameters={
-                "require_all": True,
-                "name": "MACD_Volume_Confirm",
-                "sub_detectors": ["MACDSignalDetector", "VolumeSignalDetector"]
-            })
-        ],
+        implementation_class="domain.analysis.strategy.implementations.conservative_strategy.ConservativeStrategy",
         market_filters={
             "trend_alignment": True,
             "volume_confirmation": True
@@ -98,22 +84,11 @@ STRATEGY_CONFIGS = {
     ),
     
     StrategyType.BALANCED: StrategyConfig(
-        name="균형잡힌 전략",
+        name="균형��힌 전략",
         description="다양한 신호를 균형있게 사용하는 기본 전략",
         signal_threshold=8.0,
         risk_per_trade=0.02,
-        detectors=[
-            DetectorConfig("SMASignalDetector", weight=5.0),
-            DetectorConfig("MACDSignalDetector", weight=5.0),
-            DetectorConfig("RSISignalDetector", weight=3.0),
-            DetectorConfig("VolumeSignalDetector", weight=4.0),
-            DetectorConfig("ADXSignalDetector", weight=4.0),
-            DetectorConfig("CompositeSignalDetector", weight=7.0, parameters={
-                "require_all": True,
-                "name": "MACD_Volume_Confirm",
-                "sub_detectors": ["MACDSignalDetector", "VolumeSignalDetector"]
-            })
-        ],
+        implementation_class="domain.analysis.strategy.implementations.balanced_strategy.BalancedStrategy",
         market_filters={
             "trend_alignment": False
         },
@@ -128,14 +103,7 @@ STRATEGY_CONFIGS = {
         description="낮은 임계값으로 많은 거래 기회를 포착하는 전략",
         signal_threshold=5.0,   # 낮은 임계값
         risk_per_trade=0.03,    # 3% 리스크
-        detectors=[
-            DetectorConfig("SMASignalDetector", weight=4.0),
-            DetectorConfig("MACDSignalDetector", weight=4.0),
-            DetectorConfig("RSISignalDetector", weight=3.0),
-            DetectorConfig("StochSignalDetector", weight=3.0),
-            DetectorConfig("VolumeSignalDetector", weight=3.0),
-            DetectorConfig("ADXSignalDetector", weight=3.0)
-        ],
+        implementation_class="domain.analysis.strategy.implementations.aggressive_strategy.AggressiveStrategy",
         market_filters={
             "trend_alignment": False,
             "volume_confirmation": False
@@ -152,17 +120,7 @@ STRATEGY_CONFIGS = {
         description="RSI, 스토캐스틱 등 모멘텀 지표 중심 전략",
         signal_threshold=6.0,
         risk_per_trade=0.025,
-        detectors=[
-            DetectorConfig("RSISignalDetector", weight=6.0),
-            DetectorConfig("StochSignalDetector", weight=5.0),
-            DetectorConfig("MACDSignalDetector", weight=4.0),
-            DetectorConfig("VolumeSignalDetector", weight=3.0),
-            DetectorConfig("CompositeSignalDetector", weight=8.0, parameters={
-                "require_all": True,
-                "name": "RSI_Stoch_Confirm",
-                "sub_detectors": ["RSISignalDetector", "StochSignalDetector"]
-            })
-        ],
+        implementation_class="domain.analysis.strategy.implementations.momentum_strategy.MomentumStrategy",
         market_filters={
             "momentum_confirmation": True
         },
@@ -177,17 +135,7 @@ STRATEGY_CONFIGS = {
         description="SMA, MACD, ADX 등 추세 지표 중심 전략",
         signal_threshold=7.0,
         risk_per_trade=0.02,
-        detectors=[
-            DetectorConfig("SMASignalDetector", weight=7.0),
-            DetectorConfig("MACDSignalDetector", weight=6.0),
-            DetectorConfig("ADXSignalDetector", weight=6.0),
-            DetectorConfig("VolumeSignalDetector", weight=4.0),
-            DetectorConfig("CompositeSignalDetector", weight=8.0, parameters={
-                "require_all": True,
-                "name": "MACD_Volume_Confirm",
-                "sub_detectors": ["MACDSignalDetector", "VolumeSignalDetector"]
-            })
-        ],
+        implementation_class="domain.analysis.strategy.implementations.trend_following_strategy.TrendFollowingStrategy",
         market_filters={
             "trend_alignment": True,
             "trend_strength": True
@@ -203,11 +151,7 @@ STRATEGY_CONFIGS = {
         description="과매수/과매도 상황에서 반대 방향으로 진입하는 전략",
         signal_threshold=8.0,
         risk_per_trade=0.02,
-        detectors=[
-            DetectorConfig("RSISignalDetector", weight=6.0),
-            DetectorConfig("StochSignalDetector", weight=5.0),
-            DetectorConfig("BBSignalDetector", weight=4.0, parameters={"detector_type": "mean_reversion"}),
-        ],
+        implementation_class="domain.analysis.strategy.implementations.contrarian_strategy.ContrarianStrategy",
         market_filters={
             "trend_alignment": False,
         },
@@ -222,12 +166,7 @@ STRATEGY_CONFIGS = {
         description="빠른 진입/청산을 위한 단기 전략",
         signal_threshold=4.0,   # 매우 낮은 임계값
         risk_per_trade=0.01,    # 낮은 리스크
-        detectors=[
-            DetectorConfig("RSISignalDetector", weight=4.0),
-            DetectorConfig("StochSignalDetector", weight=4.0),
-            DetectorConfig("VolumeSignalDetector", weight=5.0),  # 거래량 중시
-            DetectorConfig("MACDSignalDetector", weight=3.0)
-        ],
+        implementation_class="domain.analysis.strategy.implementations.scalping_strategy.ScalpingStrategy",
         market_filters={
             "volume_confirmation": True,
             "volatility_filter": True
@@ -243,12 +182,7 @@ STRATEGY_CONFIGS = {
         description="중기 추세 변화를 포착하는 전략",
         signal_threshold=7.0,
         risk_per_trade=0.025,
-        detectors=[
-            DetectorConfig("SMASignalDetector", weight=5.0),
-            DetectorConfig("MACDSignalDetector", weight=6.0),
-            DetectorConfig("RSISignalDetector", weight=4.0),
-            DetectorConfig("ADXSignalDetector", weight=4.0)
-        ],
+        implementation_class="domain.analysis.strategy.implementations.swing_strategy.SwingStrategy",
         market_filters={
             "trend_alignment": False
         },
@@ -263,11 +197,7 @@ STRATEGY_CONFIGS = {
         description="과매수/과매도 후 평균으로 회귀하는 경향을 이용하는 전략",
         signal_threshold=7.0,
         risk_per_trade=0.015,
-        detectors=[
-            DetectorConfig("BBSignalDetector", weight=6.0, parameters={"detector_type": "mean_reversion"}),
-            DetectorConfig("RSISignalDetector", weight=4.0),
-            DetectorConfig("StochSignalDetector", weight=3.0),
-        ],
+        implementation_class="domain.analysis.strategy.implementations.mean_reversion_strategy.MeanReversionStrategy",
         market_filters={"trend_alignment": False},
         position_management={"max_positions": 4, "position_timeout_hours": 120}
     ),
@@ -277,11 +207,7 @@ STRATEGY_CONFIGS = {
         description="상승 추세 중 일시적 하락(눌림목) 시 매수하는 전략",
         signal_threshold=8.0,
         risk_per_trade=0.02,
-        detectors=[
-            DetectorConfig("SMASignalDetector", weight=5.0),
-            DetectorConfig("ADXSignalDetector", weight=4.0),
-            DetectorConfig("RSISignalDetector", weight=6.0),
-        ],
+        implementation_class="domain.analysis.strategy.implementations.trend_pullback_strategy.TrendPullbackStrategy",
         market_filters={"trend_alignment": True},
         position_management={"max_positions": 4, "position_timeout_hours": 120}
     ),
@@ -291,11 +217,7 @@ STRATEGY_CONFIGS = {
         description="변동성 응축 후 폭발하는 시점을 포착하는 전략",
         signal_threshold=6.0,
         risk_per_trade=0.025,
-        detectors=[
-            DetectorConfig("BBSignalDetector", weight=7.0, parameters={"detector_type": "breakout"}),
-            DetectorConfig("ADXSignalDetector", weight=4.0),
-            DetectorConfig("VolumeSignalDetector", weight=5.0),
-        ],
+        implementation_class="domain.analysis.strategy.implementations.volatility_breakout_strategy.VolatilityBreakoutStrategy",
         market_filters={"volume_confirmation": True},
         position_management={"max_positions": 3, "position_timeout_hours": 48}
     ),
@@ -305,11 +227,7 @@ STRATEGY_CONFIGS = {
         description="장기 추세(일봉)와 단기(시간봉) 진입 신호를 함께 확인하는 전략",
         signal_threshold=9.0,
         risk_per_trade=0.02,
-        detectors=[
-            DetectorConfig("MACDSignalDetector", weight=5.0),
-            DetectorConfig("StochSignalDetector", weight=5.0),
-            DetectorConfig("RSISignalDetector", weight=4.0),
-        ],
+        implementation_class="domain.analysis.strategy.implementations.multi_timeframe_strategy.MultiTimeframeStrategy",
         market_filters={"multi_timeframe_confirmation": True},
         position_management={"max_positions": 3, "position_timeout_hours": 504}
     ),
@@ -319,12 +237,7 @@ STRATEGY_CONFIGS = {
         description="VIX와 버핏지수 등 거시경제 지표를 기술적 분석과 결합한 전략",
         signal_threshold=7.0,
         risk_per_trade=0.015,
-        detectors=[
-            DetectorConfig("MACDSignalDetector", weight=4.0),
-            DetectorConfig("RSISignalDetector", weight=3.0),
-            DetectorConfig("StochSignalDetector", weight=3.0),
-            DetectorConfig("VolumeSignalDetector", weight=2.0),
-        ],
+        implementation_class="domain.analysis.strategy.implementations.macro_driven_strategy.MacroDrivenStrategy",
         market_filters={
             "macro_sentiment_filter": True,
             "macro_signal_threshold": 3.0,
@@ -345,7 +258,7 @@ STRATEGY_CONFIGS = {
         description="추세, 모멘텀, 변동성을 결합한 적응형 전략",
         signal_threshold=6.0,
         risk_per_trade=0.02,
-        detectors=[],  # 로직이 클래스 내부에 직접 구현됨
+        implementation_class="domain.analysis.strategy.implementations.adaptive_momentum_strategy.AdaptiveMomentumStrategy",
         market_filters={},
         position_management={}
     ),
@@ -355,7 +268,7 @@ STRATEGY_CONFIGS = {
         description="보수적 추세 확인 후 평균 회귀로 진입하는 전략",
         signal_threshold=6.0, # 임계값을 약간 낮춰 더 많은 기회 포착
         risk_per_trade=0.015,
-        detectors=[], # 로직이 클래스 내부에 직접 구현됨
+        implementation_class="domain.analysis.strategy.implementations.conservative_reversion_hybrid.ConservativeReversionHybridStrategy",
         market_filters={},
         position_management={}
     ),
@@ -365,7 +278,7 @@ STRATEGY_CONFIGS = {
         description="시장의 추세와 변동성을 진단하여 최적의 하위 전략을 동적으로 선택",
         signal_threshold=6.0, # 하위 전략의 임계값을 따르므로, 중간값으로 설정
         risk_per_trade=0.02,
-        detectors=[], # 로직이 클래스 내부에 직접 구현됨
+        implementation_class="domain.analysis.strategy.implementations.market_regime_hybrid.MarketRegimeHybridStrategy",
         market_filters={},
         position_management={}
     ),
@@ -375,7 +288,7 @@ STRATEGY_CONFIGS = {
         description="안정적인 추세에서 눌림목을 공략하는 우량주 특화 전략",
         signal_threshold=8.0, # 눌림목 전략의 임계값을 따름
         risk_per_trade=0.015,
-        detectors=[], # 로직이 클래스 내부에 직접 구현됨
+        implementation_class="domain.analysis.strategy.implementations.stable_value_hybrid.StableValueHybridStrategy",
         market_filters={},
         position_management={}
     )
