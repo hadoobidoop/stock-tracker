@@ -2,6 +2,7 @@ from typing import Dict, Optional
 import pandas as pd
 from datetime import datetime
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
+from domain.analysis.models.trading_signal import TradingSignal
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
 from domain.analysis.strategy.configs.static_strategies import StrategyType
 from infrastructure.db.models.enums import TrendType
