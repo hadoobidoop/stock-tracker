@@ -8,37 +8,11 @@ import pandas as pd
 from domain.analysis.base.models import StrategyConfig
 from domain.analysis.base.models.enums import StrategyType
 from domain.analysis.models.trading_signal import TradingSignal, SignalType
+from domain.analysis.models.strategy_result import StrategyResult
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
-
-
-@dataclass
-class StrategyResult:
-    """전략 실행 결과"""
-    strategy_name: str
-    strategy_type: StrategyType
-    has_signal: bool
-    total_score: float
-    signal_strength: str  # "WEAK", "MODERATE", "STRONG"
-    signals_detected: List[str]
-    signal: Optional[TradingSignal] = None
-    confidence: float = 0.0
-    buy_score: float = 0.0
-    sell_score: float = 0.0
-    stop_loss_price: Optional[float] = None
-
-    def __post_init__(self):
-        """신호 강도 자동 계산"""
-        if self.total_score >= 10:
-            self.signal_strength = "STRONG"
-        elif self.total_score >= 6:
-            self.signal_strength = "MODERATE"
-        else:
-            self.signal_strength = "WEAK"
-
-        self.confidence = min(self.total_score / 15.0, 1.0)  # 15점 만점 기준으로 정규화
 
 
 class BaseStrategy(ABC):
@@ -70,7 +44,7 @@ class BaseStrategy(ABC):
                 ticker: str,
                 market_trend: TrendType = TrendType.NEUTRAL,
                 long_term_trend: TrendType = TrendType.NEUTRAL,
-                daily_extra_indicators: Optional[Dict] = None) -> StrategyResult:
+                daily_extra_indicators: Optional[Dict] = None) -> Dict:
         """
         데이터를 분석하여 거래 신호를 생성합니다.
         각 구체적인 전략 클래스에서 핵심 로직을 구현해야 합니다.
