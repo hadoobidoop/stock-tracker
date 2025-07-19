@@ -28,6 +28,7 @@ class StrategyType(Enum):
     ADAPTIVE_MOMENTUM = "adaptive_momentum"
     CONSERVATIVE_REVERSION_HYBRID = "conservative_reversion_hybrid"
     MARKET_REGIME_HYBRID = "market_regime_hybrid"
+    MACRO_DRIVEN = "macro_driven"  # 매크로 경제 지표 중심 전략
     DYNAMIC_WEIGHT = "dynamic_weight" # 동적 전략을 위한 플레이스홀더
 
 

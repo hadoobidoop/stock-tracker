@@ -20,6 +20,7 @@ import pandas as pd
 
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
+from domain.analysis.strategy.configs.static_strategies import StrategyType
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 
@@ -39,12 +40,13 @@ class VolatilityBreakoutStrategy(BaseStrategy):
     - 변동성 응축(squeeze) 후 상단/하단 돌파 및 거래량 급증 구간을 포착
     - 각 Detector별 신호 근거(TechnicalIndicatorEvidence)를 상세 기록
     """
-    def __init__(self, config=None):
+    def __init__(self, strategy_type: StrategyType = StrategyType.VOLATILITY_BREAKOUT, config=None):
         """
         Volatility Breakout 전략 인스턴스 생성
+        :param strategy_type: 전략 타입
         :param config: Detector 가중치, 파라미터 등 설정(dict 또는 config 객체)
         """
-        super().__init__(config)
+        super().__init__(strategy_type, config)
         self.detectors = [
             VolatilityBreakoutBBDetector(weight=7.0, detector_type="breakout"),
             VolatilityBreakoutADXDetector(weight=4.0),

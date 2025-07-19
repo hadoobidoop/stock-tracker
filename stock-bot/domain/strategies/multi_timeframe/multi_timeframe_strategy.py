@@ -30,6 +30,7 @@ from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from .configs.multi_timeframe_config import MULTI_TIMEFRAME_CONFIG
 from domain.analysis.detectors.composite.multi_timeframe_composite_detector import MultiTimeframeCompositeDetector
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
+from domain.analysis.strategy.configs.static_strategies import StrategyType
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 
@@ -43,14 +44,15 @@ class MultiTimeframeStrategy(BaseStrategy):
     - 모든 파라미터/가중치는 configs/multi_timeframe_config.py에서 관리
     - 확장: detectors/ 하위에 커스텀 Detector 추가, config에서 동적 조합, 신호 컨펌/복합 판단 로직 확장 가능
     """
-    def __init__(self, config=None):
+    def __init__(self, strategy_type: StrategyType = StrategyType.MULTI_TIMEFRAME, config=None):
         """
         MultiTimeframeStrategy 생성자
         Args:
+            strategy_type: 전략 타입
             config (dict, optional): 전략 파라미터(config). 미지정 시 기본값(MULTI_TIMEFRAME_CONFIG) 사용
         """
         config = config or MULTI_TIMEFRAME_CONFIG
-        super().__init__(config["strategy_type"], config)
+        super().__init__(strategy_type, config)
         self.config = config
         self.orchestrator: Optional[SignalDetectionOrchestrator] = None
 

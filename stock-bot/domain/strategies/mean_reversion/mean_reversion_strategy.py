@@ -21,6 +21,7 @@ from domain.strategies.mean_reversion.detectors.mean_reversion_bb_detector impor
 from domain.strategies.mean_reversion.detectors.mean_reversion_rsi_detector import MeanReversionRSISignalDetector
 from domain.strategies.mean_reversion.detectors.mean_reversion_stoch_detector import MeanReversionStochSignalDetector
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
+from domain.analysis.strategy.configs.static_strategies import StrategyType
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 
@@ -33,8 +34,8 @@ class MeanReversionStrategy(BaseStrategy):
     - Detector별 가중치/파라미터는 config에서 관리
     - mean_reversion 전용 래퍼 Detector 클래스 사용
     """
-    def __init__(self, config: Optional[MeanReversionConfig] = None):
-        super().__init__(StrategyType.MEAN_REVERSION, config or MEAN_REVERSION_CONFIG)
+    def __init__(self, strategy_type: StrategyType = StrategyType.MEAN_REVERSION, config: Optional[MeanReversionConfig] = None):
+        super().__init__(strategy_type, config or MEAN_REVERSION_CONFIG)
         self.config = config or MEAN_REVERSION_CONFIG
         self.orchestrator: Optional[SignalDetectionOrchestrator] = None
 

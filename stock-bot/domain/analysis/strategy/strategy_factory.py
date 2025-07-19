@@ -3,6 +3,17 @@ from typing import Dict, Optional
 from domain.strategies.dynamic.configs.dynamic_strategies import get_all_strategies, get_strategy_definition, get_all_modifiers
 from domain.analysis.strategy.configs.static_strategies import StrategyType, StrategyConfig, get_strategy_config, \
     get_static_strategy_types
+
+# Strategy-specific config imports
+from domain.strategies.conservative.configs.conservative_config import ConservativeStrategyConfig
+from domain.strategies.balanced.configs.balanced_config import BalancedStrategyConfig
+from domain.strategies.aggressive.configs.aggressive_config import AggressiveStrategyConfig
+from domain.strategies.momentum.configs.momentum_config import MomentumStrategyConfig
+from domain.strategies.swing.configs.swing_config import SWING_STRATEGY_CONFIG
+from domain.strategies.mean_reversion.configs.mean_reversion_config import MEAN_REVERSION_CONFIG
+# Note: TrendPullbackConfig and VolatilityBreakoutConfig classes don't exist, 
+# they only have constants. Will use general config for these.
+from domain.strategies.multi_timeframe.configs.multi_timeframe_config import MULTI_TIMEFRAME_CONFIG
 from domain.analysis.strategy.base_strategy import BaseStrategy
 from domain.strategies.conservative_reversion_hybrid.conservative_reversion_hybrid_strategy import ConservativeReversionHybridStrategy
 from domain.strategies.adaptive_momentum_hybrid.adaptive_momentum_hybrid_strategy import AdaptiveMomentumStrategy
@@ -17,6 +28,7 @@ from domain.strategies.swing.swing_strategy import SwingStrategy
 from domain.strategies.trend_following.trend_following_strategy import TrendFollowingStrategy
 from domain.strategies.trend_pullback.trend_pullback_strategy import TrendPullbackStrategy
 from domain.strategies.mean_reversion.mean_reversion_strategy import MeanReversionStrategy
+from domain.strategies.multi_timeframe.multi_timeframe_strategy import MultiTimeframeStrategy
 from .modifier_engine import ModifierEngine
 from domain.strategies.dynamic.dynamic_strategy import DynamicCompositeStrategy
 from domain.strategies.dynamic.modifiers.registry import ModifierFactory
@@ -39,7 +51,44 @@ STRATEGY_CLASS_MAP = {
     StrategyType.TREND_PULLBACK: TrendPullbackStrategy,
     StrategyType.MEAN_REVERSION: MeanReversionStrategy,
     StrategyType.VOLATILITY_BREAKOUT: VolatilityBreakoutStrategy,
+    StrategyType.MULTI_TIMEFRAME: MultiTimeframeStrategy,
 }
+
+def get_strategy_specific_config(strategy_type: StrategyType):
+    """전략별 특정 config 인스턴스 생성"""
+    config_map = {
+        StrategyType.CONSERVATIVE: lambda: ConservativeStrategyConfig(
+            name="Conservative Strategy",
+            description="Low-risk conservative trading strategy"
+        ),
+        StrategyType.BALANCED: lambda: BalancedStrategyConfig(
+            name="Balanced Strategy", 
+            description="Balanced risk/reward strategy",
+            signal_threshold=8.0,
+            risk_per_trade=0.02
+        ),
+        StrategyType.AGGRESSIVE: lambda: AggressiveStrategyConfig(
+            name="Aggressive Strategy",
+            description="High-risk aggressive trading strategy", 
+            signal_threshold=5.0,
+            risk_per_trade=0.03
+        ),
+        StrategyType.MOMENTUM: lambda: MomentumStrategyConfig(
+            name="Momentum Strategy",
+            description="Momentum-based trading strategy",
+            signal_threshold=6.0, 
+            risk_per_trade=0.025
+        ),
+        StrategyType.SWING: lambda: SWING_STRATEGY_CONFIG,
+        StrategyType.MEAN_REVERSION: lambda: MEAN_REVERSION_CONFIG,
+        # TREND_PULLBACK and VOLATILITY_BREAKOUT use general config (no specific config class)
+        StrategyType.MULTI_TIMEFRAME: lambda: MULTI_TIMEFRAME_CONFIG,
+    }
+    
+    config_creator = config_map.get(strategy_type)
+    if config_creator:
+        return config_creator()
+    return None
 
 class StrategyFactory:
     """
@@ -51,7 +100,11 @@ class StrategyFactory:
                                config: Optional[StrategyConfig] = None) -> Optional[BaseStrategy]:
         """정적 전략 인스턴스 생성"""
         if config is None:
-            config = get_strategy_config(strategy_type)
+            # 전략별 특정 config 우선 사용
+            config = get_strategy_specific_config(strategy_type)
+            if config is None:
+                # fallback to general config
+                config = get_strategy_config(strategy_type)
 
         if config is None:
             logger.error(f"전략 설정을 찾을 수 없습니다: {strategy_type.value}")
