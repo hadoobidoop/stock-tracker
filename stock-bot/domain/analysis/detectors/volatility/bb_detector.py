@@ -4,7 +4,7 @@ import pandas as pd
 
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
-from ...base.signal_detector import SignalDetector
+from domain.analysis.detectors.signal_detector import SignalDetector
 
 logger = get_logger(__name__)
 
@@ -58,7 +58,7 @@ class BBSignalDetector(SignalDetector):
                 buy_score += self.weight * adj * 0.5 # 이벤트 보너스
                 buy_details.append("BB 하단 복귀 이벤트")
 
-        # 매도 신호: 상단 밴드 근접 ���는 터치
+        # 매도 신호: 상단 밴드 근접 또는 터치
         if latest['Close'] > latest['BBU_20_2.0']:
             strength = (latest['Close'] - latest['BBU_20_2.0']) / latest['BBB_20_2.0']
             sell_score += self.weight * adj * (0.5 + strength) # 상태 점수

@@ -2,7 +2,7 @@ from typing import Dict, List, Tuple
 
 import pandas as pd
 
-from domain.analysis.base.signal_detector import SignalDetector
+from domain.analysis.detectors.signal_detector import SignalDetector
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 

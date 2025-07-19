@@ -5,7 +5,7 @@ import pandas as pd
 from domain.analysis.config.signals.realtime_signal_settings import VOLUME_SURGE_FACTOR
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
-from ...base.signal_detector import SignalDetector
+from domain.analysis.detectors.signal_detector import SignalDetector
 
 logger = get_logger(__name__)
 

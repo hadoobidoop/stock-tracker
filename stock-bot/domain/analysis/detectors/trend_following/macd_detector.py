@@ -4,7 +4,7 @@ import pandas as pd
 
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
-from ...base.signal_detector import SignalDetector
+from domain.analysis.detectors.signal_detector import SignalDetector
 from ...models.trading_signal import TechnicalIndicatorEvidence
 
 logger = get_logger(__name__)
@@ -92,7 +92,7 @@ class MACDSignalDetector(SignalDetector):
                 macd_cross_sell_score *= 0.8
                 sell_details.append(f"MACD 데드 크로스 (ADX 약세: {latest_data['ADX_14']:.2f})")
             else:
-                sell_details.append(f"MACD 데드 크로스 (ADX ���통: {latest_data['ADX_14']:.2f})")
+                sell_details.append(f"MACD 데드 크로스 (ADX 보통: {latest_data['ADX_14']:.2f})")
 
             sell_score += macd_cross_sell_score
             sell_details.append(f"MACD 데드 크로스 (MACD:{latest_data['MACD_12_26_9']:.2f} < Signal:{latest_data['MACDs_12_26_9']:.2f})")
