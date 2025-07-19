@@ -258,7 +258,7 @@ class StrategyManager:
             strategies.append({
                 "type": strategy_type.value,
                 "name": strategy.get_name(),
-                "description": strategy.config.description,
+                "description": strategy.get_description(),
                 "is_current": strategy == self.current_strategy,
                 "strategy_class": "static"
             })

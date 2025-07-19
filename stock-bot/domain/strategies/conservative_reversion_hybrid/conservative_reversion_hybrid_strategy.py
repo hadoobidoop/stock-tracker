@@ -27,7 +27,8 @@ from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from domain.strategies.conservative.conservative_strategy import ConservativeStrategy
 from domain.strategies.mean_reversion.mean_reversion_strategy import MeanReversionStrategy
-from domain.analysis.strategy.configs.static_strategies import get_strategy_config
+from domain.strategies.conservative.configs.conservative_config import ConservativeStrategyConfig
+from domain.strategies.mean_reversion.configs.mean_reversion_config import MEAN_REVERSION_CONFIG
 
 logger = get_logger(__name__)
 
@@ -40,8 +41,13 @@ class ConservativeReversionHybridStrategy(BaseStrategy):
     """
     def __init__(self, strategy_type: StrategyType, config: StrategyConfig):
         super().__init__(strategy_type, config)
-        self.conservative_strategy = ConservativeStrategy(StrategyType.CONSERVATIVE, get_strategy_config(StrategyType.CONSERVATIVE))
-        self.mean_reversion_strategy = MeanReversionStrategy(StrategyType.MEAN_REVERSION, get_strategy_config(StrategyType.MEAN_REVERSION))
+        conservative_config = ConservativeStrategyConfig(
+            name="Conservative Strategy",
+            description="Low-risk conservative trading strategy"
+        )
+        mean_reversion_config = MEAN_REVERSION_CONFIG
+        self.conservative_strategy = ConservativeStrategy(StrategyType.CONSERVATIVE, conservative_config)
+        self.mean_reversion_strategy = MeanReversionStrategy(StrategyType.MEAN_REVERSION, mean_reversion_config)
 
     def initialize(self) -> bool:
         """

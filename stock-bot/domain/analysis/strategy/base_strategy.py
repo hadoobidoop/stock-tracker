@@ -110,11 +110,21 @@ class BaseStrategy(ABC):
 
     def get_name(self) -> str:
         """전략 이름 반환"""
-        return self.config.name
+        if hasattr(self.config, 'name'):
+            return self.config.name
+        elif isinstance(self.config, dict):
+            return self.config.get('name', f"Strategy_{self.strategy_type.value}")
+        else:
+            return f"Strategy_{self.strategy_type.value}"
 
     def get_description(self) -> str:
         """전략 설명 반환"""
-        return self.config.description
+        if hasattr(self.config, 'description'):
+            return self.config.description
+        elif isinstance(self.config, dict):
+            return self.config.get('description', f"Description for {self.strategy_type.value}")
+        else:
+            return f"Description for {self.strategy_type.value}"
 
     def get_performance_metrics(self) -> Dict[str, Any]:
         """전략 성능 지표 반환"""

@@ -22,6 +22,7 @@ from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from domain.strategies.trend_following.trend_following_strategy import TrendFollowingStrategy
 from domain.strategies.momentum.momentum_strategy import MomentumStrategy
+from domain.strategies.momentum.configs.momentum_config import MomentumStrategyConfig
 from domain.analysis.strategy.configs.static_strategies import get_strategy_config
 
 logger = get_logger(__name__)
@@ -35,8 +36,16 @@ class AdaptiveMomentumStrategy(BaseStrategy):
     """
     def __init__(self, strategy_type: StrategyType, config: StrategyConfig):
         super().__init__(strategy_type, config)
-        self.trend_strategy = TrendFollowingStrategy(StrategyType.TREND_FOLLOWING, get_strategy_config(StrategyType.TREND_FOLLOWING))
-        self.momentum_strategy = MomentumStrategy(StrategyType.MOMENTUM, get_strategy_config(StrategyType.MOMENTUM))
+        # Use general config for TREND_FOLLOWING (it doesn't need detector_weights)
+        trend_config = get_strategy_config(StrategyType.TREND_FOLLOWING)
+        momentum_config = MomentumStrategyConfig(
+            name="Momentum Strategy",
+            description="Momentum-based trading strategy",
+            signal_threshold=6.0, 
+            risk_per_trade=0.025
+        )
+        self.trend_strategy = TrendFollowingStrategy(StrategyType.TREND_FOLLOWING, trend_config)
+        self.momentum_strategy = MomentumStrategy(StrategyType.MOMENTUM, momentum_config)
 
     def initialize(self) -> bool:
         """하위 전략들을 초기화합니다."""

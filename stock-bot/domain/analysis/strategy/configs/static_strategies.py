@@ -243,6 +243,21 @@ STRATEGY_CONFIGS = {
         implementation_class="domain.strategies.market_regime_hybrid.market_regime_hybrid_strategy.MarketRegimeHybridStrategy",
         market_filters={},
         position_management={}
+    ),
+    
+    StrategyType.MACRO_DRIVEN: StrategyConfig(
+        name="매크로 지표 중심 전략",
+        description="VIX, 버핏지수 등 매크로 경제 지표를 중심으로 하는 전략",
+        signal_threshold=7.0,
+        risk_per_trade=0.02,
+        implementation_class="domain.strategies.macro_driven.macro_driven_strategy.MacroDrivenStrategy",
+        market_filters={
+            "macro_confirmation": True
+        },
+        position_management={
+            "max_positions": 3,
+            "position_timeout_hours": 168  # 7일
+        }
     )
 }
 

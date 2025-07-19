@@ -67,10 +67,9 @@ class MultiTimeframeStrategy(BaseStrategy):
             Exception: Detector/Orchestrator 생성 실패 시 False 반환 및 로그 기록
         """
         try:
-            detectors = [
-                MultiTimeframeCompositeDetector(weight=self.config["detector_weights"].get("composite", 7.0))
-            ]
-            self.orchestrator = SignalDetectionOrchestrator(detectors=detectors)
+            self.orchestrator = SignalDetectionOrchestrator()
+            detector = MultiTimeframeCompositeDetector(weight=self.config["detector_weights"].get("composite", 7.0))
+            self.orchestrator.add_detector(detector)
             self.is_initialized = True
             logger.info(f"{self.get_name()} 초기화 완료")
             return True
