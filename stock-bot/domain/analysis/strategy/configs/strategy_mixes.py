@@ -5,7 +5,7 @@
 """
 
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Union
 
 from domain.analysis.base.models.enums import StrategyType, StrategyMixMode
 
@@ -20,11 +20,17 @@ class StrategyMixConfig:
     threshold_adjustment: float = 1.0   # 임계값 조정 계수
     
     
-# 전략 조합 정의
-STRATEGY_MIXES: Dict[str, StrategyMixConfig] = {
-    # aggressive_mix는 domain.strategies.aggressive_mix.configs.aggressive_mix_config에서 관리됩니다.
-    # conservative_mix는 domain.strategies.conservative_mix.configs.conservative_mix_config에서 관리됩니다.
-    # balanced_mix는 domain.strategies.balanced_mix.configs.balanced_mix_config에서 관리됩니다.
+# Import individual mix configurations
+from domain.strategies.aggressive_mix.configs.aggressive_mix_config import AGGRESSIVE_MIX_CONFIG
+from domain.strategies.conservative_mix.configs.conservative_mix_config import CONSERVATIVE_MIX_CONFIG
+from domain.strategies.balanced_mix.configs.balanced_mix_config import BALANCED_MIX_CONFIG
+
+# 전략 조합 정의 - 개별 폴더에서 이관된 설정들을 중앙 집중화
+# Note: The individual configs have their own dataclass types but compatible interfaces
+STRATEGY_MIXES: Dict[str, Union[StrategyMixConfig, object]] = {
+    "aggressive_mix": AGGRESSIVE_MIX_CONFIG,
+    "conservative_mix": CONSERVATIVE_MIX_CONFIG,
+    "balanced_mix": BALANCED_MIX_CONFIG,
 }
 
 # 시장 상황별 권장 전략 조합

@@ -19,9 +19,7 @@ from domain.analysis.base.models.enums import StrategyType
 from domain.analysis.strategy.configs.strategy_mixes import (
     StrategyMixMode, StrategyMixConfig, STRATEGY_MIXES
 )
-from domain.strategies.aggressive_mix.configs.aggressive_mix_config import AGGRESSIVE_MIX_CONFIG
-from domain.strategies.balanced_mix.configs.balanced_mix_config import BALANCED_MIX_CONFIG
-from domain.strategies.conservative_mix.configs.conservative_mix_config import CONSERVATIVE_MIX_CONFIG
+# Individual mix configs are now managed centrally via STRATEGY_MIXES
 from domain.strategies.dynamic.dynamic_strategy_manager import DynamicStrategyManager
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
@@ -226,13 +224,7 @@ class StrategyManager:
 
     def _get_mix_config(self, mix_name: str) -> Optional[StrategyMixConfig]:
         """믹스 설정을 가져옵니다."""
-        mix_configs = {
-            "aggressive_mix": AGGRESSIVE_MIX_CONFIG,
-            "conservative_mix": CONSERVATIVE_MIX_CONFIG,
-            "balanced_mix": BALANCED_MIX_CONFIG
-        }
-        
-        return mix_configs.get(mix_name) or STRATEGY_MIXES.get(mix_name)
+        return STRATEGY_MIXES.get(mix_name)
 
     def switch_to_dynamic_strategy(self, strategy_name: str) -> bool:
         """동적 전략으로 교체 (DynamicStrategyManager에 위임)"""
