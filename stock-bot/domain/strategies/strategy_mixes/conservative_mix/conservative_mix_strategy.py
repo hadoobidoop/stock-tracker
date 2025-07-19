@@ -33,7 +33,7 @@ import pandas as pd
 
 from domain.analysis.base.models import StrategyType
 from domain.analysis.models.strategy_result import StrategyResult
-from domain.analysis.base.models.base_strategy import BaseStrategy
+from domain.analysis.models.base_strategy import BaseStrategy
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from .configs import CONSERVATIVE_MIX_CONFIG, ConservativeMixConfig

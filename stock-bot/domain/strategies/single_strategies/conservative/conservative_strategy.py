@@ -6,7 +6,7 @@ from domain.analysis.models.enums import StrategyType
 from domain.analysis.detectors.composite.composite_detector import CompositeSignalDetector
 from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDetector
 from domain.analysis.models.strategy_result import StrategyResult
-from domain.analysis.base.models.base_strategy import BaseStrategy
+from domain.analysis.models.base_strategy import BaseStrategy
 from domain.analysis.service.signal_orchestrator import SignalDetectionOrchestrator
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger

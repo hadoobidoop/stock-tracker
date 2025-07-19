@@ -28,6 +28,7 @@ from typing import Dict, Optional
 
 import pandas as pd
 
+from domain.analysis.models.base_strategy import BaseStrategy
 from domain.analysis.service.signal_orchestrator import SignalDetectionOrchestrator
 from domain.strategies.strategy_config import StrategyConfig
 from domain.analysis.models.enums import StrategyType
@@ -39,7 +40,6 @@ from domain.analysis.models.strategy_result import StrategyResult
 from domain.stock.service.market_data_service import MarketDataService
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
-from domain.analysis.base.models.base_strategy import BaseStrategy
 
 logger = get_logger(__name__)
 

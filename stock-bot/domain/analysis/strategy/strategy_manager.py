@@ -23,7 +23,7 @@ from domain.strategies.strategy_mixes import (
 from domain.strategies.dynamic_strategies.dynamic_strategy_manager.dynamic_strategy_manager import DynamicStrategyManager
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
-from domain.analysis.base.models.base_strategy import BaseStrategy
+from domain.analysis.models.base_strategy import BaseStrategy
 from domain.analysis.models.strategy_result import StrategyResult
 from .strategy_factory import StrategyFactory
 

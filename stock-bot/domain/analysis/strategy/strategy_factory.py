@@ -39,7 +39,7 @@ try:
     from domain.strategies.dynamic_strategies.market_regime_hybrid.configs.market_regime_hybrid_config import MARKET_REGIME_HYBRID_CONFIG
 except ImportError:
     MARKET_REGIME_HYBRID_CONFIG = None
-from domain.analysis.base.models.base_strategy import BaseStrategy
+from domain.analysis.models.base_strategy import BaseStrategy
 from domain.strategies.dynamic_strategies.conservative_reversion_hybrid.conservative_reversion_hybrid_strategy import ConservativeReversionHybridStrategy
 from domain.strategies.dynamic_strategies.adaptive_momentum_hybrid.adaptive_momentum_hybrid_strategy import AdaptiveMomentumStrategy
 from domain.strategies.dynamic_strategies.market_regime_hybrid.market_regime_hybrid_strategy import MarketRegimeHybridStrategy

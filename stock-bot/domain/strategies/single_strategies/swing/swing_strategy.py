@@ -5,7 +5,7 @@ import pandas as pd
 from domain.analysis.base.models import StrategyType
 from domain.analysis.service.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.models.strategy_result import StrategyResult
-from domain.analysis.base.models.base_strategy import BaseStrategy
+from domain.analysis.models.base_strategy import BaseStrategy
 from domain.strategies.single_strategies.swing.configs.swing_config import SWING_STRATEGY_CONFIG
 from domain.strategies.single_strategies.swing.detectors.swing_adx_detector import SwingADXDetector
 from domain.strategies.single_strategies.swing.detectors.swing_macd_detector import SwingMACDDetector
