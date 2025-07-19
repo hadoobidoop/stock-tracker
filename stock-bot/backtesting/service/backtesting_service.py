@@ -3,8 +3,8 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 
 # 새로운 전략 시스템 import
-from domain.analysis.models.enums import StrategyType
-from domain.analysis.repository.analysis_repository import MarketDataRepository
+from domain.signals.models.enums import StrategyType
+from domain.signals.repository.analysis_repository import MarketDataRepository
 from domain.stock.repository.stock_repository import StockRepository
 from domain.stock.service.stock_analysis_service import StockAnalysisService
 from infrastructure.db.repository.sql_market_data_repository import SQLMarketDataRepository
@@ -31,7 +31,7 @@ class BacktestingService:
         """단일 전략을 심층 분석합니다."""
         logger.info(f"Running deep-dive analysis for single strategy: {strategy_name}")
 
-        from domain.analysis.strategy.strategy_factory import StrategyFactory
+        from domain.signals.strategy.strategy_factory import StrategyFactory
         is_supported, strategy_class = StrategyFactory.is_strategy_supported(strategy_name)
 
         if not is_supported:
@@ -52,7 +52,7 @@ class BacktestingService:
         logger.info(f"Comparing performance for strategies: {', '.join(strategies)}")
         
         all_results = {}
-        from domain.analysis.strategy.strategy_factory import StrategyFactory
+        from domain.signals.strategy.strategy_factory import StrategyFactory
 
         for name in strategies:
             is_supported, strategy_class = StrategyFactory.is_strategy_supported(name)
@@ -122,7 +122,7 @@ class BacktestingService:
         """동적 전략으로 백테스트 실행"""
         logger.info(f"Running backtest with dynamic strategy: {dynamic_strategy_name}")
         
-        from domain.analysis.strategy.strategy_factory import StrategyFactory
+        from domain.signals.strategy.strategy_factory import StrategyFactory
         
         # DynamicStrategyFactory를 사용하여 동적 전략 인스턴스 생성
         dynamic_strategy = StrategyFactory.create_dynamic_strategy(dynamic_strategy_name)

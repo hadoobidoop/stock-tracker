@@ -69,7 +69,7 @@
 ```python
 from domain.strategies.scalping.scalping_strategy import ScalpingStrategy
 from domain.strategies.scalping.configs.scalping_config import ScalpingStrategyConfig
-from domain.analysis.strategy.configs.static_strategies import StrategyType
+from domain.signals.strategy.configs.static_strategies import StrategyType
 
 config = ScalpingStrategyConfig()
 strategy = ScalpingStrategy(StrategyType.SCALPING, config)

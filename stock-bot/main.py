@@ -2,9 +2,10 @@
 import argparse
 import sys
 
-from domain.analysis.config.signals.service.signal_detection_service import SignalDetectionService
-from domain.analysis.models.enums import StrategyType
-from domain.strategies.strategy_selector import list_all_strategies
+from domain.signals.config.signals.service.signal_detection_service import SignalDetectionService
+from domain.signals.models.enums import StrategyType
+from domain.orchestration.selector import list_all_strategies
+from domain.orchestration.registry import get_available_static_strategies
 # --- 새로운 전략 시스템 추가 ---
 from infrastructure.db.db_manager import create_db_and_tables
 from infrastructure.logging import setup_logging, get_logger
@@ -24,7 +25,7 @@ def parse_arguments():
     
     # 동적으로 사용 가능한 전략 목록 가져오기
     try:
-        from domain.analysis.strategy.strategy_registry import get_available_static_strategies
+        from domain.signals.strategy.strategy_registry import get_available_static_strategies
         available_strategies = [st.lower() for st in get_available_static_strategies()]
     except ImportError:
         # 폴백: 기본 전략들
@@ -70,7 +71,7 @@ def list_available_strategies():
     # 동적 전략
     print("\n🧠 동적 전략 (Dynamic Strategies):")
     print("-" * 60)
-    for strategy in strategies["dynamic_strategies"]:
+    for strategy in strategies["dynamic"]:
         print(f"• {strategy['name']}: {strategy['display_name']}")
         print(f"  📝 {strategy['description']}")
         print(f"  ⚡ 임계값: {strategy['signal_threshold']}, 💰 리스크: {strategy['risk_per_trade']*100:.1f}%")

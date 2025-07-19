@@ -62,7 +62,7 @@ from domain.strategies.aggressive_mix import AggressiveMixStrategy, AGGRESSIVE_M
 from domain.strategies.momentum.momentum_strategy import MomentumStrategy
 from domain.strategies.scalping.scalping_strategy import ScalpingStrategy
 from domain.strategies.volatility_breakout.volatility_breakout_strategy import VolatilityBreakoutStrategy
-from domain.analysis.strategy.configs.static_strategies import StrategyType
+from domain.signals.strategy.configs.static_strategies import StrategyType
 
 # 하위 전략 인스턴스 생성 및 등록
 momentum = MomentumStrategy(...)

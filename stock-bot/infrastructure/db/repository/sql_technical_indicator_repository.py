@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from sqlalchemy.dialects.mysql import insert as mysql_insert
 
-from domain.analysis.repository.technical_indicator_repository import TechnicalIndicatorRepository
+from domain.signals.repository.technical_indicator_repository import TechnicalIndicatorRepository
 from infrastructure.db import get_db
 from infrastructure.db.models.technical_indicator import TechnicalIndicator as TechnicalIndicatorModel
 from infrastructure.logging import get_logger

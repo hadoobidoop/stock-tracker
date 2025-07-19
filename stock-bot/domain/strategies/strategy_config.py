@@ -5,13 +5,15 @@
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional
 
-from domain.analysis.detectors.detector_config import DetectorConfig
-from domain.analysis.models.enums import StrategyMode
-from domain.strategies.strategy_registry import (
+from domain.signals.detectors.detector_config import DetectorConfig
+from domain.signals.models.enums import StrategyMode
+from domain.orchestration.registry import (
     get_available_static_strategies,
-    get_available_dynamic_strategies,
-    get_available_strategy_mix,
+    get_available_dynamic,
+    get_available_strategy_mix
 )
+
+
 @dataclass
 class StrategyConfig:
     """전략 설정"""
@@ -34,7 +36,7 @@ class DefaultStrategyConfig:
     STATIC_STRATEGIES_ENABLED = True
     # === 동적 전략 설정 ===
     DEFAULT_DYNAMIC_STRATEGY = "dynamic_weight_strategy"
-    DYNAMIC_STRATEGIES_ENABLED = True
+    dynamic_ENABLED = True
     # === Static Strategy Mix 설정 ===
     DEFAULT_STRATEGY_MIX = "balanced_mix"  # balanced_mix, conservative_mix, aggressive_mix
     STRATEGY_MIX_ENABLED = True
@@ -56,9 +58,9 @@ def get_strategy_availability() -> Dict[str, Dict[str, Any]]:
             "available": get_available_static_strategies(),
             "default": DefaultStrategyConfig.DEFAULT_STATIC_STRATEGY
         },
-        "dynamic_strategies": {
-            "enabled": DefaultStrategyConfig.DYNAMIC_STRATEGIES_ENABLED,
-            "available": get_available_dynamic_strategies(),
+        "dynamic": {
+            "enabled": DefaultStrategyConfig.dynamic_ENABLED,
+            "available": get_available_dynamic(),
             "default": DefaultStrategyConfig.DEFAULT_DYNAMIC_STRATEGY
         },
         "strategy_mix": {

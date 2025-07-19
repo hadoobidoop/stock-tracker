@@ -80,8 +80,8 @@
 
 ## [서비스 패키지 구조 결정 및 위치]
 
-### ✅ 서비스 생성 위치: domain/analysis/service/
-- DataPreparationService, StrategyExecutionService, SignalPersistenceService 등은 모두 `domain/analysis/service/` 하위에 생성
+### ✅ 서비스 생성 위치: domain/signals/service/
+- DataPreparationService, StrategyExecutionService, SignalPersistenceService 등은 모두 `domain/signals/service/` 하위에 생성
 - 기존 signal_detection_service.py 등과 함께 관리, 분석(analysis) 도메인에 집중
 - 스케줄러/잡, API, 백테스트 등 다양한 실행 환경에서 재사용 용이
 
@@ -180,14 +180,4 @@ domain/
 | DataPreparationService        | 데이터 로딩, 캐싱, 전처리, 지표 계산 등 데이터 준비 전담                                          | load_data(), compute_indicators(), ...            |
 | StrategyExecutionService      | 전략 실행(정적/동적/믹스), 신호 감지, 전략별 분석 실행                                           | execute_strategy(), execute_mix(), ...            |
 | SignalPersistenceService      | 신호/지표 저장, DB 연동, 결과 기록                                                               | save_signal(), save_indicator(), ...              |
-| SignalDetectionService        | StrategyManager 기반 신호 감지, 전략 전환/조합, 지표 캐시, 동적 전략/믹스 지원                   | initialize(), analyze_with_current_strategy(), ...|
-
-#### 역할/인터페이스 상세 설명
-- **StaticStrategyManager**: 정적 전략만을 관리하며, 전략의 초기화, 분석, 추가/제거, 상태 조회 등 책임.
-- **StrategyMixManager**: 여러 정적 전략을 조합(가중치, 투표 등)하여 믹스 전략을 실행, 믹스 config 관리.
-- **DynamicStrategyManager**: 동적 전략(시장 상황/지표 기반 실시간 가중치 조정) 관리, 전략 전환, 분석 실행.
-- **Orchestrator**: 각 매니저/서비스를 조합하여 전체 신호 감지/전략 실행 흐름을 제어, 결과 통합.
-- **DataPreparationService**: 데이터 로딩, 전처리, 지표 계산 등 데이터 준비만 전담.
-- **StrategyExecutionService**: 전략 실행(정적/동적/믹스) 및 신호 감지, 분석 실행.
-- **SignalPersistenceService**: 신호/지표/분석 결과의 저장, DB 연동, 기록 관리.
-- **SignalDetectionService**: StrategyManager를 활용한 신호 감지, 전략 전환/조합, 지표 캐시, 실시간/배치 신호 분석의 핵심 서비스. 
+| SignalDetectionService        | StrategyManager 기반 신호 감지, 전략 전환/조합, 지표 캐시, 동적 전략/믹스 지원                   | initialize(), analyze_with_current_strategy(), ...| 

@@ -67,7 +67,7 @@ domain/strategies/mean_reversion/
 
 ```python
 from domain.strategies.conservative_reversion_hybrid.conservative_reversion_hybrid_strategy import ConservativeReversionHybridStrategy
-from domain.analysis.strategy.configs.static_strategies import StrategyType, get_strategy_config
+from domain.signals.strategy.configs.static_strategies import StrategyType, get_strategy_config
 
 config = get_strategy_config(StrategyType.CONSERVATIVE_REVERSION_HYBRID)
 strategy = ConservativeReversionHybridStrategy(StrategyType.CONSERVATIVE_REVERSION_HYBRID, config)

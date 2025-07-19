@@ -31,11 +31,11 @@
 
 **[최신 구조 안내]**
 - 모든 전략은 3개의 패키지로 체계적으로 분류되어 관리됩니다:
-  - `domain/strategies/single_strategies/`: 개별 전략들 (conservative, balanced, aggressive, momentum 등)
+  - `domain/strategies/single/`: 개별 전략들 (conservative, balanced, aggressive, momentum 등)
   - `domain/strategies/strategy_mixes/`: 전략 조합들 (conservative_mix, balanced_mix, aggressive_mix)
-  - `domain/strategies/dynamic_strategies/`: 동적 전략들 (dynamic_strategy_manager, adaptive_momentum_hybrid, market_regime_hybrid 등)
+  - `domain/strategies/dynamic/`: 동적 전략들 (dynamic_strategy_manager, adaptive_momentum_hybrid, market_regime_hybrid 등)
 - 각 전략은 독립적인 폴더에 구현체, Detector, config가 완전히 분리되어 관리됩니다.
-- 예: `domain/strategies/single_strategies/conservative/conservative_strategy.py`, `domain/strategies/single_strategies/aggressive/detectors/aggressive_sma_detector.py` 등
+- 예: `domain/strategies/single/conservative/conservative_strategy.py`, `domain/strategies/single/aggressive/detectors/aggressive_sma_detector.py` 등
 - 기존 `domain/analysis/strategy/implementations/` 디렉토리는 점진적으로 폐기 예정이며, 신규/주요 전략은 모두 폴더별로 완전 분리되어 있습니다.
 
 #### **세 가지 분석 모드**
@@ -72,11 +72,11 @@
 
 **[전략 구조 최신화]**
 - 모든 전략은 3개의 패키지로 체계적으로 분류되어 관리됩니다:
-  - `domain/strategies/single_strategies/`: 개별 전략들 (conservative, balanced, aggressive, momentum 등)
+  - `domain/strategies/single/`: 개별 전략들 (conservative, balanced, aggressive, momentum 등)
   - `domain/strategies/strategy_mixes/`: 전략 조합들 (conservative_mix, balanced_mix, aggressive_mix)
-  - `domain/strategies/dynamic_strategies/`: 동적 전략들 (dynamic_strategy_manager, adaptive_momentum_hybrid, market_regime_hybrid 등)
+  - `domain/strategies/dynamic/`: 동적 전략들 (dynamic_strategy_manager, adaptive_momentum_hybrid, market_regime_hybrid 등)
 - 각 전략은 독립적인 폴더에 구현체, Detector, config가 완전히 분리되어 관리됩니다.
-- 예: `domain/strategies/single_strategies/balanced/balanced_strategy.py`, `domain/strategies/single_strategies/momentum/configs/momentum_config.py` 등
+- 예: `domain/strategies/single/balanced/balanced_strategy.py`, `domain/strategies/single/momentum/configs/momentum_config.py` 등
 - 전략 추가/확장 시 기존 구조를 참고하여 폴더 단위로 일관성 있게 확장 가능합니다.
 
 | 전략명 (Enum) | 핵심 특징 |
@@ -173,11 +173,11 @@
 
 **[최신 구조]**
 - 모든 전략은 3개의 패키지로 체계적으로 분류되어 관리됩니다:
-  - `domain/strategies/single_strategies/`: 개별 전략들 (conservative, balanced, aggressive, momentum 등)
+  - `domain/strategies/single/`: 개별 전략들 (conservative, balanced, aggressive, momentum 등)
   - `domain/strategies/strategy_mixes/`: 전략 조합들 (conservative_mix, balanced_mix, aggressive_mix)
-  - `domain/strategies/dynamic_strategies/`: 동적 전략들 (dynamic_strategy_manager, adaptive_momentum_hybrid, market_regime_hybrid 등)
+  - `domain/strategies/dynamic/`: 동적 전략들 (dynamic_strategy_manager, adaptive_momentum_hybrid, market_regime_hybrid 등)
 - 각 전략은 독립적인 폴더에 구현체, Detector, config가 완전히 분리되어 관리됩니다.
-- 예: `domain/strategies/single_strategies/conservative/conservative_strategy.py`, `domain/strategies/single_strategies/aggressive/detectors/aggressive_sma_detector.py` 등
+- 예: `domain/strategies/single/conservative/conservative_strategy.py`, `domain/strategies/single/aggressive/detectors/aggressive_sma_detector.py` 등
 - 기존 `domain/analysis/strategy/implementations/` 디렉토리는 점진적으로 폐기 예정입니다.
 - 전략 추가/확장 시 기존 구조를 참고하여 폴더 단위로 일관성 있게 확장 가능합니다.
 

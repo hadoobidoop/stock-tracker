@@ -44,7 +44,7 @@
 ```python
 from domain.strategies.conservative_mix.conservative_mix_strategy import ConservativeMixStrategy
 from domain.strategies.conservative_mix.configs.conservative_mix_config import CONSERVATIVE_MIX_CONFIG
-from domain.analysis.strategy.configs.static_strategies import StrategyType
+from domain.signals.strategy.configs.static_strategies import StrategyType
 
 # 하위 전략 인스턴스 준비 (예시)
 conservative = ...  # ConservativeStrategy 인스턴스

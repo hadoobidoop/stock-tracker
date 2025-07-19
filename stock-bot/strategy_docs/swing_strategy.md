@@ -61,7 +61,7 @@ domain/strategies/swing/
 
 ```python
 from domain.strategies.swing.swing_strategy import SwingStrategy
-from domain.analysis.strategy.configs.static_strategies import StrategyType
+from domain.signals.strategy.configs.static_strategies import StrategyType
 
 # 전략 인스턴스 생성
 strategy = SwingStrategy(StrategyType.SWING)

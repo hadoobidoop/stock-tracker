@@ -5,7 +5,7 @@ from typing import List, Dict
 import pandas as pd
 from pytz import timezone
 
-from domain.analysis.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
+from domain.signals.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
 from domain.stock.config.settings import STOCK_SYMBOLS
 from domain.stock.repository.stock_repository import StockRepository
 from infrastructure.db.models.enums import TrendType

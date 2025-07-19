@@ -4,15 +4,15 @@ from typing import Dict, List, Optional, Any
 
 import pandas as pd
 
-from domain.analysis.models.enums import StrategyType
-from domain.analysis.base.models.enums import TradeType, TradeStatus
-from domain.analysis.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
-from domain.analysis.config.signals.signal_weights import SIGNAL_THRESHOLD
+from domain.signals.models.enums import StrategyType
+from domain.signals.base.models.enums import TradeType, TradeStatus
+from domain.signals.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
+from domain.signals.config.signals.signal_weights import SIGNAL_THRESHOLD
 # 기존 호환성을 위한 import
-from domain.analysis.service.signal_detection_service import SignalDetectionService
+from domain.signals.service.signal_detection_service import SignalDetectionService
 # Removed dependency on static_strategies.py
-from domain.analysis.models.strategy_result import StrategyResult
-from domain.analysis.utils import calculate_all_indicators, calculate_fibonacci_levels
+from domain.signals.models.strategy_result import StrategyResult
+from domain.signals.utils import calculate_all_indicators, calculate_fibonacci_levels
 from domain.stock.config.settings import MARKET_INDEX_TICKER
 from domain.stock.service.market_data_service import MarketDataService
 from domain.stock.service.stock_analysis_service import StockAnalysisService
@@ -75,7 +75,7 @@ class BacktestingEngine:
         """신호 감지 서비스 초기화"""
         if self.signal_service:
             try:
-                from domain.analysis.strategy.strategy_factory import StrategyFactory
+                from domain.signals.strategy.strategy_factory import StrategyFactory
                 all_strategies = StrategyFactory.get_available_static_strategies()
                 success = self.signal_service.initialize(all_strategies)
                 if success:

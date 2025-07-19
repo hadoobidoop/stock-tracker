@@ -31,7 +31,7 @@
 
 ### 2.4 Config 구조
 - 동적 전략 정의, 모디파이어 정의, 액션/조건/우선순위 등 모든 설정을 코드로 관리
-- 위치: `domain/strategies/dynamic/configs/dynamic_strategies.py`
+- 위치: `domain/strategies/dynamic/configs/dynamic.py`
 
 ---
 
@@ -98,7 +98,7 @@ MODIFIER_DEFINITIONS = {
 
 ## 5. 주요 확장/사용법
 
-- **새 동적 전략 추가**: `dynamic_strategies.py`에 전략 정의 추가 → 매니저에서 자동 인식/초기화
+- **새 동적 전략 추가**: `dynamic.py`에 전략 정의 추가 → 매니저에서 자동 인식/초기화
 - **새 모디파이어 추가**: `MODIFIER_DEFINITIONS`에 규칙 추가, 필요시 커스텀 Modifier 클래스 구현
 - **실행/전환**: `DynamicStrategyManager.switch_strategy('전략명')`으로 런타임에 전략 교체 가능
 - **상세 로그/분석**: `get_strategy_info()`, `get_detailed_log()` 등으로 분석 근거/적용 내역 확인
@@ -115,7 +115,7 @@ MODIFIER_DEFINITIONS = {
     - 매니저: `domain/strategies/dynamic/dynamic_strategy_manager.py`
     - 전략: `domain/strategies/dynamic/dynamic_strategy.py`
     - 모디파이어: `domain/strategies/dynamic/modifiers/`
-    - 설정: `domain/strategies/dynamic/configs/dynamic_strategies.py`
+    - 설정: `domain/strategies/dynamic/configs/dynamic.py`
 
 ---
 

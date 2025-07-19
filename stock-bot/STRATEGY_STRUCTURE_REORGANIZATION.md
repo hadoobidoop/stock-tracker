@@ -7,7 +7,7 @@
 ## 새로운 구조
 
 ### 1. 단일전략 (Single Strategies)
-**위치**: `domain/strategies/single_strategies/`
+**위치**: `domain/strategies/single/`
 
 개별적으로 동작하는 독립적인 전략들입니다.
 
@@ -35,7 +35,7 @@
 - `aggressive_mix/` - 공격적 조합 전략
 
 ### 3. 동적전략 (Dynamic Strategies)
-**위치**: `domain/strategies/dynamic_strategies/`
+**위치**: `domain/strategies/dynamic/`
 
 시장 상황에 따라 실시간으로 전략을 조정하는 동적 전략들입니다.
 
@@ -70,7 +70,7 @@
 └── market_regime_hybrid/
 
 변경: domain/strategies/
-├── single_strategies/
+├── single/
 │   ├── conservative/
 │   ├── balanced/
 │   ├── aggressive/
@@ -86,7 +86,7 @@
 │   ├── conservative_mix/
 │   ├── balanced_mix/
 │   └── aggressive_mix/
-└── dynamic_strategies/
+└── dynamic/
     ├── dynamic_strategy_manager/
     ├── adaptive_momentum_hybrid/
     ├── conservative_reversion_hybrid/
@@ -104,9 +104,10 @@ from domain.strategies.conservative_mix.conservative_mix_strategy import Conserv
 ```
 
 **변경**:
+
 ```python
-from domain.strategies.single_strategies.conservative.conservative_strategy import ConservativeStrategy
-from domain.strategies.dynamic_strategies.dynamic_strategy_manager.dynamic_strategy import DynamicCompositeStrategy
+from domain.strategies.single.conservative.conservative_strategy import ConservativeStrategy
+from domain.strategies.dynamic.dynamic_strategy_manager.dynamic_strategy import DynamicCompositeStrategy
 from domain.strategies.strategy_mixes.conservative_mix.conservative_mix_strategy import ConservativeMixStrategy
 ```
 
@@ -123,27 +124,29 @@ from domain.strategies.strategy_mixes.conservative_mix.conservative_mix_strategy
 ## 사용법
 
 ### Import 예시
+
 ```python
 # 단일전략 import
-from domain.strategies.single_strategies.conservative.conservative_strategy import ConservativeStrategy
-from domain.strategies.single_strategies.aggressive.aggressive_strategy import AggressiveStrategy
+from domain.strategies.single.conservative.conservative_strategy import ConservativeStrategy
+from domain.strategies.single.aggressive.aggressive_strategy import AggressiveStrategy
 
 # 전략 조합 import
 from domain.strategies.strategy_mixes.conservative_mix.conservative_mix_strategy import ConservativeMixStrategy
 
 # 동적전략 import
-from domain.strategies.dynamic_strategies.dynamic_strategy_manager.dynamic_strategy import DynamicCompositeStrategy
+from domain.strategies.dynamic.dynamic_strategy_manager.dynamic_strategy import DynamicCompositeStrategy
 ```
 
 ### 패키지별 import
+
 ```python
 # 전체 패키지 import
-from domain.strategies import single_strategies, strategy_mixes, dynamic_strategies
+from domain.strategies import single, strategy_mixes, dynamic
 
 # 특정 패키지의 모든 전략 import
-from domain.strategies.single_strategies import conservative, balanced, aggressive
+from domain.strategies.single import conservative, balanced, aggressive
 from domain.strategies.strategy_mixes import conservative_mix, balanced_mix, aggressive_mix
-from domain.strategies.dynamic_strategies import dynamic_strategy_manager, adaptive_momentum_hybrid
+from domain.strategies.dynamic import dynamic_strategy_manager, adaptive_momentum_hybrid
 ```
 
 ## 마이그레이션 완료

@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from domain.analysis.base.models.enums import TradeStatus
+from domain.signals.base.models.enums import TradeStatus
 from .trade import Trade
 
 

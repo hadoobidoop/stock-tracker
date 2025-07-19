@@ -120,7 +120,7 @@ domain/
 - 각 폴더 내 configs/, detectors/, 전략 구현체 파일 분리
 
 ### ✅ 2단계: Detector 계층 리팩토링 (완료)
-- 공통 Detector는 기본 구현 제공 (domain/analysis/detectors/)
+- 공통 Detector는 기본 구현 제공 (domain/signals/detectors/)
 - 전략별 커스텀 Detector는 각 전략 패키지의 detectors/에 위치
 - 모든 Detector가 TechnicalIndicatorEvidence 등 상세 근거를 일관되게 반환하도록 개선
 
@@ -275,7 +275,7 @@ domain/
 - [ ] 신호 근거, 점수, 전략별 동작에 대한 리포트/로그 체계화
 - [ ] 문서화(README, 구조/확장법, 예시 등) 및 자동화 스크립트 추가
 - [ ] 신규 전략/Detector 추가 시, 기존 구조/패턴을 준수하여 일관성 유지
-- [ ] 레거시 코드(domain/analysis/strategy/implementations 등) 일괄 삭제 및 정리 (전략별 폴더 독립화 100% 완료 후)
+- [ ] 레거시 코드(signals/strategy/implementations 등) 일괄 삭제 및 정리 (전략별 폴더 독립화 100% 완료 후)
 
 ---
 
@@ -283,7 +283,7 @@ domain/
 
 ### 전략별 폴더 독립화 이후 기존 코드 정리/수정 계획
 
-1. domain/analysis/strategy/implementations/, domain/analysis/detectors/ 등 상위 디렉터리의 레거시 전략/Detector/config 파일 삭제 또는 deprecated 처리
+1. domain/signals/strategy/implementations/, domain/signals/detectors/ 등 상위 디렉터리의 레거시 전략/Detector/config 파일 삭제 또는 deprecated 처리
 2. StrategyFactory, StrategyManager 등 전략 생성/등록/선택 로직의 import 경로를 새로운 구조(domain/strategies/전략명/...)로 일괄 수정
 3. 테스트 코드의 import 경로 및 테스트 대상 파일/클래스 위치를 모두 새로운 구조로 변경
 4. README, 개발 가이드, 예시 코드 등 문서에서 전략 구조/사용법을 새로운 구조로 일원화

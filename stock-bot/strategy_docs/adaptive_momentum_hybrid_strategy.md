@@ -67,7 +67,7 @@ domain/strategies/momentum/
 
 ```python
 from domain.strategies.adaptive_momentum_hybrid.adaptive_momentum_hybrid_strategy import AdaptiveMomentumStrategy
-from domain.analysis.strategy.configs.static_strategies import StrategyType, get_strategy_config
+from domain.signals.strategy.configs.static_strategies import StrategyType, get_strategy_config
 
 config = get_strategy_config(StrategyType.ADAPTIVE_MOMENTUM)
 strategy = AdaptiveMomentumStrategy(StrategyType.ADAPTIVE_MOMENTUM, config)

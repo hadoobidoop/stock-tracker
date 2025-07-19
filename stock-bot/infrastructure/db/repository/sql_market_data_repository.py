@@ -16,7 +16,7 @@ from infrastructure.logging import get_logger
 logger = get_logger(__name__)
 
 
-from domain.analysis.repository.analysis_repository import MarketDataRepository
+from domain.signals.repository.analysis_repository import MarketDataRepository
 
 class SQLMarketDataRepository(MarketDataRepository):
     """시장 데이터 SQL 레포지토리"""

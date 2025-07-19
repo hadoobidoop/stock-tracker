@@ -9,7 +9,7 @@
 from datetime import datetime, timedelta
 from typing import Dict, Any
 
-from domain.analysis.models.trading_signal import SignalEvidence
+from domain.signals.models.trading_signal import SignalEvidence
 from infrastructure.db.repository.sql_trading_signal_repository import SQLTradingSignalRepository
 from infrastructure.logging import get_logger
 

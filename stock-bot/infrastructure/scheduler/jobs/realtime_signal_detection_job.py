@@ -3,10 +3,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Coroutine
 
-from domain.analysis.config.signals.service.signal_detection_service import SignalDetectionService
-from domain.analysis.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
-from domain.analysis.models.enums import StrategyMode
-from domain.strategies.strategy_selector import get_current_strategy_config, strategy_selector
+from domain.orchestration.selector import get_current_strategy_config, strategy_selector
+from domain.signals.config.signals.service.signal_detection_service import SignalDetectionService
+from domain.signals.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
+from domain.signals.models.enums import StrategyMode
 
 # 프로젝트 루트 디렉토리를 Python 경로에 추가
 project_root = Path(__file__).resolve().parents[3]
@@ -20,18 +20,18 @@ from infrastructure.db.repository.sql_trading_signal_repository import SQLTradin
 
 # 새로운 전략 시스템 import
 
-from domain.analysis.utils import (
+from domain.signals.utils import (
     calculate_all_indicators,
     calculate_fibonacci_levels
 )
-from domain.analysis.repository.technical_indicator_repository import TechnicalIndicatorRepository
-from domain.analysis.repository.trading_signal_repository import TradingSignalRepository
+from domain.signals.repository.technical_indicator_repository import TechnicalIndicatorRepository
+from domain.signals.repository.trading_signal_repository import TradingSignalRepository
 from domain.stock.service.stock_analysis_service import StockAnalysisService
 from domain.stock.repository.stock_repository import StockRepository
 from infrastructure.db.repository.sql_stock_repository import SQLStockRepository
-from domain.analysis.config.signals.signal_weights import  SIGNAL_THRESHOLD
-from domain.analysis.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
-from domain.analysis.utils.multi_timeframe import (
+from domain.signals.config.signals.signal_weights import  SIGNAL_THRESHOLD
+from domain.signals.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
+from domain.signals.utils.multi_timeframe import (
     apply_multi_timeframe_filter,
     validate_multi_timeframe_data,
     get_trend_direction_multi_timeframe,
@@ -232,7 +232,7 @@ class RealtimeSignalDetectionJob:
                 return None
             
             # 2. 기술적 지표 계산
-            from domain.analysis.utils import calculate_all_indicators
+            from domain.signals.utils import calculate_all_indicators
             df_with_indicators = calculate_all_indicators(df)
             
             if df_with_indicators.empty:
@@ -399,7 +399,7 @@ def realtime_signal_detection_job():
                     daily_data_cache["daily_extras"][symbol] = fib_data
 
                     # 새로 추가: 일봉 기술적 지표 계산
-                    from domain.analysis.utils import calculate_daily_indicators
+                    from domain.signals.utils import calculate_daily_indicators
                     daily_indicators = calculate_daily_indicators(df_daily)
                     daily_data_cache["daily_indicators"][symbol] = daily_indicators
 
@@ -586,8 +586,8 @@ def realtime_signal_detection_job():
 
                     # 신호 저장 로직 (기존)
                     try:
-                        from domain.analysis.models.trading_signal import TradingSignal, SignalType
-                        from domain.analysis.models.trading_signal import SignalEvidence
+                        from domain.signals.models.trading_signal import TradingSignal, SignalType
+                        from domain.signals.models.trading_signal import SignalEvidence
 
                         signal_type = SignalType.BUY if signal_result.get('type') == 'BUY' else SignalType.SELL
                         evidence = SignalEvidence(

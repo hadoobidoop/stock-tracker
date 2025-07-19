@@ -1,6 +1,6 @@
 import os
 from typing import Dict, Any
-from domain.analysis.models.enums import StrategyMode
+from domain.signals.models.enums import StrategyMode
 from domain.strategies.strategy_config import DefaultStrategyConfig
 
 
@@ -38,6 +38,6 @@ class EnvironmentConfig:
             "mode": backtest_mode,
             "allow_switching": os.getenv("BACKTEST_ALLOW_SWITCHING", "true").lower() == "true",
             "static_strategies_enabled": DefaultStrategyConfig.STATIC_STRATEGIES_ENABLED,
-            "dynamic_strategies_enabled": DefaultStrategyConfig.DYNAMIC_STRATEGIES_ENABLED,
+            "dynamic_enabled": DefaultStrategyConfig.dynamic_ENABLED,
             "strategy_mix_enabled": DefaultStrategyConfig.STRATEGY_MIX_ENABLED
         } 

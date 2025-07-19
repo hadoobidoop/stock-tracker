@@ -48,7 +48,7 @@
 from domain.strategies.balanced_mix import BalancedMixStrategy
 from domain.strategies.trend_following.trend_following_strategy import TrendFollowingStrategy
 from domain.strategies.mean_reversion.mean_reversion_strategy import MeanReversionStrategy
-from domain.analysis.strategy.configs.static_strategies import StrategyType
+from domain.signals.strategy.configs.static_strategies import StrategyType
 
 # 하위 전략 인스턴스 생성
 trend_following = TrendFollowingStrategy(...)

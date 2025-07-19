@@ -7,15 +7,15 @@ This package contains all trading strategies organized into three main categorie
 3. Dynamic Strategies: Strategies that adapt to market conditions
 
 Structure:
-- single_strategies/: Individual trading strategies
+- single/: Individual trading strategies
 - strategy_mixes/: Strategy combinations (weighted, voting, ensemble)
-- dynamic_strategies/: Market-adaptive strategies
+- dynamic/: Market-adaptive strategies
 """
 
-from . import single_strategies, strategy_mixes, dynamic_strategies
+from . import single, mixes, dynamic
 
 __all__ = [
-    'single_strategies',
-    'strategy_mixes', 
-    'dynamic_strategies'
+    'single',
+    'mixes',
+    'dynamic'
 ]
