@@ -212,7 +212,7 @@ class StrategyManager:
         Returns:
             bool: 성공 여부
         """
-        mix_config = self._get_mix_config(mix_name)
+        mix_config = STRATEGY_MIXES.get(mix_name)
         if not mix_config:
             logger.warning(f"알 수 없는 믹스 이름: {mix_name}")
             return False
@@ -223,10 +223,6 @@ class StrategyManager:
 
         logger.info(f"전략 조합 설정 완료: {mix_name}")
         return True
-
-    def _get_mix_config(self, mix_name: str) -> Optional[StrategyMixConfig]:
-        """믹스 설정을 가져옵니다."""
-        return STRATEGY_MIXES.get(mix_name)
 
     def switch_to_dynamic_strategy(self, strategy_name: str) -> bool:
         """동적 전략으로 교체 (DynamicStrategyManager에 위임)"""
@@ -293,34 +289,6 @@ class StrategyManager:
             results[strategy_type] = result
         return results
 
-    def get_available_strategies(self) -> List[Dict[str, Any]]:
-        """사용 가능한 전략 목록을 반환합니다."""
-        strategies = []
-        
-        # 정적 전략
-        for strategy_type, strategy in self.active_strategies.items():
-            strategy_info = self._create_strategy_info(
-                strategy_type, 
-                strategy, 
-                is_current=(strategy == self.current_strategy),
-                strategy_class="static"
-            )
-            strategies.append(strategy_info)
-        
-        # 동적 전략 (위임)
-        for name in self.dynamic_manager.list_strategies():
-            info = self.dynamic_manager.get_strategy_info(name)
-            if info:
-                strategies.append({
-                    "type": "DYNAMIC",
-                    "name": name,
-                    "description": info.get("description", "Dynamic strategy"),
-                    "is_current": info.get("is_current", False),
-                    "strategy_class": "dynamic"
-                })
-            
-        return strategies
-    
     # ============================================================================
     # 전략 조합 (Strategy Mix) 관련 메서드들
     # ============================================================================

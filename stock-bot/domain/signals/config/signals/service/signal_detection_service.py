@@ -209,7 +209,8 @@ class SignalDetectionService:
         if not self.is_initialized:
             return []
         
-        return self.strategy_manager.get_available_strategies()
+        from domain.orchestration.strategy_registry import strategy_registry
+        return strategy_registry.get_available_strategies("all")
     
     def get_strategy_performance_summary(self) -> Dict[str, Any]:
         """전략별 성능 요약을 반환합니다."""
