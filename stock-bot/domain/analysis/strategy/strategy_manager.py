@@ -7,29 +7,27 @@
 # 레거시 domain/analysis/strategy/implementations/ 경로는 더 이상 사용하지 않습니다.
 """
 
-from typing import Dict, List, Optional, Any, Tuple, Union
-import pandas as pd
-from datetime import datetime
 import json
-from pathlib import Path
 from dataclasses import asdict
+from datetime import datetime
+from typing import Dict, List, Optional, Any, Tuple
 
-from infrastructure.db.models.enums import TrendType
-from domain.analysis.strategy.configs.static_strategies import (
-    StrategyType, StrategyConfig, STRATEGY_CONFIGS, get_static_strategy_types
-)
+import pandas as pd
+
+# Import from new centralized location
+from domain.analysis.base.models.enums import StrategyType
 # Static Strategy Mix 관련 설정 import
 from domain.analysis.strategy.configs.strategy_mixes import (
     StrategyMixMode, StrategyMixConfig, STRATEGY_MIXES
 )
 from domain.strategies.aggressive_mix.configs.aggressive_mix_config import AGGRESSIVE_MIX_CONFIG
-from domain.strategies.conservative_mix.configs.conservative_mix_config import CONSERVATIVE_MIX_CONFIG
 from domain.strategies.balanced_mix.configs.balanced_mix_config import BALANCED_MIX_CONFIG
-
+from domain.strategies.conservative_mix.configs.conservative_mix_config import CONSERVATIVE_MIX_CONFIG
+from domain.strategies.dynamic.dynamic_strategy_manager import DynamicStrategyManager
+from infrastructure.db.models.enums import TrendType
+from infrastructure.logging import get_logger
 from .base_strategy import BaseStrategy, StrategyResult
 from .strategy_factory import StrategyFactory
-from domain.strategies.dynamic.dynamic_strategy_manager import DynamicStrategyManager
-from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -59,7 +57,7 @@ class StrategyManager:
         """전략들을 초기화합니다."""
         if strategy_types is None:
             # 기본적으로 모든 정적 전략을 로드
-            strategy_types = get_static_strategy_types()
+            strategy_types = StrategyFactory.get_available_static_strategies()
         
         logger.info(f"전략 초기화 시작: {len(strategy_types)}개 정적 전략")
         
@@ -516,11 +514,9 @@ class StrategyManager:
         # 새 전략 로드
         for strategy_type_str, config_dict in configs.items():
             strategy_type = StrategyType(strategy_type_str)
-            # config_dict를 StrategyConfig 객체로 변환하는 로직 필요
-            # 여기서는 간단히 기본 설정 사용
-            config = STRATEGY_CONFIGS.get(strategy_type)
-            if config:
-                strategy = StrategyFactory.create_strategy(strategy_type, config)
+            # 개별 config 시스템 사용
+            strategy = StrategyFactory.create_static_strategy(strategy_type)
+            if strategy:
                 self.active_strategies[strategy_type] = strategy
         
         logger.info(f"레거시 전략 설정 로드 완료: {len(self.active_strategies)}개 전략")
@@ -553,10 +549,9 @@ class StrategyManager:
                 
                 strategy_type = StrategyType(strategy_type_str.lower())
                 
-                # 기본 설정 사용 (향후 config_dict 변환 로직 추가 예정)
-                config = STRATEGY_CONFIGS.get(strategy_type)
-                if config:
-                    strategy = StrategyFactory.create_strategy(strategy_type, config)
+                # 개별 config 시스템 사용
+                strategy = StrategyFactory.create_static_strategy(strategy_type)
+                if strategy:
                     self.active_strategies[strategy_type] = strategy
                     logger.debug(f"전략 로드 성공: {strategy_name}")
                 else:

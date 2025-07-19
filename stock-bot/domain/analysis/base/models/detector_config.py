@@ -2,8 +2,8 @@
 탐지기 설정 모델
 """
 
-from typing import Dict, Any
 from dataclasses import dataclass
+from typing import Dict, Any
 
 
 @dataclass

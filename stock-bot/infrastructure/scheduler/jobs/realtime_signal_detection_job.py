@@ -1,7 +1,7 @@
-from datetime import datetime, date
-from typing import Dict, List, Optional
 import sys
+from datetime import datetime
 from pathlib import Path
+from typing import Dict, List, Optional
 
 # 프로젝트 루트 디렉토리를 Python 경로에 추가
 project_root = Path(__file__).resolve().parents[3]
@@ -20,9 +20,7 @@ from common.config.settings import StrategyMode
 
 from domain.analysis.utils import (
     calculate_all_indicators,
-    calculate_fibonacci_levels,
-    validate_multi_timeframe_data,
-    get_trend_direction_multi_timeframe
+    calculate_fibonacci_levels
 )
 from domain.analysis.repository.technical_indicator_repository import TechnicalIndicatorRepository
 from domain.analysis.repository.trading_signal_repository import TradingSignalRepository

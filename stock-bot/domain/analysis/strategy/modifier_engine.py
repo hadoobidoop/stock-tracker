@@ -1,11 +1,12 @@
 # domain/analysis/strategy/modifier_engine.py
 from typing import Dict, Any
+
 import pandas as pd
 
-from .decision_context import DecisionContext
-from domain.strategies.dynamic.modifiers.base import BaseModifier
 from domain.strategies.dynamic.configs.dynamic_strategies import ModifierActionType
+from domain.strategies.dynamic.modifiers.base import BaseModifier
 from infrastructure.logging import get_logger
+from .decision_context import DecisionContext
 
 logger = get_logger(__name__)
 

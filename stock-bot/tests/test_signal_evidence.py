@@ -6,13 +6,12 @@
 실제 저장된 신호의 근거를 분석하고 시각화하는 기능을 제공합니다.
 """
 
-import json
 from datetime import datetime, timedelta
-from typing import Dict, List, Any
+from typing import Dict, Any
 
-from infrastructure.logging import get_logger
-from infrastructure.db.repository.sql_trading_signal_repository import SQLTradingSignalRepository
 from domain.analysis.models.trading_signal import SignalEvidence
+from infrastructure.db.repository.sql_trading_signal_repository import SQLTradingSignalRepository
+from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
 

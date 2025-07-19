@@ -1,11 +1,11 @@
-from typing import List, Optional
 from datetime import datetime
+from typing import List
 
-from infrastructure.logging import get_logger
+from domain.analysis.models.trading_signal import TradingSignal, SignalEvidence
+from domain.analysis.repository.trading_signal_repository import TradingSignalRepository
 from infrastructure.db import get_db
 from infrastructure.db.models.trading_signal import TradingSignal as TradingSignalModel
-from domain.analysis.repository.trading_signal_repository import TradingSignalRepository
-from domain.analysis.models.trading_signal import TradingSignal, SignalEvidence
+from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
 

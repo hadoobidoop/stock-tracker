@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, Float, DateTime, PrimaryKeyConstraint
+
 from infrastructure.db.db_manager import Base
 
 

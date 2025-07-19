@@ -2,19 +2,16 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
-from domain.analysis.base.models import StrategyConfig
 from domain.analysis.base.models.enums import StrategyType
+from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.detectors.composite.composite_detector import CompositeSignalDetector
 from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDetector
-from domain.analysis.detectors.trend_following.sma_detector import SMASignalDetector
-from domain.analysis.detectors.volume.volume_detector import VolumeSignalDetector
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
+from .configs.conservative_config import ConservativeStrategyConfig
 from .detectors.conservative_sma_detector import ConservativeSMADetector
 from .detectors.conservative_volume_detector import ConservativeVolumeDetector
-from .configs.conservative_config import ConservativeStrategyConfig
 
 logger = get_logger(__name__)
 

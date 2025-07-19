@@ -4,10 +4,11 @@
 여러 정적 전략을 조합하여 신호의 신뢰도와 일관성을 높이는 앙상블 전략 정의
 """
 
-from typing import Dict, Any
 from dataclasses import dataclass
+from typing import Dict
 
 from domain.analysis.base.models.enums import StrategyType, StrategyMixMode
+
 
 @dataclass
 class StrategyMixConfig:

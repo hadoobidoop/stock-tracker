@@ -1,9 +1,11 @@
 from typing import Dict, List, Tuple
+
 import pandas as pd
+
+from domain.analysis.config.signals.signal_weights import SIGNAL_WEIGHTS
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from ...base.signal_detector import SignalDetector
-from domain.analysis.config.signals.signal_weights import SIGNAL_WEIGHTS
 
 logger = get_logger(__name__)
 

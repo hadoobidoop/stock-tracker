@@ -1,21 +1,44 @@
 from typing import Dict, Optional
 
-from domain.strategies.dynamic.configs.dynamic_strategies import get_all_strategies, get_strategy_definition, get_all_modifiers
 from domain.analysis.base.models import StrategyConfig
 from domain.analysis.base.models.enums import StrategyType
-from domain.analysis.strategy.configs.static_strategies import get_strategy_config, \
-    get_static_strategy_types
-
+from domain.strategies.adaptive_momentum_hybrid.configs.adaptive_momentum_hybrid_config import \
+    AdaptiveMomentumHybridConfig
+from domain.strategies.aggressive.configs.aggressive_config import AggressiveStrategyConfig
+from domain.strategies.balanced.configs.balanced_config import BalancedStrategyConfig
 # Strategy-specific config imports
 from domain.strategies.conservative.configs.conservative_config import ConservativeStrategyConfig
-from domain.strategies.balanced.configs.balanced_config import BalancedStrategyConfig
-from domain.strategies.aggressive.configs.aggressive_config import AggressiveStrategyConfig
-from domain.strategies.momentum.configs.momentum_config import MomentumStrategyConfig
-from domain.strategies.swing.configs.swing_config import SWING_STRATEGY_CONFIG
+from domain.strategies.conservative_reversion_hybrid.configs.conservative_reversion_hybrid_config import \
+    ConservativeReversionHybridConfig
+from domain.strategies.dynamic.configs.dynamic_strategies import get_all_strategies, get_strategy_definition, \
+    get_all_modifiers
+# Import standardized config classes
 from domain.strategies.mean_reversion.configs.mean_reversion_config import MeanReversionStrategyConfig
-# Note: TrendPullbackConfig and VolatilityBreakoutConfig classes don't exist, 
-# they only have constants. Will use general config for these.
-from domain.strategies.multi_timeframe.configs.multi_timeframe_config import MULTI_TIMEFRAME_CONFIG
+from domain.strategies.momentum.configs.momentum_config import MomentumStrategyConfig
+from domain.strategies.scalping.configs.scalping_config import ScalpingStrategyConfig
+
+# Removed dependency on static_strategies.py - now using individual config classes
+
+# Import legacy constants for configs not yet standardized
+try:
+    from domain.strategies.swing.configs.swing_config import SWING_STRATEGY_CONFIG
+except ImportError:
+    SWING_STRATEGY_CONFIG = None
+    
+try:
+    from domain.strategies.multi_timeframe.configs.multi_timeframe_config import MULTI_TIMEFRAME_CONFIG
+except ImportError:
+    MULTI_TIMEFRAME_CONFIG = None
+    
+try:
+    from domain.strategies.trend_following.configs.trend_following_config import TREND_FOLLOWING_CONFIG
+except ImportError:
+    TREND_FOLLOWING_CONFIG = None
+    
+try:
+    from domain.strategies.market_regime_hybrid.configs.market_regime_hybrid_config import MARKET_REGIME_HYBRID_CONFIG
+except ImportError:
+    MARKET_REGIME_HYBRID_CONFIG = None
 from domain.analysis.strategy.base_strategy import BaseStrategy
 from domain.strategies.conservative_reversion_hybrid.conservative_reversion_hybrid_strategy import ConservativeReversionHybridStrategy
 from domain.strategies.adaptive_momentum_hybrid.adaptive_momentum_hybrid_strategy import AdaptiveMomentumStrategy
@@ -59,34 +82,48 @@ STRATEGY_CLASS_MAP = {
 
 def get_strategy_specific_config(strategy_type: StrategyType):
     """전략별 특정 config 인스턴스 생성"""
-    config_map = {
-        StrategyType.CONSERVATIVE: lambda: ConservativeStrategyConfig(
-            name="Conservative Strategy",
-            description="Low-risk conservative trading strategy"
-        ),
-        StrategyType.BALANCED: lambda: BalancedStrategyConfig(
-            name="Balanced Strategy", 
-            description="Balanced risk/reward strategy",
-            signal_threshold=8.0,
-            risk_per_trade=0.02
-        ),
-        StrategyType.AGGRESSIVE: lambda: AggressiveStrategyConfig(
-            name="Aggressive Strategy",
-            description="High-risk aggressive trading strategy", 
-            signal_threshold=5.0,
-            risk_per_trade=0.03
-        ),
-        StrategyType.MOMENTUM: lambda: MomentumStrategyConfig(
-            name="Momentum Strategy",
-            description="Momentum-based trading strategy",
-            signal_threshold=6.0, 
-            risk_per_trade=0.025
-        ),
-        StrategyType.SWING: lambda: SWING_STRATEGY_CONFIG,
-        StrategyType.MEAN_REVERSION: lambda: MeanReversionStrategyConfig(),
-        # TREND_PULLBACK and VOLATILITY_BREAKOUT use general config (no specific config class)
-        StrategyType.MULTI_TIMEFRAME: lambda: MULTI_TIMEFRAME_CONFIG,
+    # Standardized config classes
+    standardized_configs = {
+        StrategyType.CONSERVATIVE: ConservativeStrategyConfig,
+        StrategyType.BALANCED: BalancedStrategyConfig,
+        StrategyType.AGGRESSIVE: AggressiveStrategyConfig,
+        StrategyType.MOMENTUM: MomentumStrategyConfig,
+        StrategyType.MEAN_REVERSION: MeanReversionStrategyConfig,
+        StrategyType.SCALPING: ScalpingStrategyConfig,
+        StrategyType.ADAPTIVE_MOMENTUM: AdaptiveMomentumHybridConfig,
+        StrategyType.CONSERVATIVE_REVERSION_HYBRID: ConservativeReversionHybridConfig,
     }
+    
+    # Legacy constants for configs not yet standardized
+    legacy_configs = {
+        StrategyType.SWING: SWING_STRATEGY_CONFIG,
+        StrategyType.MULTI_TIMEFRAME: MULTI_TIMEFRAME_CONFIG,
+        StrategyType.TREND_FOLLOWING: TREND_FOLLOWING_CONFIG,
+        StrategyType.MARKET_REGIME_HYBRID: MARKET_REGIME_HYBRID_CONFIG,
+    }
+    
+    # Try standardized configs first
+    if strategy_type in standardized_configs:
+        config_class = standardized_configs[strategy_type]
+        try:
+            return config_class()
+        except Exception as e:
+            logger.warning(f"Failed to create standardized config for {strategy_type}: {e}")
+    
+    # Fallback to legacy configs
+    if strategy_type in legacy_configs:
+        legacy_config = legacy_configs[strategy_type]
+        if legacy_config is not None:
+            return legacy_config
+    
+    # Create basic StrategyConfig for unsupported strategies
+    logger.warning(f"No specific config found for {strategy_type}, creating basic StrategyConfig")
+    return StrategyConfig(
+        name=f"{strategy_type.value.title()} Strategy",
+        description=f"Basic configuration for {strategy_type.value} strategy",
+        signal_threshold=7.0,
+        risk_per_trade=0.02
+    )
     
     config_creator = config_map.get(strategy_type)
     if config_creator:
@@ -105,9 +142,6 @@ class StrategyFactory:
         if config is None:
             # 전략별 특정 config 우선 사용
             config = get_strategy_specific_config(strategy_type)
-            if config is None:
-                # fallback to general config
-                config = get_strategy_config(strategy_type)
 
         if config is None:
             logger.error(f"전략 설정을 찾을 수 없습니다: {strategy_type.value}")
@@ -165,9 +199,9 @@ class StrategyFactory:
         return cls.create_static_strategy(strategy_type, config)
 
     @classmethod
-    def get_available_static_strategies(self) -> list[StrategyType]:
+    def get_available_static_strategies(cls) -> list[StrategyType]:
         """사용 가능한 정적 전략 목록 반환"""
-        return get_static_strategy_types()
+        return list(STRATEGY_CLASS_MAP.keys())
 
     @classmethod
     def get_available_dynamic_strategies(self) -> list[str]:
@@ -183,7 +217,7 @@ class StrategyFactory:
         # 정적 전략 확인
         try:
             strategy_type = StrategyType(strategy_identifier.lower())
-            if get_strategy_config(strategy_type) is not None:
+            if strategy_type in STRATEGY_CLASS_MAP:
                 return True, "static"
         except ValueError:
             pass

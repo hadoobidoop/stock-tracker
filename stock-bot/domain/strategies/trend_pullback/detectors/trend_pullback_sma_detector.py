@@ -1,6 +1,3 @@
-from typing import Dict, List, Tuple
-import pandas as pd
-from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)

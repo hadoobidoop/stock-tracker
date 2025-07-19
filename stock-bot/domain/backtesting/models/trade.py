@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional, Dict, Any, List
-from enum import Enum
-
 
 # Trade enums moved to domain.analysis.base.models.enums.trade_enums
 from domain.analysis.base.models.enums import TradeType, TradeStatus

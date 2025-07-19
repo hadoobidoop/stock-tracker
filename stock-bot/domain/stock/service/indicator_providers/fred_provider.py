@@ -1,6 +1,6 @@
 import json
 from datetime import datetime, timedelta
-import pandas as pd
+
 import pandas_datareader.data as web
 
 from domain.stock.service.indicator_providers.base_provider import BaseIndicatorProvider

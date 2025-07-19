@@ -2,12 +2,13 @@
 import json
 from datetime import date
 from typing import List, Dict, Any
+
 import pandas as pd
 import pandas_datareader.data as web
 
-from .base_provider import BaseBackfillProvider
 from infrastructure.db.models.enums import MarketIndicatorType
 from infrastructure.logging import get_logger
+from .base_provider import BaseBackfillProvider
 
 logger = get_logger(__name__)
 

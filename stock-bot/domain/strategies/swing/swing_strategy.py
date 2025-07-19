@@ -1,13 +1,15 @@
 from typing import Dict, Optional
+
 import pandas as pd
+
+from domain.analysis.base.models import StrategyType
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
-from domain.analysis.base.models import StrategyType
 from domain.strategies.swing.configs.swing_config import SWING_STRATEGY_CONFIG
-from domain.strategies.swing.detectors.swing_sma_detector import SwingSMADetector
+from domain.strategies.swing.detectors.swing_adx_detector import SwingADXDetector
 from domain.strategies.swing.detectors.swing_macd_detector import SwingMACDDetector
 from domain.strategies.swing.detectors.swing_rsi_detector import SwingRSIDetector
-from domain.strategies.swing.detectors.swing_adx_detector import SwingADXDetector
+from domain.strategies.swing.detectors.swing_sma_detector import SwingSMADetector
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 

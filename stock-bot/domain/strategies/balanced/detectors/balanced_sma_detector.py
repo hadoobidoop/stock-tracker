@@ -1,9 +1,10 @@
 from typing import Dict, List, Tuple
+
 import pandas as pd
+
+from domain.analysis.detectors.trend_following.sma_detector import SMASignalDetector
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
-from domain.analysis.detectors.trend_following.sma_detector import SMASignalDetector
-from domain.analysis.models.trading_signal import TechnicalIndicatorEvidence
 
 logger = get_logger(__name__)
 

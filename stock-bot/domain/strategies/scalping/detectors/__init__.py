@@ -1,5 +1,5 @@
 # SCALPING 전략 detectors 패키지
+from .scalping_macd_detector import ScalpingMACDDetector
 from .scalping_rsi_detector import ScalpingRSIDetector
 from .scalping_stoch_detector import ScalpingStochDetector
-from .scalping_macd_detector import ScalpingMACDDetector
 from .scalping_volume_detector import ScalpingVolumeDetector

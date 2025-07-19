@@ -18,17 +18,18 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
-from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
 from domain.analysis.base.models import StrategyType
-from infrastructure.db.models.enums import TrendType
-from infrastructure.logging import get_logger
-
+from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
+from domain.analysis.strategy.base_strategy import BaseStrategy
+from domain.analysis.strategy.base_strategy import StrategyResult
+from domain.strategies.volatility_breakout.detectors.volatility_breakout_adx_detector import \
+    VolatilityBreakoutADXDetector
 # Volatility Breakout 전략 본체
 from domain.strategies.volatility_breakout.detectors.volatility_breakout_bb_detector import VolatilityBreakoutBBDetector
-from domain.strategies.volatility_breakout.detectors.volatility_breakout_adx_detector import VolatilityBreakoutADXDetector
-from domain.strategies.volatility_breakout.detectors.volatility_breakout_volume_detector import VolatilityBreakoutVolumeDetector
-from domain.analysis.strategy.base_strategy import BaseStrategy
+from domain.strategies.volatility_breakout.detectors.volatility_breakout_volume_detector import \
+    VolatilityBreakoutVolumeDetector
+from infrastructure.db.models.enums import TrendType
+from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
 

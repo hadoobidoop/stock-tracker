@@ -1,5 +1,10 @@
 """Analysis utilities package."""
 
+from .multi_timeframe import (
+    _apply_multi_timeframe_filter,
+    validate_multi_timeframe_data,
+    get_trend_direction_multi_timeframe,
+)
 from .technical_indicators import (
     calculate_all_indicators,
     calculate_sma,
@@ -17,12 +22,6 @@ from .technical_indicators import (
     calculate_multi_timeframe_indicators,
     get_trend_direction_multi_timeframe,
     validate_multi_timeframe_data
-)
-
-from .multi_timeframe import (
-    _apply_multi_timeframe_filter,
-    validate_multi_timeframe_data,
-    get_trend_direction_multi_timeframe,
 )
 
 __all__ = [

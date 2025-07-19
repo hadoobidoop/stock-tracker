@@ -1,9 +1,11 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Any
+
 import pandas as pd
-from .trade import Trade
+
 from .portfolio import Portfolio
+from .trade import Trade
 
 
 @dataclass

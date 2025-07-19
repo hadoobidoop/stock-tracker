@@ -1,13 +1,14 @@
 # domain/market_data_backfiller/providers/put_call_ratio_provider.py
 import json
-from datetime import date, timedelta
-import requests
 import time
+from datetime import date, timedelta
 from typing import List, Dict, Any
 
-from .base_provider import BaseBackfillProvider
+import requests
+
 from infrastructure.db.models.enums import MarketIndicatorType
 from infrastructure.logging import get_logger
+from .base_provider import BaseBackfillProvider
 
 logger = get_logger(__name__)
 

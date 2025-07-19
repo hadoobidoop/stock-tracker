@@ -1,8 +1,8 @@
+import logging
+from typing import List, Dict, Union, Tuple
+
 import pandas as pd
 import yfinance as yf
-import logging
-from typing import List, Dict, Union, Tuple, Optional
-from datetime import datetime
 
 # 로거 설정
 logger = logging.getLogger(__name__)

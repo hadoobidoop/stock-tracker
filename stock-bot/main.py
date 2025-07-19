@@ -1,16 +1,16 @@
 # --- 공통 로거 설정 ---
-from infrastructure.logging import setup_logging, get_logger
-from infrastructure.db.db_manager import create_db_and_tables
-from infrastructure.scheduler.jobs import update_stock_metadata_job
-from infrastructure.scheduler.scheduler_manager import setup_scheduler, start_scheduler
-
-# --- 새로운 전략 시스템 추가 ---
-from domain.analysis.service.signal_detection_service import SignalDetectionService
-from domain.analysis.base.models.enums import StrategyType, StrategyMode
-from domain.analysis.strategy.configs.static_strategies import STRATEGY_CONFIGS
-from domain.analysis.utils.strategy_selector import strategy_selector, list_all_strategies
 import argparse
 import sys
+
+from domain.analysis.base.models.enums import StrategyType
+# --- 새로운 전략 시스템 추가 ---
+from domain.analysis.service.signal_detection_service import SignalDetectionService
+# Removed dependency on static_strategies.py
+from domain.analysis.utils.strategy_selector import list_all_strategies
+from infrastructure.db.db_manager import create_db_and_tables
+from infrastructure.logging import setup_logging, get_logger
+from infrastructure.scheduler.jobs import update_stock_metadata_job
+from infrastructure.scheduler.scheduler_manager import setup_scheduler, start_scheduler
 
 # 애플리케이션 시작 시 로깅 설정
 setup_logging()

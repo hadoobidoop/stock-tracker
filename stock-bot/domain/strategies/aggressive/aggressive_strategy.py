@@ -5,25 +5,25 @@ Aggressive 전략 구현체
 - 민감한 신호 감지 및 점수 조정
 """
 
-from typing import Dict, Optional, Any
-import pandas as pd
 from datetime import datetime
-from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
-from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
+from typing import Dict, Optional
+
+import pandas as pd
+
 from domain.analysis.base.models.enums import StrategyType
-from infrastructure.db.models.enums import TrendType
-from infrastructure.logging import get_logger
-
-# 커스텀 Detector import
-from .detectors.aggressive_volume_detector import AggressiveVolumeDetector
-from .detectors.aggressive_sma_detector import AggressiveSMADetector
-from .configs.aggressive_config import AggressiveStrategyConfig
-
+from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 # 기본 Detector import
 from domain.analysis.detectors.momentum.rsi_detector import RSISignalDetector
 from domain.analysis.detectors.momentum.stoch_detector import StochSignalDetector
-from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDetector
 from domain.analysis.detectors.trend_following.adx_detector import ADXSignalDetector
+from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDetector
+from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
+from infrastructure.db.models.enums import TrendType
+from infrastructure.logging import get_logger
+from .configs.aggressive_config import AggressiveStrategyConfig
+from .detectors.aggressive_sma_detector import AggressiveSMADetector
+# 커스텀 Detector import
+from .detectors.aggressive_volume_detector import AggressiveVolumeDetector
 
 logger = get_logger(__name__)
 

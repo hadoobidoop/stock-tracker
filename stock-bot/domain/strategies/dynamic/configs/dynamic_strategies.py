@@ -3,9 +3,9 @@
 # 거시 경제 상황에 따라 기술적 지표의 가중치를 동적으로 변경하는 지능형 시스템
 # ==============================================================================
 
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from enum import Enum
+from typing import Dict, Any, Optional
 
 
 class ModifierActionType(Enum):

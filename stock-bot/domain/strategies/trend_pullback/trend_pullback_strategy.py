@@ -2,15 +2,15 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.base.models import StrategyConfig, StrategyType
-from .detectors.trend_pullback_sma_detector import TrendPullbackSMADetector
-from .detectors.trend_pullback_adx_detector import TrendPullbackADXDetector
-from .detectors.trend_pullback_rsi_detector import TrendPullbackRSIDetector
+from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from .configs.trend_pullback_config import SMA_WEIGHT, ADX_WEIGHT, RSI_WEIGHT
+from .detectors.trend_pullback_adx_detector import TrendPullbackADXDetector
+from .detectors.trend_pullback_rsi_detector import TrendPullbackRSIDetector
+from .detectors.trend_pullback_sma_detector import TrendPullbackSMADetector
 
 logger = get_logger(__name__)
 

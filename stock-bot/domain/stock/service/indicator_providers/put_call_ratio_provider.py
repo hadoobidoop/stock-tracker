@@ -1,5 +1,6 @@
 import json
 from datetime import datetime, timedelta
+
 import requests
 
 from domain.stock.service.indicator_providers.base_provider import BaseIndicatorProvider

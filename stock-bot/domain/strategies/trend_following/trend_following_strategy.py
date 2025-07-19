@@ -1,18 +1,18 @@
-from typing import Dict, Optional, List
+from typing import Dict, Optional
 
 import pandas as pd
 
-from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.base.models import StrategyConfig, StrategyType
+from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.detectors.composite.composite_detector import CompositeSignalDetector
-from .detectors.trend_following_adx_detector import ADXSignalDetector
-from .detectors.trend_following_macd_detector import MACDSignalDetector
-from .detectors.trend_following_sma_detector import SMASignalDetector
-from .detectors.trend_following_volume_detector import VolumeSignalDetector
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from .configs.trend_following_config import SMA_WEIGHT, MACD_WEIGHT, ADX_WEIGHT, VOLUME_WEIGHT
+from .detectors.trend_following_adx_detector import ADXSignalDetector
+from .detectors.trend_following_macd_detector import MACDSignalDetector
+from .detectors.trend_following_sma_detector import SMASignalDetector
+from .detectors.trend_following_volume_detector import VolumeSignalDetector
 
 logger = get_logger(__name__)
 

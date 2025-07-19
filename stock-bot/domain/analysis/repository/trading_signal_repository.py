@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Optional
 from datetime import datetime
+from typing import List
 
 from domain.analysis.models.trading_signal import TradingSignal
 

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import Dict, Any
 
 class MarketDataRepository(ABC):
     @abstractmethod

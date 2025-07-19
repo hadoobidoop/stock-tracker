@@ -1,9 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Optional
-import pandas as pd
 from datetime import datetime
 
-from domain.analysis.models.technical_indicator import TechnicalIndicator
+import pandas as pd
 
 
 class TechnicalIndicatorRepository(ABC):

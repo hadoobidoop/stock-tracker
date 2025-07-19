@@ -3,8 +3,9 @@
 - 신호 필터링, 데이터 유효성 검증, 추세 분석 등
 - realtime_signal_detection_job, 전략 등에서 재사용 가능
 """
-from typing import Dict
 import logging
+from typing import Dict
+
 import pandas as pd
 
 logger = logging.getLogger(__name__)

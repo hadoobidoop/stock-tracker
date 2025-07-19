@@ -4,15 +4,11 @@
 이 패키지는 정적 전략, 동적 전략, 전략 조합 설정을 관리합니다.
 """
 
-from .static_strategies import *
+# Deprecated: static_strategies.py is deprecated
+# Use individual config classes instead
 from .strategy_mixes import *
 
 __all__ = [
-    # static_strategies
-    'StrategyType', 'StrategyConfig', 'STRATEGY_CONFIGS',
-    'get_strategy_config', 'get_all_strategy_types', 
-    'get_static_strategy_types', 'get_available_strategies',
-    'is_strategy_available',
     # strategy_mixes
     'StrategyMixMode', 'StrategyMixConfig', 'STRATEGY_MIXES',
     'MARKET_CONDITION_STRATEGIES',

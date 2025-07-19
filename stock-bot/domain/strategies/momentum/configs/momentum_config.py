@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Dict, Any
+
 from domain.analysis.base.models import StrategyConfig, StrategyType
 
 # Detector weights constant
@@ -31,10 +32,10 @@ class MomentumStrategyConfig(StrategyConfig):
         - stop_loss_percentage: 손절 비율(5%)
         - take_profit_percentage: 익절 비율(10%)
     """
-    name: str  # 전략 이름(설명용)
-    description: str  # 전략 설명(문서/로그용)
-    signal_threshold: float  # 신호 발생 기준점(기본 6.0)
-    risk_per_trade: float  # 트레이드당 리스크 비율(0.025=2.5%)
+    name: str = "모멘텀 전략"  # 전략 이름(설명용)
+    description: str = "RSI, Stoch 등 모멘텀 지표 중심의 신호 감지"  # 전략 설명(문서/로그용)
+    signal_threshold: float = 6.0  # 신호 발생 기준점(기본 6.0)
+    risk_per_trade: float = 0.025  # 트레이드당 리스크 비율(0.025=2.5%)
     strategy_type: StrategyType = StrategyType.MOMENTUM  # 전략 타입(고정)
     max_positions: int = 4  # 최대 동시 포지션 수
     position_hold_hours: int = 24  # 포지션 최대 보유 시간(시간 단위)

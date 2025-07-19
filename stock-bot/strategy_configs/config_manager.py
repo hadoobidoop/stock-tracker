@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 from typing import Dict, Any
 
-from config_loader import StrategyConfigLoader, get_strategy_config_loader
+from config_loader import get_strategy_config_loader
 
 
 def list_strategies():

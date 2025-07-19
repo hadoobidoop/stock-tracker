@@ -1,32 +1,26 @@
 import uuid
 from datetime import datetime, timedelta, timezone, date
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Any
+
 import pandas as pd
 
-from infrastructure.logging import get_logger
-from infrastructure.db.models.enums import TrendType
-
+from domain.analysis.base.models.enums import StrategyType
+from domain.analysis.base.models.enums import TradeType, TradeStatus
+from domain.analysis.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
+from domain.analysis.config.signals.signal_weights import SIGNAL_THRESHOLD
 # 기존 호환성을 위한 import
 from domain.analysis.service.signal_detection_service import SignalDetectionService
-from domain.analysis.base.models.enums import StrategyType
-from domain.analysis.strategy.configs.static_strategies import STRATEGY_CONFIGS
+# Removed dependency on static_strategies.py
 from domain.analysis.strategy.base_strategy import StrategyResult
-
 from domain.analysis.utils import calculate_all_indicators, calculate_fibonacci_levels
-from domain.stock.service.stock_analysis_service import StockAnalysisService
-from domain.stock.service.market_data_service import MarketDataService
-from domain.analysis.config.signals.signal_weights import SIGNAL_WEIGHTS, SIGNAL_THRESHOLD
-from domain.analysis.config.signals.signal_adjustment_factors import SIGNAL_ADJUSTMENT_FACTORS_BY_TREND
-from domain.analysis.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
-from domain.analysis.config.signals.prediction_signal_settings import (
-    DAILY_PREDICTION_HOUR_ET, DAILY_PREDICTION_MINUTE_ET, PREDICTION_ATR_MULTIPLIER_FOR_RANGE, PREDICTION_SIGNAL_WEIGHTS, PREDICTION_THRESHOLD
-)
 from domain.stock.config.settings import MARKET_INDEX_TICKER
-
-from ..models.trade import Trade
-from domain.analysis.base.models.enums import TradeType, TradeStatus
-from ..models.portfolio import Portfolio
+from domain.stock.service.market_data_service import MarketDataService
+from domain.stock.service.stock_analysis_service import StockAnalysisService
+from infrastructure.db.models.enums import TrendType
+from infrastructure.logging import get_logger
 from ..models.backtest_result import BacktestResult
+from ..models.portfolio import Portfolio
+from ..models.trade import Trade
 
 logger = get_logger(__name__)
 
@@ -81,7 +75,8 @@ class BacktestingEngine:
         """신호 감지 서비스 초기화"""
         if self.signal_service:
             try:
-                all_strategies = list(STRATEGY_CONFIGS.keys())
+                from domain.analysis.strategy.strategy_factory import StrategyFactory
+                all_strategies = StrategyFactory.get_available_static_strategies()
                 success = self.signal_service.initialize(all_strategies)
                 if success:
                     self.signal_service.switch_strategy(self.strategy_type)

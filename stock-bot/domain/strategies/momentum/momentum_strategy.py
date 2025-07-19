@@ -17,18 +17,20 @@ Momentum 전략 구현체
     - score_multiplier: 점수 조정(기본 1.0)
     - max_positions/position_hold_hours: 포지션 관리(4개/24시간)
 """
-from typing import Dict, Optional
-import pandas as pd
 from datetime import datetime
+from typing import Dict, Optional
+
+import pandas as pd
+
+from domain.analysis.base.models import StrategyType
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
-from domain.strategies.momentum.detectors.momentum_rsi_detector import RSISignalDetector
-from domain.strategies.momentum.detectors.momentum_stoch_detector import StochSignalDetector
-from domain.strategies.momentum.detectors.momentum_rsi_stoch_detector import RSIStochDetector
 from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDetector
 from domain.analysis.detectors.volume.volume_detector import VolumeSignalDetector
-from domain.strategies.momentum.configs.momentum_config import MomentumStrategyConfig
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
-from domain.analysis.base.models import StrategyType
+from domain.strategies.momentum.configs.momentum_config import MomentumStrategyConfig
+from domain.strategies.momentum.detectors.momentum_rsi_detector import RSISignalDetector
+from domain.strategies.momentum.detectors.momentum_rsi_stoch_detector import RSIStochDetector
+from domain.strategies.momentum.detectors.momentum_stoch_detector import StochSignalDetector
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 

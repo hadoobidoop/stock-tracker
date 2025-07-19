@@ -1,14 +1,14 @@
 # domain/market_data_backfiller/backfiller.py
 import argparse
-from datetime import datetime
 import time
-from typing import List, Dict, Any, Optional
+from datetime import datetime
+from typing import List, Optional
 
 from domain.market_data_backfiller.providers.buffett_provider import BuffettBackfillProvider
-from .config import ENABLED_PROVIDERS as DEFAULT_ENABLED_PROVIDERS, BACKFILL_PROVIDERS_CONFIG
-from .providers import *
 from infrastructure.db.repository.sql_market_data_repository import SQLMarketDataRepository
 from infrastructure.logging import get_logger
+from .config import ENABLED_PROVIDERS as DEFAULT_ENABLED_PROVIDERS, BACKFILL_PROVIDERS_CONFIG
+from .providers import *
 
 logger = get_logger(__name__)
 

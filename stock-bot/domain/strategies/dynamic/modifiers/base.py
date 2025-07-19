@@ -1,11 +1,12 @@
 # domain/analysis/strategy/modifiers/base.py
 from abc import ABC, abstractmethod
 from typing import Dict, Any
+
 import pandas as pd
 
 from domain.analysis.strategy.decision_context import DecisionContext
-from ..configs.dynamic_strategies import ModifierDefinition
 from infrastructure.logging import get_logger
+from ..configs.dynamic_strategies import ModifierDefinition
 
 logger = get_logger(__name__)
 

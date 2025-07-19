@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Tuple
+
 import pandas as pd
 
 from domain.stock.models.stock_metadata import StockMetadata
-
 
 
 class StockRepository(ABC):

@@ -5,13 +5,13 @@ DecisionContext - 동적 가중치 조절 시스템의 핵심 컨텍스트 클�
 전략의 기본 가중치, 각 Detector의 값, Modifier에 의해 변경된 최종 가중치 등을 모두 관리합니다.
 """
 
-from typing import Dict, List, Optional, Any
+import copy
 from dataclasses import dataclass, field
 from datetime import datetime
-import copy
+from typing import Dict, List, Optional, Any
 
-from domain.strategies.dynamic.configs.dynamic_strategies import ModifierActionType
 from domain.analysis.models.trading_signal import SignalType
+from domain.strategies.dynamic.configs.dynamic_strategies import ModifierActionType
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)

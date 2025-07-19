@@ -2,10 +2,11 @@
 시장 전체 지표 데이터를 저장하는 모델
 버핏 지수, VIX, 공포지수 등 개별 종목이 아닌 시장 전체의 지표들을 관리합니다.
 """
-from sqlalchemy import Column, Integer, String, Float, Date, Enum as SQLEnum, DateTime, Text
-from infrastructure.db.db_manager import Base
 from datetime import datetime
 
+from sqlalchemy import Column, Integer, Float, Date, Enum as SQLEnum, DateTime, Text
+
+from infrastructure.db.db_manager import Base
 from .enums import MarketIndicatorType
 
 

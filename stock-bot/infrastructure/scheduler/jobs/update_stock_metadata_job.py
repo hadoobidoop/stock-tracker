@@ -1,11 +1,12 @@
-from time import sleep
-import yfinance
 import math
+from time import sleep
+
+import yfinance
 
 from domain.stock.config import STOCK_SYMBOLS
 from domain.stock.service import update_stock_metadata
-from infrastructure.logging import get_logger
 from infrastructure.db.repository.sql_stock_repository import SQLStockRepository
+from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
 

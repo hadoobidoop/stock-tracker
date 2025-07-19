@@ -1,4 +1,5 @@
 import json
+
 import pandas as pd
 
 from domain.stock.service.indicator_providers.base_provider import BaseIndicatorProvider

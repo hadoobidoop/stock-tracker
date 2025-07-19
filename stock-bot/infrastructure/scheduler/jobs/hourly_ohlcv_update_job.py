@@ -1,13 +1,12 @@
-from datetime import datetime, timedelta
-import pandas as pd
 import math
 import time
+from datetime import datetime, timedelta
 
-from infrastructure.logging import get_logger
-from infrastructure.db.repository.sql_stock_repository import SQLStockRepository
-from infrastructure.db.repository.sql_technical_indicator_repository import SQLTechnicalIndicatorRepository
 from domain.analysis.utils import calculate_all_indicators
 from domain.stock.config.settings import OHLCV_COLLECTION
+from infrastructure.db.repository.sql_stock_repository import SQLStockRepository
+from infrastructure.db.repository.sql_technical_indicator_repository import SQLTechnicalIndicatorRepository
+from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
 

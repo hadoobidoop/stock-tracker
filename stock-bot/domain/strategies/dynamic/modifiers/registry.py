@@ -1,9 +1,10 @@
 # domain/analysis/strategy/modifiers/registry.py
 from typing import Dict, Type
+
+from infrastructure.logging import get_logger
 from .base import BaseModifier
 from .market_indicator_modifier import MarketIndicatorModifier
 from ..configs.dynamic_strategies import ModifierDefinition
-from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
 

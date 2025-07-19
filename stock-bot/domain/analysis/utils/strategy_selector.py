@@ -4,19 +4,17 @@
 설정 기반으로 정적/동적/Static Strategy Mix 전략을 유연하게 선택하고 관리
 """
 
-from typing import Dict, Any, Optional, List, Union, Callable, Tuple
-from enum import Enum
-import os
 from functools import lru_cache
+from typing import Dict, Any, Optional, List, Union, Callable, Tuple
 
 from common.config.settings import (
     StrategyMode, DefaultStrategyConfig, EnvironmentConfig, get_strategy_availability
 )
 from domain.analysis.base.models.enums import StrategyType
-from domain.analysis.strategy.configs.static_strategies import get_strategy_config, get_static_strategy_types
-from domain.strategies.dynamic.configs.dynamic_strategies import STRATEGY_DEFINITIONS
 # MARKET_CONDITION_STRATEGIES를 strategy_mixes에서 직접 가져옵니다.
 from domain.analysis.strategy.configs.strategy_mixes import MARKET_CONDITION_STRATEGIES
+from domain.analysis.strategy.strategy_factory import StrategyFactory
+from domain.strategies.dynamic.configs.dynamic_strategies import STRATEGY_DEFINITIONS
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
@@ -44,15 +42,18 @@ class StrategySelector:
         
         # 정적 전략 로드
         if strategy_availability["static_strategies"]["enabled"]:
-            for strategy_type in get_static_strategy_types():
+            for strategy_type in StrategyFactory.get_available_static_strategies():
                 if strategy_type != StrategyType.DYNAMIC_WEIGHT:  # 동적 전략 제외
-                    config = get_strategy_config(strategy_type)
-                    if config:
-                        strategies["static"][strategy_type.value] = {
-                            "config": config,
-                            "type": strategy_type,
-                            "available": True
-                        }
+                    try:
+                        config = StrategyFactory.create_static_strategy(strategy_type)
+                        if config and config.config:
+                            strategies["static"][strategy_type.value] = {
+                                "config": config.config,
+                                "type": strategy_type,
+                                "available": True
+                            }
+                    except Exception as e:
+                        logger.warning(f"Failed to load strategy {strategy_type}: {e}")
         
         # 동적 전략 로드
         if strategy_availability["dynamic_strategies"]["enabled"]:

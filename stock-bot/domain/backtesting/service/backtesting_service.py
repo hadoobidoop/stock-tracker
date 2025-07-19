@@ -1,20 +1,15 @@
+import json
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
-import pandas as pd
-import json
-
-from infrastructure.logging import get_logger
-from domain.stock.service.stock_analysis_service import StockAnalysisService
-from domain.stock.repository.stock_repository import StockRepository
-from infrastructure.db.repository.sql_stock_repository import SQLStockRepository
-from domain.analysis.repository.analysis_repository import MarketDataRepository
-from infrastructure.db.repository.sql_market_data_repository import SQLMarketDataRepository
 
 # 새로운 전략 시스템 import
 from domain.analysis.base.models.enums import StrategyType
-from domain.analysis.strategy.configs.static_strategies import STRATEGY_CONFIGS
-from domain.analysis.strategy.strategy_manager import StrategyManager
-
+from domain.analysis.repository.analysis_repository import MarketDataRepository
+from domain.stock.repository.stock_repository import StockRepository
+from domain.stock.service.stock_analysis_service import StockAnalysisService
+from infrastructure.db.repository.sql_market_data_repository import SQLMarketDataRepository
+from infrastructure.db.repository.sql_stock_repository import SQLStockRepository
+from infrastructure.logging import get_logger
 from ..engine.backtesting_engine import BacktestingEngine
 from ..models.backtest_result import BacktestResult
 

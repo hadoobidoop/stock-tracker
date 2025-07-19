@@ -14,16 +14,18 @@ Adaptive Momentum Hybrid 전략 (적응형 모멘텀 하이브리드)
 """
 
 from typing import Dict
+
 import pandas as pd
-from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
+
 from domain.analysis.base.models import StrategyConfig, StrategyType
+from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
+from domain.strategies.momentum.configs.momentum_config import MomentumStrategyConfig
+from domain.strategies.momentum.momentum_strategy import MomentumStrategy
+from domain.strategies.trend_following.configs.trend_following_config import TREND_FOLLOWING_CONFIG
+from domain.strategies.trend_following.trend_following_strategy import TrendFollowingStrategy
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
-from domain.strategies.trend_following.trend_following_strategy import TrendFollowingStrategy
-from domain.strategies.momentum.momentum_strategy import MomentumStrategy
-from domain.strategies.momentum.configs.momentum_config import MomentumStrategyConfig
-from domain.analysis.strategy.configs.static_strategies import get_strategy_config
 
 logger = get_logger(__name__)
 
@@ -37,7 +39,7 @@ class AdaptiveMomentumStrategy(BaseStrategy):
     def __init__(self, strategy_type: StrategyType, config: StrategyConfig):
         super().__init__(strategy_type, config)
         # Use general config for TREND_FOLLOWING (it doesn't need detector_weights)
-        trend_config = get_strategy_config(StrategyType.TREND_FOLLOWING)
+        trend_config = TREND_FOLLOWING_CONFIG
         momentum_config = MomentumStrategyConfig(
             name="Momentum Strategy",
             description="Momentum-based trading strategy",

@@ -2,9 +2,10 @@
 데이터베이스 연결 및 세션 관리, 테이블 생성 등
 데이터베이스 관련 로직을 총괄하는 모듈입니다.
 """
+from contextlib import contextmanager
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
-from contextlib import contextmanager
 
 # 설정 파일에서 DATABASE_URL을 가져옵니다.
 from infrastructure.db.config.settings import DATABASE_URL
@@ -22,7 +23,6 @@ def create_db_and_tables():
     """
     # models 패키지 내의 모든 모듈을 import하여 테이블이 Base에 등록되도록 합니다.
     # 이 과정이 없으면 Base.metadata.create_all()이 테이블을 찾지 못할 수 있습니다.
-    from infrastructure.db import models
     Base.metadata.create_all(bind=engine)
     print("Database and tables checked/created successfully for MySQL.")
 

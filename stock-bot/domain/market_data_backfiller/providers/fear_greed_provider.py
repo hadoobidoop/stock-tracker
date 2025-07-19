@@ -1,13 +1,13 @@
 # domain/market_data_backfiller/providers/fear_greed_provider.py
 import json
-from datetime import date, datetime, timedelta
-import requests
+from datetime import date, datetime
 from typing import List, Dict, Any
 
-from .base_provider import BaseBackfillProvider
-from infrastructure.db.models.market_data import MarketData
+import requests
+
 from infrastructure.db.models.enums import MarketIndicatorType
 from infrastructure.logging import get_logger
+from .base_provider import BaseBackfillProvider
 
 logger = get_logger(__name__)
 

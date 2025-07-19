@@ -2,19 +2,19 @@ from typing import Dict
 
 import pandas as pd
 
-from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.base.models import StrategyConfig, StrategyType
+from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
 from domain.stock.service.market_data_service import MarketDataService
+from domain.strategies.mean_reversion.mean_reversion_strategy import MeanReversionStrategy
+from domain.strategies.trend_following.trend_following_strategy import TrendFollowingStrategy
+from domain.strategies.volatility_breakout.volatility_breakout_strategy import VolatilityBreakoutStrategy
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from .configs.market_regime_hybrid_config import (
     VIX_VOLATILE_THRESHOLD, VIX_HIGH_RISK_THRESHOLD, VIX_LOW_RISK_THRESHOLD,
     VIX_HIGH_RISK_MULTIPLIER, VIX_LOW_RISK_MULTIPLIER, BULLISH_BONUS, BEARISH_BONUS
 )
-from domain.strategies.trend_following.trend_following_strategy import TrendFollowingStrategy
-from domain.strategies.mean_reversion.mean_reversion_strategy import MeanReversionStrategy
-from domain.strategies.volatility_breakout.volatility_breakout_strategy import VolatilityBreakoutStrategy
 
 logger = get_logger(__name__)
 

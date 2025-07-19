@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timedelta, date
+
 import requests
-from typing import Dict
 
 from domain.stock.service.indicator_providers.base_provider import BaseIndicatorProvider
 from domain.stock.service.indicator_providers.vix_provider import VixProvider

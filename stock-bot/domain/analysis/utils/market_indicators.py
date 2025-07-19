@@ -2,9 +2,8 @@
 시장 지표 분석 유틸리티
 VIX, 버핏 지수 등 시장 전체 지표를 분석하는 함수들
 """
-from typing import Dict, Optional, Tuple, List, Any
-from datetime import datetime, timedelta
-import pandas as pd
+from typing import Dict, Optional, List, Any
+
 from infrastructure.db.models.enums import MarketIndicatorType
 from infrastructure.db.repository.sql_market_data_repository import SQLMarketDataRepository
 from infrastructure.logging import get_logger

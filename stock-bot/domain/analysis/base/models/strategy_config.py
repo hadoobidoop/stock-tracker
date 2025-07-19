@@ -2,8 +2,8 @@
 전략 설정 모델
 """
 
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
+from typing import Dict, Any, List, Optional
 
 from .detector_config import DetectorConfig
 

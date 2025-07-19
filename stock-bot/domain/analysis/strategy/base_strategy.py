@@ -1,13 +1,14 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Any
-import pandas as pd
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Dict, List, Optional, Any
 
-from domain.analysis.models.trading_signal import TradingSignal, SignalType
-from infrastructure.db.models.enums import TrendType
+import pandas as pd
+
 from domain.analysis.base.models import StrategyConfig
 from domain.analysis.base.models.enums import StrategyType
+from domain.analysis.models.trading_signal import TradingSignal, SignalType
+from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)

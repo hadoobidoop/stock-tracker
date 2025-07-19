@@ -5,14 +5,15 @@
 동적으로 조절하는 지능형 신호 감지 서비스입니다.
 """
 
-from typing import Dict, Optional, List, Any
 from datetime import datetime
+from typing import Dict, Optional, List, Any
+
 import pandas as pd
 
-from infrastructure.db.models.enums import TrendType
 from domain.analysis.base.models.enums import StrategyType
-from domain.analysis.strategy.strategy_manager import StrategyManager
 from domain.analysis.strategy.base_strategy import StrategyResult
+from domain.analysis.strategy.strategy_manager import StrategyManager
+from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)

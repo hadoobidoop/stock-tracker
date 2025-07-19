@@ -1,21 +1,22 @@
-from dataclasses import asdict
-from typing import List, Optional, Dict, Tuple
-from datetime import datetime, timedelta, timezone
-import pandas as pd
-from sqlalchemy.orm import Session
-from sqlalchemy.dialects.mysql import insert as mysql_insert
-from sqlalchemy import func
 import time
-from sqlalchemy import and_
+from dataclasses import asdict
+from datetime import datetime, timedelta, timezone
+from typing import List, Optional, Dict, Tuple
 
+import pandas as pd
+from sqlalchemy import and_
+from sqlalchemy import func
+from sqlalchemy.dialects.mysql import insert as mysql_insert
+from sqlalchemy.orm import Session
+
+from domain.stock.config.settings import OHLCV_COLLECTION
 from domain.stock.models.stock_metadata import StockMetadata as DomainStockMetadata
 from domain.stock.repository.stock_repository import StockRepository
+from infrastructure.client.yahoo.yahoo_client import get_ohlcv_data
 from infrastructure.db.db_manager import get_db
 from infrastructure.db.models import StockMetadata as DbStockMetadata
 from infrastructure.db.models.intraday_ohlcv import IntradayOhlcv
-from infrastructure.client.yahoo.yahoo_client import get_ohlcv_data
 from infrastructure.logging import get_logger
-from domain.stock.config.settings import OHLCV_COLLECTION
 
 logger = get_logger(__name__)
 

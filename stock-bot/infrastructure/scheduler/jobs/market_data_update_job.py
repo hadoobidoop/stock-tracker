@@ -2,11 +2,10 @@
 시장 데이터 업데이트 배치 잡
 버핏 지수, VIX, 10년 국채 수익률 등 시장 지표들을 정기적으로 수집합니다.
 """
-from datetime import datetime
 
-from infrastructure.logging import get_logger
 from domain.stock.service.market_data_service import MarketDataService
 from infrastructure.db.models.enums import MarketIndicatorType
+from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
 

@@ -27,7 +27,7 @@ python run_backtest.py --tickers AAPL MSFT NVDA --start-date 2023-01-01 --end-da
 
 import argparse
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 # 프로젝트 루트를 Python 경로에 추가
@@ -36,10 +36,8 @@ sys.path.insert(0, str(project_root))
 
 from infrastructure.logging import get_logger
 from domain.backtesting.service.backtesting_service import BacktestingService
-from domain.analysis.base.models.enums import StrategyType
 
 # 거시지표 분석 기능 추가
-from domain.analysis.utils.market_indicators import get_market_indicator_analysis
 
 logger = get_logger(__name__)
 

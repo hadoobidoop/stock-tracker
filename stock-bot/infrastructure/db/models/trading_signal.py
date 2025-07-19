@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, Integer, Float, DateTime, Enum, JSON
+
 from infrastructure.db.db_manager import Base
 from infrastructure.db.models.enums import SignalType, TrendType
 

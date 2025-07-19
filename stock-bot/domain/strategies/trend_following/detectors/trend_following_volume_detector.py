@@ -1,9 +1,11 @@
 from typing import Dict, List, Tuple
+
 import pandas as pd
-from infrastructure.db.models.enums import TrendType
-from infrastructure.logging import get_logger
+
 from domain.analysis.base.signal_detector import SignalDetector
 from domain.analysis.config.signals.realtime_signal_settings import VOLUME_SURGE_FACTOR
+from infrastructure.db.models.enums import TrendType
+from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
 

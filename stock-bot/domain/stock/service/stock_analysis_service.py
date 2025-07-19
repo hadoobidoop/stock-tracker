@@ -1,15 +1,15 @@
-from typing import List, Dict, Tuple
-import pandas as pd
-from datetime import datetime
-from pytz import timezone
 from dataclasses import dataclass, field
+from datetime import datetime
+from typing import List, Dict
 
-from infrastructure.logging import get_logger
-from infrastructure.db.models.enums import TrendType
-from domain.stock.repository.stock_repository import StockRepository
-from domain.stock.models.stock_metadata import StockMetadata
-from domain.stock.config.settings import STOCK_SYMBOLS
+import pandas as pd
+from pytz import timezone
+
 from domain.analysis.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
+from domain.stock.config.settings import STOCK_SYMBOLS
+from domain.stock.repository.stock_repository import StockRepository
+from infrastructure.db.models.enums import TrendType
+from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
 

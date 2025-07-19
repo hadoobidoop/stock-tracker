@@ -4,10 +4,9 @@
 """
 
 import json
-import os
 import sys
-from typing import Dict, List, Optional, Any
 from pathlib import Path
+from typing import Dict, List, Optional, Any
 
 # Add parent directory to path to import from infrastructure
 sys.path.append(str(Path(__file__).parent.parent))

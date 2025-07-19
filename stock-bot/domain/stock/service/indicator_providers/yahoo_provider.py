@@ -1,4 +1,5 @@
 import json
+
 from domain.stock.service.indicator_providers.base_provider import BaseIndicatorProvider
 from domain.stock.service.indicator_providers.buffett_provider import YahooApiHelper
 from infrastructure.db.models.enums import MarketIndicatorType

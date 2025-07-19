@@ -3,10 +3,10 @@ from typing import Dict, Any
 
 import pandas as pd
 
-from .base import BaseModifier
 from domain.analysis.strategy.decision_context import DecisionContext
-from ..configs.dynamic_strategies import ModifierDefinition, ModifierActionType
 from infrastructure.logging import get_logger
+from .base import BaseModifier
+from ..configs.dynamic_strategies import ModifierDefinition, ModifierActionType
 
 logger = get_logger(__name__)
 

@@ -1,8 +1,9 @@
+import pytz
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-import pytz
 
 from infrastructure.logging import get_logger
+from infrastructure.scheduler import settings
 from infrastructure.scheduler.jobs import (
     realtime_signal_detection_job,
     update_stock_metadata_job,
@@ -10,7 +11,6 @@ from infrastructure.scheduler.jobs import (
     hourly_ohlcv_update_job,
     market_data_update_job
 )
-from infrastructure.scheduler import settings
 
 logger = get_logger(__name__)
 
