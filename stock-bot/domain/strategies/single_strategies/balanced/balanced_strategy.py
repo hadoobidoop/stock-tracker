@@ -4,7 +4,7 @@ from typing import Dict, Optional, Any
 import pandas as pd
 
 from domain.analysis.base.models import StrategyType
-from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
+from domain.analysis.service.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.detectors.composite.composite_detector import CompositeSignalDetector
 # 기본 Detector import
 from domain.analysis.detectors.momentum.rsi_detector import RSISignalDetector

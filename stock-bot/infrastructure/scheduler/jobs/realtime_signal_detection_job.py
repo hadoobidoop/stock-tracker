@@ -29,7 +29,7 @@ from domain.stock.repository.stock_repository import StockRepository
 from infrastructure.db.repository.sql_stock_repository import SQLStockRepository
 from domain.analysis.config.signals.signal_weights import  SIGNAL_THRESHOLD
 from domain.analysis.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
-from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
+from domain.analysis.service.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.utils.multi_timeframe import (
     apply_multi_timeframe_filter,
     validate_multi_timeframe_data,

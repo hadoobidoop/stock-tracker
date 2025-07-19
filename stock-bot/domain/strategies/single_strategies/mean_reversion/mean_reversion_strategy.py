@@ -18,7 +18,7 @@ from typing import Dict, Optional
 import pandas as pd
 
 from domain.analysis.base.models import StrategyType
-from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
+from domain.analysis.service.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.models.strategy_result import StrategyResult
 from domain.analysis.base.models.base_strategy import BaseStrategy
 from domain.strategies.single_strategies.mean_reversion.configs.mean_reversion_config import MeanReversionStrategyConfig
