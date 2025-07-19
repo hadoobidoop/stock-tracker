@@ -1,7 +1,7 @@
 """Analysis utilities package."""
 
 from .multi_timeframe import (
-    _apply_multi_timeframe_filter,
+    apply_multi_timeframe_filter,
     validate_multi_timeframe_data,
     get_trend_direction_multi_timeframe,
 )
@@ -37,7 +37,7 @@ __all__ = [
     'calculate_daily_indicators',
     'calculate_hourly_indicators',
     'calculate_multi_timeframe_indicators',
-    '_apply_multi_timeframe_filter',
+    'apply_multi_timeframe_filter',
     'validate_multi_timeframe_data',
     'get_trend_direction_multi_timeframe',
 ] 
