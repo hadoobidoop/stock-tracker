@@ -52,13 +52,6 @@ class ModifierDefinition:
 # ==============================================================================
 MODIFIER_DEFINITIONS = {
     # --- 기존 필터는 'VETO' 액션을 가진 모디파이어로 재정의 ---
-    "vix_filter": ModifierDefinition(
-        description="VIX 지수가 30을 초과하면 위험 회피 모드로 간주하여 매수 신호 거부",
-        detector="vix",
-        condition=ModifierCondition(operator=">", value=30),
-        action=ModifierAction(type=ModifierActionType.VETO_BUY, reason="High VIX volatility"),
-        priority=10  # 높은 우선순위
-    ),
 
     "extreme_fear_filter": ModifierDefinition(
         description="VIX 지수가 35를 초과하면 극도의 공포 상태로 모든 거래 중단",
@@ -117,17 +110,6 @@ MODIFIER_DEFINITIONS = {
         priority=60
     ),
 
-    "low_volatility_consolidation": ModifierDefinition(
-        description="VIX가 15 이하로 낮으면 횡보장으로 판단, 모든 신호 임계값 상향 조정",
-        detector="vix",
-        condition=ModifierCondition(operator="<", value=15),
-        action=ModifierAction(
-            type=ModifierActionType.ADJUST_THRESHOLD,
-            threshold_adjustment=2.0,  # 임계값 +2점 상향
-            reason="Low volatility environment requires stronger signals"
-        ),
-        priority=70
-    ),
 
     "fear_greed_extreme_greed": ModifierDefinition(
         description="공포탐욕지수가 80 이상이면 극도의 탐욕 상태로 매수 신호 억제",
@@ -198,36 +180,17 @@ STRATEGY_DEFINITIONS = {
         # 이 전략이 사용할 모디파이어들을 우선순위 순서로 나열
         "modifiers": [
             "extreme_fear_filter",     # priority 5
-            "vix_filter",              # priority 10  
             "fear_greed_extreme_greed", # priority 30
             "fear_greed_extreme_fear",  # priority 30
             "dollar_strength_mode",     # priority 40
             "yield_curve_inversion",    # priority 40
             "vix_high_volatility_mode", # priority 50
             "market_in_uptrend",        # priority 60
-            "market_in_downtrend",      # priority 60
-            "low_volatility_consolidation" # priority 70
+            "market_in_downtrend"       # priority 60
         ]
     },
 
-    "conservative_dynamic_strategy": {
-        "description": "보수적 성향의 동적 전략 - 더 제한적인 모디파이어 적용",
-        "signal_threshold": 10.0,  # 높은 임계값
-        "risk_per_trade": 0.015,
-        "detectors": {
-            "sma": {"weight": 0.4},    # 추세 추종 중심
-            "macd": {"weight": 0.35},
-            "rsi": {"weight": 0.15},
-            "adx": {"weight": 0.1}
-        },
-        "modifiers": [
-            "extreme_fear_filter",
-            "vix_filter",
-            "market_in_uptrend",
-            "market_in_downtrend",
-            "low_volatility_consolidation"
-        ]
-    },
+    # conservative_dynamic_strategy removed - simplified to two main strategies
 
     "aggressive_dynamic_strategy": {
         "description": "공격적 성향의 동적 전략 - 더 많은 조정 허용",

@@ -31,7 +31,7 @@ def get_available_dynamic_strategies() -> List[str]:
         return list(get_all_strategies().keys())
     except ImportError:
         # 폴백: 기본 동적 전략들만
-        return ["dynamic_weight_strategy", "conservative_dynamic_strategy", "aggressive_dynamic_strategy"]
+        return ["dynamic_weight_strategy", "aggressive_dynamic_strategy"]
 
 
 def get_available_strategy_mix() -> List[str]:
