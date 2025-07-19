@@ -28,7 +28,7 @@ class StrategyType(Enum):
     ADAPTIVE_MOMENTUM = "adaptive_momentum"
     CONSERVATIVE_REVERSION_HYBRID = "conservative_reversion_hybrid"
     MARKET_REGIME_HYBRID = "market_regime_hybrid"
-    MACRO_DRIVEN = "macro_driven"  # 매크로 경제 지표 중심 전략
+    MACRO_DRIVEN = "macro_driven"  # 동적 전략 시스템 전용 타입 (독립 전략 아님)
     DYNAMIC_WEIGHT = "dynamic_weight" # 동적 전략을 위한 플레이스홀더
 
 
@@ -243,22 +243,8 @@ STRATEGY_CONFIGS = {
         implementation_class="domain.strategies.market_regime_hybrid.market_regime_hybrid_strategy.MarketRegimeHybridStrategy",
         market_filters={},
         position_management={}
-    ),
-    
-    StrategyType.MACRO_DRIVEN: StrategyConfig(
-        name="매크로 지표 중심 전략",
-        description="VIX, 버핏지수 등 매크로 경제 지표를 중심으로 하는 전략",
-        signal_threshold=7.0,
-        risk_per_trade=0.02,
-        implementation_class="domain.strategies.macro_driven.macro_driven_strategy.MacroDrivenStrategy",
-        market_filters={
-            "macro_confirmation": True
-        },
-        position_management={
-            "max_positions": 3,
-            "position_timeout_hours": 168  # 7일
-        }
     )
+    # MACRO_DRIVEN config removed - functionality moved to dynamic strategy system
 }
 
 
@@ -278,7 +264,8 @@ def get_all_strategy_types() -> List[StrategyType]:
 
 def get_static_strategy_types() -> List[StrategyType]:
     """정적 전략 타입들만 반환 (동적 전략 제외)"""
-    return [st for st in StrategyType if st != StrategyType.DYNAMIC_WEIGHT]
+    excluded = {StrategyType.DYNAMIC_WEIGHT, StrategyType.MACRO_DRIVEN}
+    return [st for st in StrategyType if st not in excluded]
 
 
 def get_available_strategies() -> Dict[str, List[str]]:

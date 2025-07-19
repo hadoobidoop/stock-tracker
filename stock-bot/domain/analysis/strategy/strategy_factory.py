@@ -52,7 +52,7 @@ STRATEGY_CLASS_MAP = {
     StrategyType.MEAN_REVERSION: MeanReversionStrategy,
     StrategyType.VOLATILITY_BREAKOUT: VolatilityBreakoutStrategy,
     StrategyType.MULTI_TIMEFRAME: MultiTimeframeStrategy,
-    # StrategyType.MACRO_DRIVEN: MacroDrivenStrategy,  # Not implemented yet
+    # MACRO_DRIVEN is used by dynamic strategy system only, not as independent strategy
 }
 
 def get_strategy_specific_config(strategy_type: StrategyType):
