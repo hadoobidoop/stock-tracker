@@ -3,8 +3,8 @@ from typing import Dict, Optional, Any
 
 import pandas as pd
 
-from domain.analysis.base.models import StrategyType
-from domain.analysis.service.signal_orchestrator import SignalDetectionOrchestrator
+from domain.analysis.models.enums import StrategyType
+from domain.analysis.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.detectors.composite.composite_detector import CompositeSignalDetector
 # 기본 Detector import
 from domain.analysis.detectors.momentum.rsi_detector import RSISignalDetector

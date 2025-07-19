@@ -7,7 +7,7 @@ from domain.analysis.detectors.composite.composite_detector import CompositeSign
 from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDetector
 from domain.analysis.models.strategy_result import StrategyResult
 from domain.analysis.models.base_strategy import BaseStrategy
-from domain.analysis.service.signal_orchestrator import SignalDetectionOrchestrator
+from domain.analysis.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from .configs.conservative_config import ConservativeStrategyConfig

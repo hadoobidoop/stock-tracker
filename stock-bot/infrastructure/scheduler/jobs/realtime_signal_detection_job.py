@@ -3,6 +3,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Coroutine
 
+from domain.analysis.config.signals.service.signal_detection_service import SignalDetectionService
+from domain.analysis.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
+
 # 프로젝트 루트 디렉토리를 Python 경로에 추가
 project_root = Path(__file__).resolve().parents[3]
 sys.path.append(str(project_root))
@@ -14,7 +17,6 @@ from infrastructure.db.repository.sql_technical_indicator_repository import SQLT
 from infrastructure.db.repository.sql_trading_signal_repository import SQLTradingSignalRepository
 
 # 새로운 전략 시스템 import
-from domain.analysis.service.signal_detection_service import SignalDetectionService
 from domain.analysis.utils.strategy_selector import strategy_selector, get_current_strategy_config
 from common.config.settings import StrategyMode
 
@@ -29,7 +31,6 @@ from domain.stock.repository.stock_repository import StockRepository
 from infrastructure.db.repository.sql_stock_repository import SQLStockRepository
 from domain.analysis.config.signals.signal_weights import  SIGNAL_THRESHOLD
 from domain.analysis.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
-from domain.analysis.service.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.utils.multi_timeframe import (
     apply_multi_timeframe_filter,
     validate_multi_timeframe_data,

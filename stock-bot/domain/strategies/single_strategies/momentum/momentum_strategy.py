@@ -22,12 +22,12 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from domain.analysis.base.models import StrategyType
+from domain.analysis.models.enums import StrategyType
 from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDetector
 from domain.analysis.detectors.volume.volume_detector import VolumeSignalDetector
 from domain.analysis.models.strategy_result import StrategyResult
 from domain.analysis.models.base_strategy import BaseStrategy
-from domain.analysis.service.signal_orchestrator import SignalDetectionOrchestrator
+from domain.analysis.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
 from domain.strategies.single_strategies.momentum.configs.momentum_config import MomentumStrategyConfig
 from domain.strategies.single_strategies.momentum.detectors.momentum_rsi_detector import RSISignalDetector
 from domain.strategies.single_strategies.momentum.detectors.momentum_rsi_stoch_detector import RSIStochDetector

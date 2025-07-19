@@ -2,8 +2,8 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from domain.analysis.base.models import StrategyType
-from domain.analysis.service.signal_orchestrator import SignalDetectionOrchestrator
+from domain.analysis.models.enums import StrategyType
+from domain.analysis.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.models.strategy_result import StrategyResult
 from domain.analysis.models.base_strategy import BaseStrategy
 from domain.strategies.single_strategies.swing.configs.swing_config import SWING_STRATEGY_CONFIG

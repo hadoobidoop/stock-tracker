@@ -12,7 +12,7 @@ import pandas as pd
 
 from domain.strategies.strategy_config import StrategyConfig
 from domain.analysis.models.enums import StrategyType
-from domain.analysis.service.signal_orchestrator import SignalDetectionOrchestrator
+from domain.analysis.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.models.trading_signal import (
     TradingSignal, SignalType, SignalEvidence, TechnicalIndicatorEvidence, MarketContextEvidence
 )
