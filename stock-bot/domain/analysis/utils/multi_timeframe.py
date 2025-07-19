@@ -11,7 +11,7 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 
-def _apply_multi_timeframe_filter(signal_result: Dict, multi_timeframe_analysis: Dict) -> Dict:
+def apply_multi_timeframe_filter(signal_result: Dict, multi_timeframe_analysis: Dict) -> Dict:
     """
     다중 시간대 분석 결과를 바탕으로 신호를 필터링합니다.
     Args:

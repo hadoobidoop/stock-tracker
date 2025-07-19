@@ -289,8 +289,9 @@ class StrategySelector:
             if not strategy_info:
                 continue
 
-            strategy_id = strategy_info['id']
-            strategy_class = strategy_info['class']
+            # strategy_info is a string (strategy name), not a dict
+            strategy_id = strategy_info
+            strategy_class = 'static'  # Assume strategy mix is static by default
 
             # 정적 전략인 경우, StrategyType Enum으로 변환 시도
             if strategy_class == 'static':

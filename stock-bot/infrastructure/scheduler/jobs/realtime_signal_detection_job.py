@@ -1,7 +1,7 @@
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any, Coroutine
 
 # 프로젝트 루트 디렉토리를 Python 경로에 추가
 project_root = Path(__file__).resolve().parents[3]
@@ -31,7 +31,7 @@ from domain.analysis.config.signals.signal_weights import  SIGNAL_THRESHOLD
 from domain.analysis.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.utils.multi_timeframe import (
-    _apply_multi_timeframe_filter,
+    apply_multi_timeframe_filter,
     validate_multi_timeframe_data,
     get_trend_direction_multi_timeframe,
 )
@@ -59,7 +59,7 @@ stock_analysis_service = StockAnalysisService(stock_repo)
 orchestrator = SignalDetectionOrchestrator()
 
 
-def get_strategy_service() -> SignalDetectionService:
+def get_strategy_service() -> SignalDetectionService | None:
     """main.py에서 초기화된 전략 서비스를 가져옵니다."""
     try:
         from main import get_strategy_service
@@ -123,7 +123,7 @@ class RealtimeSignalDetectionJob:
             logger.error(f"활성 종목 목록 조회 실패: {e}")
             return ['AAPL', 'MSFT', 'NVDA']  # 폴백
 
-    async def execute(self) -> Dict:
+    async def execute(self) -> dict[str, str] | None:
         """실시간 신호 감지 실행"""
         if self.is_running:
             logger.warning("실시간 신호 감지 작업이 이미 실행 중입니다.")
@@ -213,6 +213,7 @@ class RealtimeSignalDetectionJob:
             
         finally:
             self.is_running = False
+            return None
 
     async def _detect_signals_for_ticker(self, ticker: str, strategy_config: Dict) -> Optional[Dict]:
         """개별 종목에 대한 신호 감지"""
@@ -255,11 +256,10 @@ class RealtimeSignalDetectionJob:
                 )
             elif strategy_type == 'dynamic':
                 # 동적 전략 사용
-                strategy_name = strategy_config.get('strategy_name')
-                result = self.signal_detection_service.detect_signals_with_dynamic_strategy(
+                result = self.signal_detection_service.detect_signals_with_strategy(
                     df_with_indicators=df_with_indicators,
                     ticker=ticker,
-                    strategy_name=strategy_name,
+                    strategy_type=None,  # Use current active strategy
                     market_trend=market_trend,
                     long_term_trend=long_term_trend
                 )
@@ -271,10 +271,18 @@ class RealtimeSignalDetectionJob:
             if result and result.has_signal:
                 logger.info(f"🎯 {ticker}: 신호 감지 (점수: {result.total_score:.2f}, 신뢰도: {result.confidence:.1%})")
                 
+                # Determine signal type from the result
+                if result.signal and result.signal.signal_type:
+                    signal_type_value = result.signal.signal_type.value
+                elif result.buy_score > result.sell_score:
+                    signal_type_value = SignalType.BUY.value
+                else:
+                    signal_type_value = SignalType.SELL.value
+                
                 return {
                     "ticker": ticker,
                     "has_signal": True,
-                    "signal_type": result.signal_type.value if result.signal_type else SignalType.BUY.value,
+                    "signal_type": signal_type_value,
                     "total_score": result.total_score,
                     "confidence": result.confidence,
                     "strategy_used": strategy_config.get('name'),
@@ -551,7 +559,7 @@ def realtime_signal_detection_job():
                             'stop_loss_price': None  # 필요시 구현
                         }
 
-                        filtered_result = _apply_multi_timeframe_filter(legacy_signal_result, multi_timeframe_analysis)
+                        filtered_result = apply_multi_timeframe_filter(legacy_signal_result, multi_timeframe_analysis)
 
                         if filtered_result != legacy_signal_result:
                             logger.info(f"Multi-timeframe filter applied for {symbol}: "
@@ -573,7 +581,7 @@ def realtime_signal_detection_job():
 
                     # 다중 시간대 필터 적용
                     if multi_timeframe_analysis:
-                        signal_result = _apply_multi_timeframe_filter(signal_result, multi_timeframe_analysis)
+                        signal_result = apply_multi_timeframe_filter(signal_result, multi_timeframe_analysis)
 
                     # 신호 저장 로직 (기존)
                     try:
@@ -599,8 +607,8 @@ def realtime_signal_detection_job():
                             signal_score=signal_result.get('score', 0),
                             timestamp_utc=current_et,
                             current_price=df_with_indicators['Close'].iloc[-1],
-                            market_trend=market_trend.value,
-                            long_term_trend=long_term_trend.value,
+                            market_trend=market_trend,
+                            long_term_trend=long_term_trend,
                             details=signal_result.get('details', []),
                             stop_loss_price=signal_result.get('stop_loss_price'),
                             evidence=evidence
