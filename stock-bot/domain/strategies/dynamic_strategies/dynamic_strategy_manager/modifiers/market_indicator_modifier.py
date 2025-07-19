@@ -3,7 +3,7 @@ from typing import Dict, Any
 
 import pandas as pd
 
-from domain.analysis.strategy.decision_context import DecisionContext
+from domain.strategies.decision_context import DecisionContext
 from infrastructure.logging import get_logger
 from .base import BaseModifier
 from ..configs.dynamic_strategies import ModifierDefinition, ModifierActionType

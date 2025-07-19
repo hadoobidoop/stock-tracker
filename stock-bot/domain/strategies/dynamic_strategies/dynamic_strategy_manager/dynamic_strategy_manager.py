@@ -2,10 +2,10 @@
 
 from typing import Dict, List, Optional, Any
 
-from domain.analysis.strategy.strategy_factory import StrategyFactory
 from domain.strategies.dynamic_strategies.dynamic_strategy_manager.configs.dynamic_strategies import get_all_strategies
 from infrastructure.logging import get_logger
 from .dynamic_strategy import DynamicCompositeStrategy
+from ...strategy_factory import StrategyFactory
 
 logger = get_logger(__name__)
 

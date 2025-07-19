@@ -10,6 +10,8 @@ from typing import Dict, Any, List, Optional
 
 import pandas as pd
 
+from domain.strategies.decision_context import DecisionContext
+from domain.strategies.modifier_engine import ModifierEngine
 from domain.strategies.strategy_config import StrategyConfig
 from domain.analysis.models.enums import StrategyType
 from domain.analysis.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
@@ -18,8 +20,7 @@ from domain.analysis.models.trading_signal import (
 )
 from domain.analysis.models.strategy_result import StrategyResult
 from domain.analysis.models.base_strategy import BaseStrategy
-from domain.analysis.strategy.decision_context import DecisionContext
-from domain.analysis.strategy.modifier_engine import ModifierEngine
+
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 

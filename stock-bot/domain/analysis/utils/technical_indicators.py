@@ -6,9 +6,8 @@ from typing import Dict
 import numpy as np
 import pandas as pd
 
-from domain.analysis.config.indicators.technical_indicator_settings import FIBONACCI_LEVELS
-from domain.analysis.config.indicators.technical_indicator_settings import HOURLY_INDICATORS
-from domain.analysis.config.indicators.technical_indicator_settings import TECHNICAL_INDICATORS
+from domain.analysis.detectors.technical_indicator_settings import TECHNICAL_INDICATORS, FIBONACCI_LEVELS, \
+    HOURLY_INDICATORS
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)

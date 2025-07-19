@@ -4,8 +4,8 @@ import sys
 
 from domain.analysis.config.signals.service.signal_detection_service import SignalDetectionService
 from domain.analysis.models.enums import StrategyType
+from domain.strategies.strategy_selector import list_all_strategies
 # --- 새로운 전략 시스템 추가 ---
-from domain.analysis.utils.strategy_selector import list_all_strategies
 from infrastructure.db.db_manager import create_db_and_tables
 from infrastructure.logging import setup_logging, get_logger
 from infrastructure.scheduler.jobs import update_stock_metadata_job
@@ -24,7 +24,7 @@ def parse_arguments():
     
     # 동적으로 사용 가능한 전략 목록 가져오기
     try:
-        from common.config.settings import get_available_static_strategies
+        from domain.analysis.strategy.strategy_registry import get_available_static_strategies
         available_strategies = [st.lower() for st in get_available_static_strategies()]
     except ImportError:
         # 폴백: 기본 전략들

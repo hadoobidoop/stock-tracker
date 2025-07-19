@@ -15,6 +15,7 @@ import pandas as pd
 
 # Import from new centralized location
 from domain.analysis.models.enums import StrategyType, StrategyMixMode
+from domain.strategies.strategy_factory import StrategyFactory
 # Static Strategy Mix 관련 설정 import
 from domain.strategies.strategy_mixes import (
     StrategyMixConfig, STRATEGY_MIXES
@@ -25,7 +26,6 @@ from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from domain.analysis.models.base_strategy import BaseStrategy
 from domain.analysis.models.strategy_result import StrategyResult
-from .strategy_factory import StrategyFactory
 
 logger = get_logger(__name__)
 

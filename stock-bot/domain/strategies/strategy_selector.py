@@ -7,13 +7,12 @@
 from functools import lru_cache
 from typing import Dict, Any, Optional, List, Union, Callable, Tuple
 
-from common.config.settings import (
-    StrategyMode, DefaultStrategyConfig, EnvironmentConfig, get_strategy_availability
-)
-from domain.analysis.models.enums import StrategyType
+from domain.analysis.models.enums import StrategyType, StrategyMode
+from domain.strategies.environment import EnvironmentConfig
+from domain.strategies.strategy_config import get_strategy_availability, DefaultStrategyConfig
+from domain.strategies.strategy_factory import StrategyFactory
 # MARKET_CONDITION_STRATEGIES를 strategy_mixes에서 직접 가져옵니다.
 from domain.strategies.strategy_mixes import MARKET_CONDITION_STRATEGIES
-from domain.analysis.strategy.strategy_factory import StrategyFactory
 from domain.strategies.dynamic_strategies.dynamic_strategy_manager.configs.dynamic_strategies import STRATEGY_DEFINITIONS
 from infrastructure.logging import get_logger
 

@@ -12,7 +12,7 @@ import pandas as pd
 
 from domain.analysis.models.enums import StrategyType
 from domain.analysis.models.strategy_result import StrategyResult
-from domain.analysis.strategy.strategy_manager import StrategyManager
+from domain.strategies.strategy_manager import StrategyManager
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 

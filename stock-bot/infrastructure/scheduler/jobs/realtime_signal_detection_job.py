@@ -5,6 +5,8 @@ from typing import Dict, List, Optional, Any, Coroutine
 
 from domain.analysis.config.signals.service.signal_detection_service import SignalDetectionService
 from domain.analysis.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
+from domain.analysis.models.enums import StrategyMode
+from domain.strategies.strategy_selector import get_current_strategy_config, strategy_selector
 
 # 프로젝트 루트 디렉토리를 Python 경로에 추가
 project_root = Path(__file__).resolve().parents[3]
@@ -17,8 +19,6 @@ from infrastructure.db.repository.sql_technical_indicator_repository import SQLT
 from infrastructure.db.repository.sql_trading_signal_repository import SQLTradingSignalRepository
 
 # 새로운 전략 시스템 import
-from domain.analysis.utils.strategy_selector import strategy_selector, get_current_strategy_config
-from common.config.settings import StrategyMode
 
 from domain.analysis.utils import (
     calculate_all_indicators,
