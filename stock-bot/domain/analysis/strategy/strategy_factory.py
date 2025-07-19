@@ -12,7 +12,7 @@ from domain.strategies.balanced.configs.balanced_config import BalancedStrategyC
 from domain.strategies.aggressive.configs.aggressive_config import AggressiveStrategyConfig
 from domain.strategies.momentum.configs.momentum_config import MomentumStrategyConfig
 from domain.strategies.swing.configs.swing_config import SWING_STRATEGY_CONFIG
-from domain.strategies.mean_reversion.configs.mean_reversion_config import MEAN_REVERSION_CONFIG
+from domain.strategies.mean_reversion.configs.mean_reversion_config import MeanReversionStrategyConfig
 # Note: TrendPullbackConfig and VolatilityBreakoutConfig classes don't exist, 
 # they only have constants. Will use general config for these.
 from domain.strategies.multi_timeframe.configs.multi_timeframe_config import MULTI_TIMEFRAME_CONFIG
@@ -83,7 +83,7 @@ def get_strategy_specific_config(strategy_type: StrategyType):
             risk_per_trade=0.025
         ),
         StrategyType.SWING: lambda: SWING_STRATEGY_CONFIG,
-        StrategyType.MEAN_REVERSION: lambda: MEAN_REVERSION_CONFIG,
+        StrategyType.MEAN_REVERSION: lambda: MeanReversionStrategyConfig(),
         # TREND_PULLBACK and VOLATILITY_BREAKOUT use general config (no specific config class)
         StrategyType.MULTI_TIMEFRAME: lambda: MULTI_TIMEFRAME_CONFIG,
     }

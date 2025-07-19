@@ -17,19 +17,19 @@ class AggressiveStrategyConfig(StrategyConfig):
         - risk_per_trade: 트레이드당 리스크 비율(0.03=3%)
         - detector_weights: 각 Detector별 가중치
         - score_multiplier: 점수 조정(기본 1.2)
-        - max_positions/position_hold_hours: 포지션 관리(8개/48시간)
+        - max_positions/position_hold_hours: 포지션 관리(8개/336시간)
         - long_term_bullish_multiplier: 장기 상승장 가중치(1.3)
         - long_term_bearish_multiplier: 장기 하락장 가중치(1.2)
         - stop_loss_percentage: 손절 비율(5%)
         - take_profit_percentage: 익절 비율(12%)
     """
-    name: str  # 전략 이름(설명용)
-    description: str  # 전략 설명(문서/로그용)
-    signal_threshold: float  # 신호 발생 기준점(기본 5.0)
-    risk_per_trade: float  # 트레이드당 리스크 비율(0.03=3%)
+    name: str = "공격적 전략"  # 전략 이름(설명용)
+    description: str = "낮은 임계값으로 많은 거래 기회를 포착하는 전략"  # 전략 설명(문서/로그용)
+    signal_threshold: float = 5.0  # 신호 발생 기준점(기본 5.0)
+    risk_per_trade: float = 0.03  # 트레이드당 리스크 비율(0.03=3%)
     strategy_type: StrategyType = StrategyType.AGGRESSIVE  # 전략 타입(고정)
     max_positions: int = 8  # 최대 동시 포지션 수
-    position_hold_hours: int = 48  # 포지션 최대 보유 시간(시간 단위)
+    position_hold_hours: int = 336  # 포지션 최대 보유 시간(14일, static_strategies.py 기준)
     stop_loss_percentage: float = 5.0  # 손절 비율(%)
     take_profit_percentage: float = 12.0  # 익절 비율(%)
     score_multiplier: float = 1.2  # 점수 조정 계수(기본 1.2)
@@ -66,10 +66,13 @@ class AggressiveStrategyConfig(StrategyConfig):
     def from_dict(cls, data: Dict[str, Any]) -> 'AggressiveStrategyConfig':
         """딕셔너리에서 설정 생성"""
         return cls(
+            name=data.get('name', "공격적 전략"),
+            description=data.get('description', "낮은 임계값으로 많은 거래 기회를 포착하는 전략"),
             strategy_type=StrategyType(data['strategy_type']),
             signal_threshold=data.get('signal_threshold', 5.0),
+            risk_per_trade=data.get('risk_per_trade', 0.03),
             max_positions=data.get('max_positions', 8),
-            position_hold_hours=data.get('position_hold_hours', 48),
+            position_hold_hours=data.get('position_hold_hours', 336),
             stop_loss_percentage=data.get('stop_loss_percentage', 5.0),
             take_profit_percentage=data.get('take_profit_percentage', 12.0),
             score_multiplier=data.get('score_multiplier', 1.2),

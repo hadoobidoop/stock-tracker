@@ -1,6 +1,26 @@
 """
-정적 전략 설정 (확장된 버전)
+정적 전략 설정 (확장된 버전) - DEPRECATED
 
+⚠️  이 파일은 더 이상 사용되지 않습니다 (DEPRECATED)
+⚠️  각 전략별 개별 config 파일로 이관 완료
+
+=== 이관 완료된 전략들 ===
+✅ CONSERVATIVE          → domain/strategies/conservative/configs/conservative_config.py
+✅ BALANCED              → domain/strategies/balanced/configs/balanced_config.py
+✅ AGGRESSIVE            → domain/strategies/aggressive/configs/aggressive_config.py
+✅ MOMENTUM              → domain/strategies/momentum/configs/momentum_config.py
+✅ TREND_FOLLOWING       → domain/strategies/trend_following/configs/trend_following_config.py
+✅ SCALPING              → domain/strategies/scalping/configs/scalping_config.py
+✅ SWING                 → domain/strategies/swing/configs/swing_config.py
+✅ MEAN_REVERSION        → domain/strategies/mean_reversion/configs/mean_reversion_config.py
+✅ TREND_PULLBACK        → domain/strategies/trend_pullback/configs/trend_pullback_config.py
+✅ VOLATILITY_BREAKOUT   → domain/strategies/volatility_breakout/configs/volatility_breakout_config.py
+✅ MULTI_TIMEFRAME       → domain/strategies/multi_timeframe/configs/multi_timeframe_config.py
+✅ ADAPTIVE_MOMENTUM     → domain/strategies/adaptive_momentum_hybrid/configs/adaptive_momentum_hybrid_config.py
+✅ CONSERVATIVE_REVERSION_HYBRID → domain/strategies/conservative_reversion_hybrid/configs/conservative_reversion_hybrid_config.py
+✅ MARKET_REGIME_HYBRID  → domain/strategies/market_regime_hybrid/configs/market_regime_hybrid_config.py
+
+향후 새로운 전략 설정은 각 전략 폴더의 configs/ 디렉토리에 개별 파일로 생성하세요.
 기존 정적 전략들을 모두 유지하면서 동적 전략 시스템과 호환되도록 구성
 """
 
@@ -235,4 +255,32 @@ def is_strategy_available(strategy_name: str) -> bool:
         strategy_type = StrategyType(strategy_name.lower())
         return strategy_type in STRATEGY_CONFIGS
     except ValueError:
-        return False 
+        return False
+
+
+# ==============================================
+# ⚠️  DEPRECATION WARNING
+# ==============================================
+
+import warnings
+
+def show_deprecation_warning():
+    """
+    이 파일이 deprecated 되었음을 알리는 경고 메시지 출력
+    """
+    warnings.warn(
+        "\n"
+        "⚠️  static_strategies.py는 더 이상 사용되지 않습니다!\n"
+        "⚠️  각 전략의 개별 config 파일을 사용해주세요.\n"
+        "\n"
+        "예시:\n"
+        "  from domain.strategies.conservative.configs import ConservativeStrategyConfig\n"
+        "  from domain.strategies.aggressive.configs import AggressiveStrategyConfig\n"
+        "\n"
+        "자세한 내용은 CLAUDE.md 파일을 참조하세요.\n",
+        DeprecationWarning,
+        stacklevel=2
+    )
+
+# 자동으로 deprecation warning 표시 (import 시)
+show_deprecation_warning() 

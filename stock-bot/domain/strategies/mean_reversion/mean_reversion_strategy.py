@@ -5,7 +5,7 @@ mean_reversion 전략 실행체 (독립 패키지)
 - Detector별 가중치/파라미터는 config에서 일관 관리 (유지보수/튜닝/확장성 우수)
 - mean_reversion 전용 래퍼 Detector 클래스 사용 (prefix: MeanReversion)
 - signal_threshold: 7.0 (표준), position_management: 최대 4개, 24시간 보유(단기)
-- config: domain.strategies.mean_reversion.configs.mean_reversion_config.MEAN_REVERSION_CONFIG
+- config: domain.strategies.mean_reversion.configs.mean_reversion_config.MeanReversionStrategyConfig
 
 활용 포인트:
     - 과매수/과매도 후 평균 회귀 신호 포착
@@ -16,7 +16,7 @@ mean_reversion 전략 실행체 (독립 패키지)
 from typing import Dict, Optional
 import pandas as pd
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
-from domain.strategies.mean_reversion.configs.mean_reversion_config import MEAN_REVERSION_CONFIG, MeanReversionConfig
+from domain.strategies.mean_reversion.configs.mean_reversion_config import MeanReversionStrategyConfig
 from domain.strategies.mean_reversion.detectors.mean_reversion_bb_detector import MeanReversionBBSignalDetector
 from domain.strategies.mean_reversion.detectors.mean_reversion_rsi_detector import MeanReversionRSISignalDetector
 from domain.strategies.mean_reversion.detectors.mean_reversion_stoch_detector import MeanReversionStochSignalDetector
@@ -34,9 +34,10 @@ class MeanReversionStrategy(BaseStrategy):
     - Detector별 가중치/파라미터는 config에서 관리
     - mean_reversion 전용 래퍼 Detector 클래스 사용
     """
-    def __init__(self, strategy_type: StrategyType = StrategyType.MEAN_REVERSION, config: Optional[MeanReversionConfig] = None):
-        super().__init__(strategy_type, config or MEAN_REVERSION_CONFIG)
-        self.config = config or MEAN_REVERSION_CONFIG
+    def __init__(self, strategy_type: StrategyType = StrategyType.MEAN_REVERSION, config: Optional[MeanReversionStrategyConfig] = None):
+        default_config = MeanReversionStrategyConfig()
+        super().__init__(strategy_type, config or default_config)
+        self.config = config or default_config
         self.orchestrator: Optional[SignalDetectionOrchestrator] = None
 
     def initialize(self) -> bool:

@@ -5,13 +5,18 @@ from domain.analysis.base.models import StrategyConfig, StrategyType
 
 @dataclass
 class ConservativeStrategyConfig(StrategyConfig):
-    """보수적 전략 설정"""
+    """
+    보수적 전략 설정
+    높은 신뢰도의 강한 신호만 사용하는 안전한 전략
+    """
+    name: str = "보수적 전략"
+    description: str = "높은 신뢰도의 강한 신호만 사용하는 안전한 전략"
     risk_per_trade: float = 0.01  # ← 기본값 명시
     # 기본 전략 설정 상속
     strategy_type: StrategyType = StrategyType.CONSERVATIVE
     signal_threshold: float = 12.0  # 높은 임계값 (기본 8.0 → 12.0)
-    max_positions: int = 2  # 적은 포지션 (기본 4 → 2)
-    position_hold_hours: int = 120  # 긴 보유 기간 (기본 72 → 120)
+    max_positions: int = 3  # 적은 포지션 (static_strategies.py에서 3으로 설정)
+    position_hold_hours: int = 672  # 긴 보유 기간 (28일, static_strategies.py 기준)
     stop_loss_percentage: float = 5.0  # 기본값 유지
     take_profit_percentage: float = 12.0  # 기본값 유지
     
@@ -35,6 +40,8 @@ class ConservativeStrategyConfig(StrategyConfig):
     def to_dict(self) -> Dict[str, Any]:
         """설정을 딕셔너리로 변환"""
         return {
+            'name': self.name,
+            'description': self.description,
             'strategy_type': self.strategy_type.value,
             'signal_threshold': self.signal_threshold,
             'max_positions': self.max_positions,
@@ -51,10 +58,12 @@ class ConservativeStrategyConfig(StrategyConfig):
     def from_dict(cls, data: Dict[str, Any]) -> 'ConservativeStrategyConfig':
         """딕셔너리에서 설정 생성"""
         return cls(
+            name=data.get('name', "보수적 전략"),
+            description=data.get('description', "높은 신뢰도의 강한 신호만 사용하는 안전한 전략"),
             strategy_type=StrategyType(data['strategy_type']),
             signal_threshold=data.get('signal_threshold', 12.0),
-            max_positions=data.get('max_positions', 2),
-            position_hold_hours=data.get('position_hold_hours', 120),
+            max_positions=data.get('max_positions', 3),
+            position_hold_hours=data.get('position_hold_hours', 672),
             stop_loss_percentage=data.get('stop_loss_percentage', 5.0),
             take_profit_percentage=data.get('take_profit_percentage', 12.0),
             score_multiplier=data.get('score_multiplier', 0.8),

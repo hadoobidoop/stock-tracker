@@ -1,1 +1,3 @@
-# conservative_reversion_hybrid configs 패키지 
+from .conservative_reversion_hybrid_config import ConservativeReversionHybridConfig
+
+__all__ = ['ConservativeReversionHybridConfig'] 

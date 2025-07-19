@@ -28,7 +28,7 @@ from infrastructure.logging import get_logger
 from domain.strategies.conservative.conservative_strategy import ConservativeStrategy
 from domain.strategies.mean_reversion.mean_reversion_strategy import MeanReversionStrategy
 from domain.strategies.conservative.configs.conservative_config import ConservativeStrategyConfig
-from domain.strategies.mean_reversion.configs.mean_reversion_config import MEAN_REVERSION_CONFIG
+from domain.strategies.mean_reversion.configs.mean_reversion_config import MeanReversionStrategyConfig
 
 logger = get_logger(__name__)
 
@@ -45,7 +45,7 @@ class ConservativeReversionHybridStrategy(BaseStrategy):
             name="Conservative Strategy",
             description="Low-risk conservative trading strategy"
         )
-        mean_reversion_config = MEAN_REVERSION_CONFIG
+        mean_reversion_config = MeanReversionStrategyConfig()
         self.conservative_strategy = ConservativeStrategy(StrategyType.CONSERVATIVE, conservative_config)
         self.mean_reversion_strategy = MeanReversionStrategy(StrategyType.MEAN_REVERSION, mean_reversion_config)
 
