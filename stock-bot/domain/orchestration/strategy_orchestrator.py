@@ -220,10 +220,3 @@ class StrategyOrchestrator:
             }
         return {"mode": "none"}
     
-    def enable_auto_strategy_selection(self, enable: bool = True):
-        """자동 전략 선택 활성화/비활성화"""
-        self.auto_selector.enable_auto_strategy_selection(enable)
-    
-    def get_dynamic_strategy_info(self) -> Dict[str, Any]:
-        """현재 동적 전략 정보를 반환합니다."""
-        return self.dynamic_manager.get_strategy_info()

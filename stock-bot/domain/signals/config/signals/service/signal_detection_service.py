@@ -174,13 +174,6 @@ class SignalDetectionService:
         
         return self.strategy_manager.set_strategy_mix(mix_name)
     
-    def enable_auto_strategy_selection(self, enable: bool = True):
-        """자동 전략 선택을 활성화/비활성화합니다."""
-        if not self.is_initialized:
-            logger.warning("서비스가 초기화되지 않았습니다.")
-            return
-        
-        self.strategy_manager.enable_auto_strategy_selection(enable)
     
     def get_current_strategy_type(self) -> Optional[StrategyType]:
         """현재 활성화된 전략 타입을 반환합니다."""
@@ -198,12 +191,6 @@ class SignalDetectionService:
         
         return self.strategy_manager.get_current_strategy_info()
     
-    def get_dynamic_strategy_info(self) -> Dict[str, Any]:
-        """현재 동적 전략 정보를 반환합니다."""
-        if not self.is_initialized:
-            return {"error": "서비스가 초기화되지 않았습니다."}
-        
-        return self.strategy_manager.get_dynamic_strategy_info()
     
     def get_available_strategies(self) -> List[Dict[str, Any]]:
         """사용 가능한 전략 목록을 반환합니다."""

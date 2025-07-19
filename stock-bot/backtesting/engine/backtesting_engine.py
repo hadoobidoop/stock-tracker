@@ -237,7 +237,7 @@ class BacktestingEngine:
         if not self.use_enhanced_signals or not self.signal_service:
             raise ValueError("자동 전략 선택 백테스트는 신호 감지 서비스가 필요합니다.")
         
-        self.signal_service.enable_auto_strategy_selection(True)
+        self.signal_service.strategy_manager.auto_selector.enable_auto_strategy_selection(True)
         
         try:
             result = self.run_backtest(tickers, start_date, end_date, data_interval)
@@ -245,7 +245,7 @@ class BacktestingEngine:
                 result.backtest_settings['auto_strategy_selection'] = True
             return result
         finally:
-            self.signal_service.enable_auto_strategy_selection(False)
+            self.signal_service.strategy_manager.auto_selector.enable_auto_strategy_selection(False)
 
     def compare_strategies(self,
                           tickers: List[str],

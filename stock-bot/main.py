@@ -129,7 +129,7 @@ def initialize_strategy_system(args) -> bool:
         # 자동 전략 선택 설정
         if args.auto_strategy:
             logger.info("자동 전략 선택 활성화")
-            strategy_service.enable_auto_strategy_selection(True)
+            strategy_service.strategy_manager.auto_selector.enable_auto_strategy_selection(True)
         
         # 현재 전략 정보 로깅
         current_strategy = strategy_service.get_current_strategy_info()
