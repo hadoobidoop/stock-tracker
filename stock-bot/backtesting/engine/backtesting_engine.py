@@ -75,9 +75,9 @@ class BacktestingEngine:
         """신호 감지 서비스 초기화"""
         if self.signal_service:
             try:
-                from domain.strategies.utils import get_available_static_strategies
-                strategy_names = get_available_static_strategies()
-                all_strategies = [StrategyType(name.upper()) for name in strategy_names]
+                from domain.orchestration.strategy_registry import strategy_registry
+                strategy_names = strategy_registry.get_available_strategies("static")["static"]
+                all_strategies = [StrategyType(name) for name in strategy_names]
                 success = self.signal_service.initialize(all_strategies)
                 if success:
                     self.signal_service.switch_strategy(self.strategy_type)
