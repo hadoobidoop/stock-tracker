@@ -11,7 +11,8 @@ from domain.analysis.repository.analysis_repository import MarketDataRepository
 from infrastructure.db.repository.sql_market_data_repository import SQLMarketDataRepository
 
 # 새로운 전략 시스템 import
-from domain.analysis.strategy.configs.static_strategies import StrategyType, STRATEGY_CONFIGS
+from domain.analysis.base.models import StrategyType
+from domain.analysis.strategy.configs.static_strategies import STRATEGY_CONFIGS
 from domain.analysis.strategy.strategy_manager import StrategyManager
 
 from ..engine.backtesting_engine import BacktestingEngine

@@ -1,4 +1,4 @@
-from domain.analysis.strategy.configs.static_strategies import StrategyConfig
+from domain.analysis.base.models import StrategyConfig
 from dataclasses import dataclass, field
 from typing import Dict, Any
 

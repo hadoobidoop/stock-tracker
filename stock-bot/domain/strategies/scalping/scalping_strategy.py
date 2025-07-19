@@ -28,7 +28,7 @@ from typing import Dict, Optional
 import pandas as pd
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
-from domain.analysis.strategy.configs.static_strategies import StrategyConfig, StrategyType
+from domain.analysis.base.models import StrategyConfig, StrategyType
 from domain.stock.service.market_data_service import MarketDataService
 from domain.analysis.detectors.momentum.rsi_detector import RSISignalDetector
 from domain.analysis.detectors.momentum.stoch_detector import StochSignalDetector

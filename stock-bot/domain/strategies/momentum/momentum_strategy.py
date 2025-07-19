@@ -28,7 +28,7 @@ from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDe
 from domain.analysis.detectors.volume.volume_detector import VolumeSignalDetector
 from domain.strategies.momentum.configs.momentum_config import MomentumStrategyConfig
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
-from domain.analysis.strategy.configs.static_strategies import StrategyType
+from domain.analysis.base.models import StrategyType
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 

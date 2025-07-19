@@ -21,7 +21,7 @@ from domain.strategies.mean_reversion.detectors.mean_reversion_bb_detector impor
 from domain.strategies.mean_reversion.detectors.mean_reversion_rsi_detector import MeanReversionRSISignalDetector
 from domain.strategies.mean_reversion.detectors.mean_reversion_stoch_detector import MeanReversionStochSignalDetector
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
-from domain.analysis.strategy.configs.static_strategies import StrategyType
+from domain.analysis.base.models import StrategyType
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 

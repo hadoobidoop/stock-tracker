@@ -1,7 +1,7 @@
 from typing import Dict
 from dataclasses import dataclass
 from enum import Enum
-from domain.analysis.strategy.configs.static_strategies import StrategyType
+from domain.analysis.base.models import StrategyType
 
 class StrategyMixMode(Enum):
     WEIGHTED = "weighted"

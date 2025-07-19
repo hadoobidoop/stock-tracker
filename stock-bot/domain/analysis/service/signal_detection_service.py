@@ -10,7 +10,7 @@ from datetime import datetime
 import pandas as pd
 
 from infrastructure.db.models.enums import TrendType
-from domain.analysis.strategy.configs.static_strategies import StrategyType
+from domain.analysis.base.models import StrategyType
 from domain.analysis.strategy.strategy_manager import StrategyManager
 from domain.analysis.strategy.base_strategy import StrategyResult
 from infrastructure.logging import get_logger
@@ -216,6 +216,20 @@ class SignalDetectionService:
             return {}
         
         return self.strategy_manager.get_strategy_performance_summary()
+    
+    def load_strategy_configs(self, file_path: str) -> bool:
+        """파일에서 전략 설정을 로드합니다."""
+        try:
+            success = self.strategy_manager.load_strategies_from_file(file_path)
+            if success:
+                self.is_initialized = True
+                logger.info(f"전략 설정 로드 성공: {file_path}")
+            else:
+                logger.error(f"전략 설정 로드 실패: {file_path}")
+            return success
+        except Exception as e:
+            logger.error(f"전략 설정 로드 중 예외 발생: {e}")
+            return False
     
     def precompute_indicators_for_ticker(self, 
                                        ticker: str, 

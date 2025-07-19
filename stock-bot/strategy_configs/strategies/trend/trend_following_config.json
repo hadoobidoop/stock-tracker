@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "created_at": "2025-07-19T11:03:26Z",
+    "source_file": "startup_config_20250719_110326.json",
+    "strategy_name": "trend_following",
+    "category": "trend"
+  },
+  "name": "추세추종 전략",
+  "description": "SMA, MACD, ADX 등 추세 지표 중심 전략",
+  "signal_threshold": 7.0,
+  "risk_per_trade": 0.02,
+  "implementation_class": "domain.strategies.trend_following.trend_following_strategy.TrendFollowingStrategy",
+  "detectors": [],
+  "market_filters": {
+    "trend_alignment": true,
+    "trend_strength": true
+  },
+  "position_management": {
+    "max_positions": 4,
+    "position_timeout_hours": 720
+  }
+}

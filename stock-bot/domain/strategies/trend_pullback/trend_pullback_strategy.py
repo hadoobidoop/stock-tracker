@@ -3,7 +3,7 @@ from typing import Dict, Optional
 import pandas as pd
 
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
-from domain.analysis.strategy.configs.static_strategies import StrategyConfig, StrategyType
+from domain.analysis.base.models import StrategyConfig, StrategyType
 from .detectors.trend_pullback_sma_detector import TrendPullbackSMADetector
 from .detectors.trend_pullback_adx_detector import TrendPullbackADXDetector
 from .detectors.trend_pullback_rsi_detector import TrendPullbackRSIDetector

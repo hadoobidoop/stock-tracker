@@ -1,0 +1,32 @@
+{
+  "metadata": {
+    "created_at": "2025-07-19T11:03:26Z",
+    "source_file": "startup_config_20250719_110326.json",
+    "strategy_name": "balanced",
+    "category": "basic"
+  },
+  "name": "Balanced Strategy",
+  "description": "Balanced risk/reward strategy",
+  "signal_threshold": 8.0,
+  "risk_per_trade": 0.02,
+  "implementation_class": null,
+  "detectors": [],
+  "market_filters": {},
+  "position_management": {},
+  "strategy_type": "StrategyType.BALANCED",
+  "max_positions": 4,
+  "position_hold_hours": 72,
+  "stop_loss_percentage": 5.0,
+  "take_profit_percentage": 12.0,
+  "score_multiplier": 1.0,
+  "long_term_bullish_multiplier": 1.2,
+  "long_term_bearish_multiplier": 1.2,
+  "detector_weights": {
+    "sma": 5.0,
+    "macd": 5.0,
+    "rsi": 3.0,
+    "volume": 4.0,
+    "adx": 4.0,
+    "composite": 7.0
+  }
+}

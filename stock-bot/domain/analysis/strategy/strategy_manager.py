@@ -492,28 +492,81 @@ class StrategyManager:
     def load_strategies_from_file(self, file_path: str) -> bool:
         """파일에서 전략 설정을 로드합니다."""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                configs = json.load(f)
-            
-            # 기존 전략 정리
-            self.active_strategies.clear()
-            
-            # 새 전략 로드
-            for strategy_type_str, config_dict in configs.items():
-                strategy_type = StrategyType(strategy_type_str)
-                # config_dict를 StrategyConfig 객체로 변환하는 로직 필요
-                # 여기서는 간단히 기본 설정 사용
+            # 파일 경로에 따라 로드 방식 결정
+            if "archived" in file_path or file_path.endswith("startup_config"):
+                return self._load_legacy_config_file(file_path)
+            elif "strategies" in file_path or file_path.endswith("index.json"):
+                return self._load_organized_config_structure(file_path)
+            else:
+                # 기본적으로 레거시 형태로 시도
+                return self._load_legacy_config_file(file_path)
+                
+        except Exception as e:
+            logger.error(f"전략 설정 로드 실패: {e}")
+            return False
+    
+    def _load_legacy_config_file(self, file_path: str) -> bool:
+        """레거시 형태의 설정 파일을 로드합니다."""
+        with open(file_path, 'r', encoding='utf-8') as f:
+            configs = json.load(f)
+        
+        # 기존 전략 정리
+        self.active_strategies.clear()
+        
+        # 새 전략 로드
+        for strategy_type_str, config_dict in configs.items():
+            strategy_type = StrategyType(strategy_type_str)
+            # config_dict를 StrategyConfig 객체로 변환하는 로직 필요
+            # 여기서는 간단히 기본 설정 사용
+            config = STRATEGY_CONFIGS.get(strategy_type)
+            if config:
+                strategy = StrategyFactory.create_strategy(strategy_type, config)
+                self.active_strategies[strategy_type] = strategy
+        
+        logger.info(f"레거시 전략 설정 로드 완료: {len(self.active_strategies)}개 전략")
+        return True
+    
+    def _load_organized_config_structure(self, file_path: str) -> bool:
+        """새로운 조직화된 구조에서 전략 설정을 로드합니다."""
+        from strategy_configs.config_loader import StrategyConfigLoader
+        
+        # 설정 로더 생성
+        config_loader = StrategyConfigLoader()
+        
+        # 모든 전략 설정 로드
+        all_configs = config_loader.load_all_strategies()
+        
+        if not all_configs:
+            logger.error("조직화된 구조에서 전략 설정을 찾을 수 없습니다")
+            return False
+        
+        # 기존 전략 정리
+        self.active_strategies.clear()
+        
+        # 새 전략 로드
+        for strategy_name, config_dict in all_configs.items():
+            try:
+                # 전략 타입 결정
+                strategy_type_str = config_dict.get("strategy_type", strategy_name)
+                if strategy_type_str.startswith("StrategyType."):
+                    strategy_type_str = strategy_type_str.replace("StrategyType.", "")
+                
+                strategy_type = StrategyType(strategy_type_str.lower())
+                
+                # 기본 설정 사용 (향후 config_dict 변환 로직 추가 예정)
                 config = STRATEGY_CONFIGS.get(strategy_type)
                 if config:
                     strategy = StrategyFactory.create_strategy(strategy_type, config)
                     self.active_strategies[strategy_type] = strategy
-            
-            logger.info(f"전략 설정 로드 완료: {len(self.active_strategies)}개 전략")
-            return True
-            
-        except Exception as e:
-            logger.error(f"전략 설정 로드 실패: {e}")
-            return False
+                    logger.debug(f"전략 로드 성공: {strategy_name}")
+                else:
+                    logger.warning(f"기본 설정을 찾을 수 없는 전략: {strategy_name}")
+                    
+            except Exception as e:
+                logger.error(f"전략 로드 실패 ({strategy_name}): {e}")
+        
+        logger.info(f"조직화된 전략 설정 로드 완료: {len(self.active_strategies)}개 전략")
+        return True
     
     def get_current_strategy_info(self) -> Dict[str, Any]:
         """현재 전략 정보를 반환합니다."""

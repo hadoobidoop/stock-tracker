@@ -1,0 +1,21 @@
+{
+  "metadata": {
+    "created_at": "2025-07-19T11:03:26Z",
+    "source_file": "startup_config_20250719_110326.json",
+    "strategy_name": "volatility_breakout",
+    "category": "advanced"
+  },
+  "name": "변동성 돌파 전략",
+  "description": "변동성 응축 후 폭발하는 시점을 포착하는 전략",
+  "signal_threshold": 6.0,
+  "risk_per_trade": 0.025,
+  "implementation_class": "domain.strategies.volatility_breakout.volatility_breakout_strategy.VolatilityBreakoutStrategy",
+  "detectors": [],
+  "market_filters": {
+    "volume_confirmation": true
+  },
+  "position_management": {
+    "max_positions": 3,
+    "position_timeout_hours": 48
+  }
+}

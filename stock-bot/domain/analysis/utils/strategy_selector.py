@@ -12,7 +12,8 @@ from functools import lru_cache
 from common.config.settings import (
     StrategyMode, DefaultStrategyConfig, EnvironmentConfig, get_strategy_availability
 )
-from domain.analysis.strategy.configs.static_strategies import StrategyType, get_strategy_config, get_static_strategy_types
+from domain.analysis.base.models import StrategyType
+from domain.analysis.strategy.configs.static_strategies import get_strategy_config, get_static_strategy_types
 from domain.strategies.dynamic.configs.dynamic_strategies import STRATEGY_DEFINITIONS
 # MARKET_CONDITION_STRATEGIES를 strategy_mixes에서 직접 가져옵니다.
 from domain.analysis.strategy.configs.strategy_mixes import MARKET_CONDITION_STRATEGIES

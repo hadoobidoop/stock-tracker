@@ -1,0 +1,31 @@
+{
+  "metadata": {
+    "created_at": "2025-07-19T11:03:26Z",
+    "source_file": "startup_config_20250719_110326.json",
+    "strategy_name": "momentum",
+    "category": "momentum"
+  },
+  "name": "Momentum Strategy",
+  "description": "Momentum-based trading strategy",
+  "signal_threshold": 6.0,
+  "risk_per_trade": 0.025,
+  "implementation_class": null,
+  "detectors": [],
+  "market_filters": {},
+  "position_management": {},
+  "strategy_type": "StrategyType.MOMENTUM",
+  "max_positions": 4,
+  "position_hold_hours": 24,
+  "stop_loss_percentage": 5.0,
+  "take_profit_percentage": 10.0,
+  "score_multiplier": 1.0,
+  "long_term_bullish_multiplier": 1.15,
+  "long_term_bearish_multiplier": 0.9,
+  "detector_weights": {
+    "rsi": 6.0,
+    "stoch": 5.0,
+    "macd": 4.0,
+    "volume": 3.0,
+    "composite": 8.0
+  }
+}

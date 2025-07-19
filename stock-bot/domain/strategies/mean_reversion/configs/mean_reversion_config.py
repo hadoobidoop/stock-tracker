@@ -6,7 +6,7 @@ mean_reversion 전략 config
 - position_management: 최대 4개, 24시간 보유(단기)
 - name/description: 한글/영문 병기
 """
-from domain.analysis.strategy.configs.static_strategies import StrategyType
+from domain.analysis.base.models import StrategyType
 from dataclasses import dataclass, field
 from typing import Dict, Any
 

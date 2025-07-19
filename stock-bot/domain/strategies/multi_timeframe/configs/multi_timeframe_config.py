@@ -5,7 +5,7 @@
 # - config만 수정해 전략 튜닝/확장 가능 (예: detector_weights, 임계값, 포지션 제한 등)
 # - 신규 Detector/필터 추가 시에도 이 파일에서 관리 권장
 
-from domain.analysis.strategy.configs.static_strategies import StrategyType
+from domain.analysis.base.models import StrategyType
 
 MULTI_TIMEFRAME_CONFIG = {
     "name": "다중 시간대 확인 전략",  # 전략 이름

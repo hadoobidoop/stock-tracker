@@ -2,7 +2,7 @@ from typing import Dict, Optional
 import pandas as pd
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
-from domain.analysis.strategy.configs.static_strategies import StrategyType
+from domain.analysis.base.models import StrategyType
 from domain.strategies.swing.configs.swing_config import SWING_STRATEGY_CONFIG
 from domain.strategies.swing.detectors.swing_sma_detector import SwingSMADetector
 from domain.strategies.swing.detectors.swing_macd_detector import SwingMACDDetector

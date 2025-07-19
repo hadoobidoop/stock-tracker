@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Dict, Any
-from domain.analysis.strategy.configs.static_strategies import StrategyConfig, StrategyType
+from domain.analysis.base.models import StrategyConfig, StrategyType
 
 
 @dataclass

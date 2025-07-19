@@ -16,7 +16,7 @@ Adaptive Momentum Hybrid 전략 (적응형 모멘텀 하이브리드)
 from typing import Dict
 import pandas as pd
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
-from domain.analysis.strategy.configs.static_strategies import StrategyConfig, StrategyType
+from domain.analysis.base.models import StrategyConfig, StrategyType
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger

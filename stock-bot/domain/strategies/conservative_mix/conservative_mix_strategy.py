@@ -30,7 +30,7 @@ conservative_mix 전략 조합 실행체 (독립 패키지)
 from typing import Dict, Optional
 import pandas as pd
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
-from domain.analysis.strategy.configs.static_strategies import StrategyType
+from domain.analysis.base.models import StrategyType
 from .configs import CONSERVATIVE_MIX_CONFIG, ConservativeMixConfig
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger

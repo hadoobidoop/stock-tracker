@@ -18,7 +18,7 @@ from domain.analysis.models.trading_signal import (
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
-from domain.analysis.strategy.configs.static_strategies import StrategyConfig, StrategyType
+from domain.analysis.base.models import StrategyConfig, StrategyType
 
 logger = get_logger(__name__)
 
