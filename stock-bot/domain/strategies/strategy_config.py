@@ -5,7 +5,7 @@
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional
 
-from .detector_config import DetectorConfig
+from domain.analysis.detectors.detector_config import DetectorConfig
 
 
 @dataclass

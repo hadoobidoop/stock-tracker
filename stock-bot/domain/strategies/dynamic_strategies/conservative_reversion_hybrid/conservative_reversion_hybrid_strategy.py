@@ -22,7 +22,8 @@ from typing import Dict
 
 import pandas as pd
 
-from domain.analysis.base.models import StrategyConfig, StrategyType
+from domain.strategies.strategy_config import StrategyConfig
+from domain.analysis.base.models.enums import StrategyType
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.models.strategy_result import StrategyResult
 from domain.analysis.base.models.base_strategy import BaseStrategy

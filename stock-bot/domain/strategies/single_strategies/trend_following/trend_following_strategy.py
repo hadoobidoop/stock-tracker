@@ -2,7 +2,8 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from domain.analysis.base.models import StrategyConfig, StrategyType
+from domain.strategies.strategy_config import StrategyConfig
+from domain.analysis.base.models import StrategyType
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.detectors.composite.composite_detector import CompositeSignalDetector
 from domain.analysis.models.strategy_result import StrategyResult
