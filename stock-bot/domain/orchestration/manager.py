@@ -126,10 +126,11 @@ class StrategyManager:
         return total_success > 0
     
     def _initialize_static_strategies(self, strategy_types: List[StrategyType]) -> int:
-        """정적 전략들을 초기화"""
+        """정적 전략들을 초기화 (factory 직접 참조)"""
         success_count = 0
         for strategy_type in strategy_types:
             try:
+                # factory를 직접 참조하여 전략 생성
                 strategy = StrategyFactory.create_static_strategy(strategy_type)
                 if self._validate_strategy_initialization(strategy, strategy_type):
                     self.active_strategies[strategy_type] = strategy
@@ -157,8 +158,9 @@ class StrategyManager:
             logger.info(f"기본 전략 설정: {self.current_strategy.get_name()} (다른 모든 모드 비활성화)")
     
     def add_strategy(self, strategy_type: StrategyType, strategy: Optional[BaseStrategy] = None) -> bool:
-        """전략 추가"""
+        """전략 추가 (factory 직접 참조)"""
         if strategy is None:
+            # factory를 직접 참조하여 전략 생성
             strategy = StrategyFactory.create_static_strategy(strategy_type)
 
         if not self._validate_strategy_initialization(strategy, strategy_type):
