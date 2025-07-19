@@ -31,7 +31,7 @@ from domain.analysis.base.models import StrategyType
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
-from .configs import AGGRESSIVE_MIX_CONFIG, AggressiveMixConfig, StrategyMixMode
+from .configs import AGGRESSIVE_MIX_CONFIG, AggressiveMixConfig
 
 logger = get_logger(__name__)
 

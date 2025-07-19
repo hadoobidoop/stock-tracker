@@ -20,8 +20,6 @@ from .technical_indicators import (
     calculate_daily_indicators,
     calculate_hourly_indicators,
     calculate_multi_timeframe_indicators,
-    get_trend_direction_multi_timeframe,
-    validate_multi_timeframe_data
 )
 
 __all__ = [
@@ -39,11 +37,6 @@ __all__ = [
     'calculate_daily_indicators',
     'calculate_hourly_indicators',
     'calculate_multi_timeframe_indicators',
-    'get_trend_direction_multi_timeframe',
-    'validate_multi_timeframe_data'
-]
-
-__all__ += [
     '_apply_multi_timeframe_filter',
     'validate_multi_timeframe_data',
     'get_trend_direction_multi_timeframe',

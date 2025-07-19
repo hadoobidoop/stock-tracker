@@ -44,9 +44,7 @@ def parse_arguments():
                        action='store_true',
                        help='시장 상황에 따른 자동 전략 선택 활성화')
     
-    parser.add_argument('--load-strategies', 
-                       type=str,
-                       help='파일에서 전략 설정 로드')
+
     
     parser.add_argument('--list-strategies', 
                        action='store_true',
@@ -105,20 +103,10 @@ def initialize_strategy_system(args) -> bool:
         # 전략 서비스 생성
         strategy_service = SignalDetectionService()
         
-        # 파일에서 전략 설정 로드 (우선순위)
-        if args.load_strategies:
-            logger.info(f"파일에서 전략 설정 로드: {args.load_strategies}")
-            if strategy_service.load_strategy_configs(args.load_strategies):
-                logger.info("파일에서 전략 설정 로드 성공")
-            else:
-                logger.error("파일에서 전략 설정 로드 실패, 기본 설정 사용")
-                if not strategy_service.initialize():
-                    return False
-        else:
-            # 기본 전략들 초기화
-            if not strategy_service.initialize():
-                logger.error("전략 시스템 초기화 실패")
-                return False
+        # 기본 전략들 초기화
+        if not strategy_service.initialize():
+            logger.error("전략 시스템 초기화 실패")
+            return False
         
         # Static Strategy Mix 설정 (우선순위)
         if args.strategy_mix:
@@ -162,22 +150,7 @@ def get_strategy_service() -> SignalDetectionService:
     """전역 전략 서비스 인스턴스 반환 (스케줄러 작업에서 사용)"""
     return strategy_service
 
-def save_startup_strategy_config():
-    """시작 시 전략 설정을 파일로 저장"""
-    if strategy_service:
-        try:
-            from datetime import datetime
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            config_file = f"./strategy_configs/startup_config_{timestamp}.json"
-            
-            import os
-            os.makedirs("./strategy_configs", exist_ok=True)
-            
-            strategy_service.strategy_manager.save_strategies_to_file(config_file)
-            logger.info(f"시작 시 전략 설정 저장: {config_file}")
-            
-        except Exception as e:
-            logger.warning(f"전략 설정 저장 실패: {e}")
+
 
 if __name__ == "__main__":
     # 명령행 인수 파싱
@@ -203,8 +176,7 @@ if __name__ == "__main__":
             logger.error("전략 시스템 초기화 실패. 프로그램을 종료합니다.")
             sys.exit(1)
         
-        # 시작 시 전략 설정 저장
-        save_startup_strategy_config()
+
 
         # 3. 프로그램 시작 시 메타데이터 즉시 업데이트
         logger.info("Step 3: Performing initial metadata update...")

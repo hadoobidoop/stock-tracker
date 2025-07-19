@@ -30,7 +30,7 @@ from domain.analysis.base.models import StrategyType
 from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
-from .configs import BALANCED_MIX_CONFIG, BalancedMixConfig, StrategyMixMode
+from .configs import BALANCED_MIX_CONFIG, BalancedMixConfig
 
 logger = get_logger(__name__)
 

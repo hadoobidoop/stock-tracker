@@ -40,7 +40,7 @@
     *   가장 기본적인 모드로, 내장된 전략 중 사용자가 명시적으로 선택한 하나의 전략(예: `MOMENTUM`)을 사용하여 일관된 규칙으로 분석을 수행합니다.
 
 2.  **전략 조합 모드 (Strategy Mix Mode):**
-    *   하나의 전략에만 의존하는 위험을 줄이기 위해, 여러 정적 전략을 동시에 실행하고 그 결과를 조합(앙상블)하는 모드입니다. 예를 들어, `conservative_mix`는 `CONSERVATIVE`와 `TREND_FOLLOWING` 전략이 모두 동의하는 신호만 채������는 **투표(Voting)** 방식을 사용합니다.
+    *   하나의 전략에만 의존하는 위험을 줄이기 위해, 여러 정적 전략을 동시에 실행하고 그 결과를 조합(앙상블)하는 모드입니다. 예를 들어, `conservative_mix`는 `CONSERVATIVE`와 `TREND_FOLLOWING` 전략이 모두 동의하는 신호만 채택하는 **투표(Voting)** 방식을 사용합니다.
 
 3.  **동적 전략 모드 (Dynamic Strategy Mode):**
     *   가장 진보된 모드로, 미리 정해진 규칙을 넘어 시장 상황에 실시간으로 반응하여 스스로 분석 로직을 수정합니다. 최근 대규모 리팩토링을 통해 구조적 안정성과 확장성을 크게 개선했습니다.
@@ -56,7 +56,7 @@
 | **총수익률 (Total Return)** | 투자 기간 동안의 누적 수익률입니다. |
 | **연환산 수익률 (Annualized Return)** | 변동성을 고려하여 수익률을 연 단위로 표준화한 값입니다. |
 | **최대 낙폭 (Max Drawdown)** | 투자 기간 중 자산이 최고점에서 최저점까지 하락한 가장 큰 비율로, 전략이 가진 내재적 위험을 보여주는 핵심 지표입니다. |
-| **샤프 지수 (Sharpe Ratio)** | 위험 대비 수익성을 나타내는 지표로, 감수�� 1단위의 위험에 대해 어느 정도의 초과 수익을 얻었는지를 측정합니다. 높을수록 효율적인 전략입니다. |
+| **샤프 지수 (Sharpe Ratio)** | 위험 대비 수익성을 나타내는 지표로, 감수하는 1단위의 위험에 대해 어느 정도의 초과 수익을 얻었는지를 측정합니다. 높을수록 효율적인 전략입니다. |
 | **승률 (Win Rate)** | 전체 거래 중 수익을 낸 거래의 비율입니다. |
 | **수익 팩터 (Profit Factor)** | 총수익을 총손실로 나눈 값으로, 1보다 클수록 수익성이 높음을 의미합니다. |
 
@@ -81,13 +81,23 @@
 | **SCALPING** | 초단기 매매, 거래량 신호 중시 |
 | **SWING** | 며칠간의 중기적 가격 변동 활용 |
 | **MEAN_REVERSION** | 볼린저 밴드 기반 평균 회귀 경향 이용 |
-| **TREND_PULLBACK** | 상승 추세 중 눌림목 매수 이밍 포착 |
+| **TREND_PULLBACK** | 상승 추세 중 눌림목 매수 타이밍 포착 |
 | **VOLATILITY_BREAKOUT**| 변동성 돌파 시점을 거래량과 함께 포착 |
 | **MULTI_TIMEFRAME** | 장기(일봉)와 단기(시간봉) 추세를 함께 확인 |
 | **MACRO_DRIVEN** | VIX, 버핏 지수를 분석에 통합 |
-| **ADAPTIVE_MOMENTUM** | `TREND_FOLLOWING`과 `MOMENTUM` 전략을 결합 |
+| **ADAPTIVE_MOMENTUM_HYBRID** | `TREND_FOLLOWING`과 `MOMENTUM` 전략을 결합 |
 | **CONSERVATIVE_REVERSION_HYBRID** | `CONSERVATIVE`와 `MEAN_REVERSION` 전략을 결합 (자본 보존에 특화) |
 | **MARKET_REGIME_HYBRID** | 시장 체제를 진단하여 최적의 하위 전략(추세/변동성/평균회귀)을 동적으로 선택 |
+
+### **전략 조합 (Strategy Mixes)**
+
+여러 전략을 조합하여 더 안정적이고 신뢰도 높은 신호를 생성하는 조합 전략들도 제공됩니다:
+
+| 조합 전략명 | 구성 전략 | 조합 방식 | 특징 |
+| :--- | :--- | :--- | :--- |
+| **balanced_mix** | BALANCED + MOMENTUM + TREND_FOLLOWING | 가중치 조합 | 다양한 시장 상황에 균형있게 대응 |
+| **conservative_mix** | CONSERVATIVE + QUALITY_TREND + SWING | 투표 방식 | 매우 보수적이고 신뢰도 높은 신호 |
+| **aggressive_mix** | AGGRESSIVE + SCALPING + VOLATILITY_BREAKOUT | 가중치 조합 | 빠른 기회 포착과 적극적 거래 |
 
 ---
 
@@ -120,7 +130,7 @@
 - 백필할 지표 목록은 `domain/market_data_backfiller/config.py` 파일의 `ENABLED_PROVIDERS` 리스트에서 기본값을 수정할 수 있습니다.
 
 #### ⚠️ 데이터베이스 스키마 동기화 (Database Schema Sync)
-새로운 시장 지표(`MarketIndicatorType`)를 코드에 추가할 경우, 데이터베이스 스키마도 함께 업데이트해야 합니다. 특히 `market_data` 테이블의 `indicator_type` `ENUM` 목록에 새로운 지표 이름을 추가��야 합니다. 스키마가 동기화되지 않으면, 백필러가 해당 지표 데이터를 저장하지 못할 수 있습니다. (e.g., `ALTER TABLE market_data MODIFY COLUMN indicator_type ENUM(...) NOT NULL;`)
+새로운 시장 지표(`MarketIndicatorType`)를 코드에 추가할 경우, 데이터베이스 스키마도 함께 업데이트해야 합니다. 특히 `market_data` 테이블의 `indicator_type` `ENUM` 목록에 새로운 지표 이름을 추가해야 합니다. 스키마가 동기화되지 않으면, 백필러가 해당 지표 데이터를 저장하지 못할 수 있습니다. (e.g., `ALTER TABLE market_data MODIFY COLUMN indicator_type ENUM(...) NOT NULL;`)
 
 ## 🏗️ Architecture
 
@@ -130,14 +140,14 @@
 
 ### 아키텍처 주요 변경사항 (Architecture Highlights)
 
-최근 코드베이스의 ��지보수성과 확장성을 높이기 위해 다음과 같은 주요 리팩토링이 진행되었습니다.
+최근 코드베이스의 유지보수성과 확장성을 높이기 위해 다음과 같은 주요 리팩토링이 진행되었습니다.
 
 #### 1. 전략 관리 시스템 리팩토링 (Strategy Management System Refactoring)
 복잡했던 동적 전략(`DynamicCompositeStrategy`) 시스템의 코드 품질과 유지보수성을 향상시키기 위해, SOLID 원칙에 기반한 대대적인 리팩토링을 진행했습니다.
 
 -   **모디파이어(Modifier) 시스템 중앙화:**
     -   기존의 거대한 `modifiers.py` 파일을 `base`, `market_indicator_modifier`, `registry`, `modifier_engine` 등 역할에 따라 명확히 분리했습니다.
-    -   `ModifierRegistry`를 도��하여 모든 모디파이어 클래스를 중앙에서 등록하고 관리하도록 구조를 개선했습니다.
+    -   `ModifierRegistry`를 도입하여 모든 모디파이어 클래스를 중앙에서 등록하고 관리하도록 구조를 개선했습니다.
 
 -   **`StrategyManager` 책임 분리:**
     -   `DynamicStrategyManager`를 신설하여, 동적 전략의 생성, 관리, 실행에 대한 모든 책임을 위임했습니다.
@@ -161,6 +171,11 @@
 
 #### 3. 데이터 프로바이더 효율성 최적화 (Data Provider Efficiency Optimization)
 - `BuffettIndicatorProvider`의 비효율적인 로직을 대대적으로 개선했습니다. 매번 20년치 전체 데이터를 조회하던 방식에서 최근 2년치 데이터만 가져오도록 변경하고, 개별 DB 저장을 `bulk_save_objects`를 사용한 일괄 저장 방식으로 전환하여 API 및 DB 부하를 크게 줄이고 성능을 향상시켰습니다.
+
+#### 4. 설정 관리 시스템 단순화 (Configuration Management Simplification)
+- 기존의 JSON 파일 기반 전략 설정 저장/로드 시스템을 제거하고, Python 클래스 기반 설정으로 완전히 전환했습니다.
+- 각 전략의 설정은 `domain/strategies/전략명/configs/` 폴더의 Python 클래스로 관리되어 타입 안정성과 IDE 지원을 제공합니다.
+- 설정 변경 시 코드 수정만으로 즉시 반영되며, 파일 I/O 오버헤드가 없어 성능이 향상되었습니다.
 
 ## 📦 Installation
 
