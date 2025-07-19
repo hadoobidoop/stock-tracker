@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict
 
-from domain.analysis.base.models.enums import StrategyType, StrategyMixMode
+from domain.analysis.models.enums import StrategyType, StrategyMixMode
 
 
 @dataclass

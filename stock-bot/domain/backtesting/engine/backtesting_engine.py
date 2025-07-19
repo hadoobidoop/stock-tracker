@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Any
 
 import pandas as pd
 
-from domain.analysis.base.models.enums import StrategyType
+from domain.analysis.models.enums import StrategyType
 from domain.analysis.base.models.enums import TradeType, TradeStatus
 from domain.analysis.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
 from domain.analysis.config.signals.signal_weights import SIGNAL_THRESHOLD

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
 
 # 새로운 전략 시스템 import
-from domain.analysis.base.models.enums import StrategyType
+from domain.analysis.models.enums import StrategyType
 from domain.analysis.repository.analysis_repository import MarketDataRepository
 from domain.stock.repository.stock_repository import StockRepository
 from domain.stock.service.stock_analysis_service import StockAnalysisService

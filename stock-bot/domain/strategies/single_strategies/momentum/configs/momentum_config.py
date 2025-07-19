@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Any
 
 from domain.strategies.strategy_config import StrategyConfig
-from domain.analysis.base.models.enums import StrategyType
+from domain.analysis.models.enums import StrategyType
 
 # Detector weights constant
 MOMENTUM_DETECTOR_WEIGHTS = {

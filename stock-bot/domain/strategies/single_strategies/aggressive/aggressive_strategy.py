@@ -10,7 +10,7 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from domain.analysis.base.models.enums import StrategyType
+from domain.analysis.models.enums import StrategyType
 from domain.analysis.service.signal_orchestrator import SignalDetectionOrchestrator
 # 기본 Detector import
 from domain.analysis.detectors.momentum.rsi_detector import RSISignalDetector

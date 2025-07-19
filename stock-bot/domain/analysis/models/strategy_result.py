@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 from domain.analysis.models.trading_signal import TradingSignal
-from domain.analysis.base.models.enums import StrategyType
+from domain.analysis.models.enums import StrategyType
 
 @dataclass
 class StrategyResult:

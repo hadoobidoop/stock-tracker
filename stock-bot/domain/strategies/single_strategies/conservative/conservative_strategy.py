@@ -2,7 +2,7 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from domain.analysis.base.models.enums import StrategyType
+from domain.analysis.models.enums import StrategyType
 from domain.analysis.detectors.composite.composite_detector import CompositeSignalDetector
 from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDetector
 from domain.analysis.models.strategy_result import StrategyResult

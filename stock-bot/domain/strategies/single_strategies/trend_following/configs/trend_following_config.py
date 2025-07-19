@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Dict
 
 from domain.strategies.strategy_config import StrategyConfig
-from domain.analysis.base.models.enums import StrategyType
+from domain.analysis.models.enums import StrategyType
 
 # Detector별 가중치
 SMA_WEIGHT = 4.0

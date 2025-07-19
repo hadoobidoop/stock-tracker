@@ -1,7 +1,7 @@
 from typing import Dict, Optional
 
 from domain.strategies.strategy_config import StrategyConfig
-from domain.analysis.base.models.enums import StrategyType
+from domain.analysis.models.enums import StrategyType
 from domain.strategies.dynamic_strategies.adaptive_momentum_hybrid.configs.adaptive_momentum_hybrid_config import \
     AdaptiveMomentumHybridConfig
 from domain.strategies.single_strategies.aggressive.configs.aggressive_config import AggressiveStrategyConfig

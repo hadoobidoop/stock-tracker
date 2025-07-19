@@ -14,7 +14,7 @@ from typing import Dict, List, Optional, Any, Tuple
 import pandas as pd
 
 # Import from new centralized location
-from domain.analysis.base.models.enums import StrategyType, StrategyMixMode
+from domain.analysis.models.enums import StrategyType, StrategyMixMode
 # Static Strategy Mix 관련 설정 import
 from domain.strategies.strategy_mixes import (
     StrategyMixConfig, STRATEGY_MIXES

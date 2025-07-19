@@ -30,7 +30,7 @@ import pandas as pd
 
 from domain.analysis.service.signal_orchestrator import SignalDetectionOrchestrator
 from domain.strategies.strategy_config import StrategyConfig
-from domain.analysis.base.models.enums import StrategyType
+from domain.analysis.models.enums import StrategyType
 from domain.analysis.detectors.momentum.rsi_detector import RSISignalDetector
 from domain.analysis.detectors.momentum.stoch_detector import StochSignalDetector
 from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDetector

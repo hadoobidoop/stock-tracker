@@ -10,7 +10,7 @@ from typing import Dict, Any, Optional, List, Union, Callable, Tuple
 from common.config.settings import (
     StrategyMode, DefaultStrategyConfig, EnvironmentConfig, get_strategy_availability
 )
-from domain.analysis.base.models.enums import StrategyType
+from domain.analysis.models.enums import StrategyType
 # MARKET_CONDITION_STRATEGIES를 strategy_mixes에서 직접 가져옵니다.
 from domain.strategies.strategy_mixes import MARKET_CONDITION_STRATEGIES
 from domain.analysis.strategy.strategy_factory import StrategyFactory

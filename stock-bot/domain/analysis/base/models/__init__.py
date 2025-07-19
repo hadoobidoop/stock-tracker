@@ -3,8 +3,8 @@
 """
 
 from domain.analysis.detectors.detector_config import DetectorConfig
-from .enums import StrategyType
-# from domain.strategies.strategy_config import StrategyConfig
+from domain.strategies.strategy_config import StrategyConfig
+from domain.analysis.models.enums import StrategyType
 
 __all__ = [
     'StrategyType',

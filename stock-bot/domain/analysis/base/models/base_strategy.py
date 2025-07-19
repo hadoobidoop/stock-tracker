@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Any
 import pandas as pd
 
 from domain.strategies.strategy_config import StrategyConfig
-from domain.analysis.base.models.enums import StrategyType
+from domain.analysis.models.enums import StrategyType
 from domain.analysis.models.trading_signal import TradingSignal, SignalType
 from domain.analysis.models.strategy_result import StrategyResult
 from infrastructure.db.models.enums import TrendType

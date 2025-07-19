@@ -5,9 +5,7 @@
 import os
 from typing import Dict, Any, List
 
-# StrategyMode is now defined in domain.analysis.base.models.enums.strategy_mode
-from domain.analysis.base.models.enums import StrategyMode
-
+from domain.analysis.models.enums import StrategyMode
 
 def get_available_static_strategies() -> List[str]:
     """동적으로 사용 가능한 정적 전략 목록 조회"""

@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Dict, Any
 
+from domain.analysis.models.enums import StrategyType
 from domain.strategies.strategy_config import StrategyConfig
-from domain.analysis.base.models.enums import StrategyType
 
 
 @dataclass
