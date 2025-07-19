@@ -2,10 +2,9 @@
 import argparse
 import sys
 
+from domain.analysis.config.signals.service.signal_detection_service import SignalDetectionService
 from domain.analysis.models.enums import StrategyType
 # --- 새로운 전략 시스템 추가 ---
-from domain.analysis.service.signal_detection_service import SignalDetectionService
-# Removed dependency on static_strategies.py
 from domain.analysis.utils.strategy_selector import list_all_strategies
 from infrastructure.db.db_manager import create_db_and_tables
 from infrastructure.logging import setup_logging, get_logger
