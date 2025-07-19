@@ -2,10 +2,12 @@
 공통 모델 정의
 """
 
-from .strategy_config import StrategyType, StrategyConfig, DetectorConfig
+from .strategy_type import StrategyType
+from .detector_config import DetectorConfig
+from .strategy_config import StrategyConfig
 
 __all__ = [
     'StrategyType',
-    'StrategyConfig', 
-    'DetectorConfig'
+    'DetectorConfig',
+    'StrategyConfig'
 ]
