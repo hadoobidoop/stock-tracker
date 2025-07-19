@@ -185,27 +185,4 @@ class StrategyRegistry:
 strategy_registry = StrategyRegistry()
 
 
-# 편의 함수들 - factory.py에서 위임하도록 변경
-def get_available_static_strategies() -> List[str]:
-    """사용 가능한 정적 전략 목록"""
-    return strategy_registry.get_available_strategies("static")["static"]
-
-
-def get_available_dynamic_strategies() -> List[str]:
-    """사용 가능한 동적 전략 목록"""
-    return strategy_registry.get_available_strategies("dynamic")["dynamic"]
-
-
-def get_available_strategy_mixes() -> List[str]:
-    """사용 가능한 전략 조합 목록"""
-    return strategy_registry.get_available_strategies("mix")["mix"]
-
-
-def is_strategy_supported(strategy_identifier: str) -> Tuple[bool, str]:
-    """전략 지원 여부 확인"""
-    return strategy_registry.is_strategy_supported(strategy_identifier)
-
-
-def get_strategy_config(strategy_identifier: str, strategy_class: str = None) -> Optional[Dict[str, Any]]:
-    """전략 설정 조회"""
-    return strategy_registry.get_strategy_config(strategy_identifier, strategy_class) 
+ 

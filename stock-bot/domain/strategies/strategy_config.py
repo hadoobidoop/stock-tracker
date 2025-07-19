@@ -7,11 +7,7 @@ from typing import Dict, Any, List, Optional
 
 from domain.signals.detectors.detector_config import DetectorConfig
 from domain.signals.models.enums import StrategyMode
-from domain.orchestration.strategy_registry import (
-    get_available_static_strategies,
-    get_available_dynamic_strategies,
-    get_available_strategy_mixes
-)
+from domain.orchestration.strategy_registry import strategy_registry
 
 
 @dataclass
@@ -55,17 +51,17 @@ def get_strategy_availability() -> Dict[str, Dict[str, Any]]:
     return {
         "static_strategies": {
             "enabled": DefaultStrategyConfig.STATIC_STRATEGIES_ENABLED,
-            "available": get_available_static_strategies(),
+            "available": strategy_registry.get_available_strategies("static")["static"],
             "default": DefaultStrategyConfig.DEFAULT_STATIC_STRATEGY
         },
         "dynamic": {
             "enabled": DefaultStrategyConfig.dynamic_ENABLED,
-            "available": get_available_dynamic_strategies(),
+            "available": strategy_registry.get_available_strategies("dynamic")["dynamic"],
             "default": DefaultStrategyConfig.DEFAULT_DYNAMIC_STRATEGY
         },
         "strategy_mix": {
             "enabled": DefaultStrategyConfig.STRATEGY_MIX_ENABLED,
-            "available": get_available_strategy_mixes(),
+            "available": strategy_registry.get_available_strategies("mix")["mix"],
             "default": DefaultStrategyConfig.DEFAULT_STRATEGY_MIX
         }
     }

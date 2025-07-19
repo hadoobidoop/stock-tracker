@@ -5,7 +5,7 @@ import sys
 from domain.signals.config.signals.service.signal_detection_service import SignalDetectionService
 from domain.signals.models.enums import StrategyType
 from domain.orchestration.selector import list_all_strategies
-from domain.orchestration.strategy_registry import get_available_static_strategies
+from domain.strategies.utils import get_available_static_strategies
 # --- 새로운 전략 시스템 추가 ---
 from infrastructure.db.db_manager import create_db_and_tables
 from infrastructure.logging import setup_logging, get_logger
@@ -25,7 +25,7 @@ def parse_arguments():
     
     # 동적으로 사용 가능한 전략 목록 가져오기
     try:
-        from domain.orchestration.strategy_registry import get_available_static_strategies
+        from domain.strategies.utils import get_available_static_strategies
         available_strategies = [st.lower() for st in get_available_static_strategies()]
     except ImportError:
         # 폴백: 기본 전략들

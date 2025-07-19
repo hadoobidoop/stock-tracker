@@ -105,8 +105,8 @@ class StrategyManager:
         """전략들을 초기화합니다."""
         if strategy_types is None:
             # 기본적으로 모든 정적 전략을 로드
-            from domain.orchestration.strategy_registry import get_available_static_strategies
-            strategy_names = get_available_static_strategies()
+            from domain.orchestration.strategy_registry import strategy_registry
+            strategy_names = strategy_registry.get_available_strategies("static")["static"]
             strategy_types = [StrategyType(name.upper()) for name in strategy_names]
         
         logger.info(f"전략 초기화 시작: {len(strategy_types)}개 정적 전략")

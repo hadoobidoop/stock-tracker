@@ -12,7 +12,9 @@ from domain.strategies.dynamic.dynamic_strategy_manager.configs.dynamic_strategi
 from domain.strategies.environment import EnvironmentConfig
 from domain.strategies.strategy_config import get_strategy_availability, DefaultStrategyConfig
 from domain.orchestration.factory import StrategyFactory
+from domain.orchestration.strategy_registry import strategy_registry
 from domain.strategies.mixes import MARKET_CONDITION_STRATEGIES
+from domain.strategies.mixes.utils import get_strategy_mix_config as mixes_get_strategy_mix_config
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
@@ -40,8 +42,8 @@ class StrategySelector:
         
         # 정적 전략 로드
         if strategy_availability["static_strategies"]["enabled"]:
-            from domain.orchestration.strategy_registry import get_available_static_strategies
-            for strategy_name in get_available_static_strategies():
+            # Use strategy_registry directly
+            for strategy_name in strategy_registry.get_available_strategies("static")["static"]:
                 strategy_type = StrategyType(strategy_name.upper())
                 if strategy_type != StrategyType.DYNAMIC_WEIGHT:  # 동적 전략 제외
                     try:
@@ -92,17 +94,17 @@ class StrategySelector:
         strategy_configs = {
             StrategyMode.STATIC: lambda: {
                 "strategy_name": DefaultStrategyConfig.DEFAULT_STATIC_STRATEGY,
-                "config": self.get_static_strategy_config(DefaultStrategyConfig.DEFAULT_STATIC_STRATEGY),
+                "config": strategy_registry.get_strategy_config(DefaultStrategyConfig.DEFAULT_STATIC_STRATEGY, "static"),
                 "fallback": self._get_fallback_config()
             },
             StrategyMode.DYNAMIC: lambda: {
                 "strategy_name": DefaultStrategyConfig.DEFAULT_DYNAMIC_STRATEGY,
-                "config": self.get_dynamic_strategy_config(DefaultStrategyConfig.DEFAULT_DYNAMIC_STRATEGY),
+                "config": strategy_registry.get_strategy_config(DefaultStrategyConfig.DEFAULT_DYNAMIC_STRATEGY, "dynamic"),
                 "fallback": self._get_fallback_config()
             },
             StrategyMode.STATIC_MIX: lambda: {
                 "strategy_name": DefaultStrategyConfig.DEFAULT_STRATEGY_MIX,
-                "config": self.get_strategy_mix_config(DefaultStrategyConfig.DEFAULT_STRATEGY_MIX),
+                "config": mixes_get_strategy_mix_config(DefaultStrategyConfig.DEFAULT_STRATEGY_MIX),
                 "fallback": self._get_fallback_config()
             }
         }
@@ -112,28 +114,7 @@ class StrategySelector:
         
         return config
     
-    def get_static_strategy_config(self, strategy_name: str) -> Optional[Dict[str, Any]]:
-        """정적 전략 설정 조회 (레지스트리 위임)"""
-        from domain.orchestration.strategy_registry import strategy_registry
-        return strategy_registry.get_strategy_config(strategy_name, "static")
     
-    def get_dynamic_strategy_config(self, strategy_name: str) -> Optional[Dict[str, Any]]:
-        """동적 전략 설정 조회 (레지스트리 위임)"""
-        from domain.orchestration.strategy_registry import strategy_registry
-        return strategy_registry.get_strategy_config(strategy_name, "dynamic")
-    
-    def get_strategy_mix_config(self, mix_name: str) -> Optional[Dict[str, Any]]:
-        """Static Strategy Mix 설정 조회"""
-        strategy_info = self.available_strategies["static_mix"].get(mix_name)
-        if strategy_info and strategy_info["available"]:
-            return {
-                "type": "static_mix",
-                "mix_name": mix_name,
-                "available": True,
-                "name": f"{mix_name.replace('_', ' ').title()}",
-                "description": f"정적 전략 조합: {mix_name}"
-            }
-        return None
     
     def _get_fallback_config(self) -> Optional[Dict[str, Any]]:
         """폴백 전략 설정"""
@@ -141,7 +122,7 @@ class StrategySelector:
             return None
             
         fallback_strategy = DefaultStrategyConfig.SCHEDULER_FALLBACK_STATIC_STRATEGY
-        return self.get_static_strategy_config(fallback_strategy)
+        return strategy_registry.get_strategy_config(fallback_strategy, "static")
     
     def get_realtime_strategy_config(self) -> Dict[str, Any]:
         """실시간 작업용 전략 설정"""
@@ -149,9 +130,9 @@ class StrategySelector:
         mode = env_config["mode"]
         
         strategy_getters = {
-            StrategyMode.STATIC: lambda: self.get_static_strategy_config(env_config["static_strategy"]),
-            StrategyMode.DYNAMIC: lambda: self.get_dynamic_strategy_config(env_config["dynamic_strategy"]),
-            StrategyMode.STATIC_MIX: lambda: self.get_strategy_mix_config(env_config["strategy_mix"])
+            StrategyMode.STATIC: lambda: strategy_registry.get_strategy_config(env_config["static_strategy"], "static"),
+            StrategyMode.DYNAMIC: lambda: strategy_registry.get_strategy_config(env_config["dynamic_strategy"], "dynamic"),
+            StrategyMode.STATIC_MIX: lambda: mixes_get_strategy_mix_config(env_config["strategy_mix"])
         }
         
         strategy_config = strategy_getters.get(mode, lambda: self.get_default_strategy_config())()
@@ -222,18 +203,18 @@ class StrategySelector:
         # 명시적 타입이 있으면 해당 타입에서만 검색
         if strategy_type:
             type_getters: Dict[str, Callable[[str], Optional[Dict[str, Any]]]] = {
-                "static": self.get_static_strategy_config,
-                "dynamic": self.get_dynamic_strategy_config,
-                "static_mix": self.get_strategy_mix_config
+                "static": lambda name: strategy_registry.get_strategy_config(name, "static"),
+                "dynamic": lambda name: strategy_registry.get_strategy_config(name, "dynamic"),
+                "static_mix": mixes_get_strategy_mix_config
             }
             getter = type_getters.get(strategy_type)
             return getter(strategy_name) if getter else None
         
         # 타입이 없으면 모든 타입에서 검색
         search_methods: List[Callable[[str], Optional[Dict[str, Any]]]] = [
-            self.get_static_strategy_config,
-            self.get_dynamic_strategy_config,
-            self.get_strategy_mix_config
+            lambda name: strategy_registry.get_strategy_config(name, "static"),
+            lambda name: strategy_registry.get_strategy_config(name, "dynamic"),
+            mixes_get_strategy_mix_config
         ]
         for search_method in search_methods:
             result = search_method(strategy_name)
@@ -271,7 +252,7 @@ class StrategySelector:
                 try:
                     strategy_type_enum = StrategyType(strategy_id)
                     # 사용 가능한지 확인
-                    if self.get_static_strategy_config(strategy_type_enum.value):
+                    if strategy_registry.get_strategy_config(strategy_type_enum.value, "static"):
                         return strategy_type_enum, 'static'
                 except ValueError:
                     logger.warning(f"'{strategy_id}'는 유효한 StrategyType이 아닙니다.")
@@ -279,7 +260,7 @@ class StrategySelector:
             # 동적 전략인 경우
             elif strategy_class == 'dynamic':
                 # 사용 가능한지 확인
-                if self.get_dynamic_strategy_config(strategy_id):
+                if strategy_registry.get_strategy_config(strategy_id, "dynamic"):
                     return strategy_id, 'dynamic'
 
         logger.warning(f"'{market_condition}'에 대한 유효한 추천 전략을 찾지 못했습니다.")
