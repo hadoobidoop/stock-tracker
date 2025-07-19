@@ -17,7 +17,8 @@ from domain.analysis.detectors.momentum.rsi_detector import RSISignalDetector
 from domain.analysis.detectors.momentum.stoch_detector import StochSignalDetector
 from domain.analysis.detectors.trend_following.adx_detector import ADXSignalDetector
 from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDetector
-from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
+from domain.analysis.models.strategy_result import StrategyResult
+from domain.analysis.base.models.base_strategy import BaseStrategy
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from .configs.aggressive_config import AggressiveStrategyConfig

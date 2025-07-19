@@ -31,7 +31,8 @@ import pandas as pd
 from domain.analysis.base.models import StrategyType
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.detectors.composite.multi_timeframe_composite_detector import MultiTimeframeCompositeDetector
-from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
+from domain.analysis.models.strategy_result import StrategyResult
+from domain.analysis.base.models.base_strategy import BaseStrategy
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from .configs.multi_timeframe_config import MULTI_TIMEFRAME_CONFIG

@@ -11,7 +11,7 @@ from typing import Dict, Optional, List, Any
 import pandas as pd
 
 from domain.analysis.base.models.enums import StrategyType
-from domain.analysis.strategy.base_strategy import StrategyResult
+from domain.analysis.models.strategy_result import StrategyResult
 from domain.analysis.strategy.strategy_manager import StrategyManager
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger

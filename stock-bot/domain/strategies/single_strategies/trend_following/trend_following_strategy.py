@@ -5,7 +5,8 @@ import pandas as pd
 from domain.analysis.base.models import StrategyConfig, StrategyType
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.detectors.composite.composite_detector import CompositeSignalDetector
-from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
+from domain.analysis.models.strategy_result import StrategyResult
+from domain.analysis.base.models.base_strategy import BaseStrategy
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from .configs.trend_following_config import SMA_WEIGHT, MACD_WEIGHT, ADX_WEIGHT, VOLUME_WEIGHT

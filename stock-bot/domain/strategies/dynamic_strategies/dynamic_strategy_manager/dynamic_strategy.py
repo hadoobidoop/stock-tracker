@@ -15,7 +15,8 @@ from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.models.trading_signal import (
     TradingSignal, SignalType, SignalEvidence, TechnicalIndicatorEvidence, MarketContextEvidence
 )
-from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
+from domain.analysis.models.strategy_result import StrategyResult
+from domain.analysis.base.models.base_strategy import BaseStrategy
 from domain.analysis.strategy.decision_context import DecisionContext
 from domain.analysis.strategy.modifier_engine import ModifierEngine
 from infrastructure.db.models.enums import TrendType

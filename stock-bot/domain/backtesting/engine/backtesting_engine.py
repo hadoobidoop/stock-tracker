@@ -11,7 +11,7 @@ from domain.analysis.config.signals.signal_weights import SIGNAL_THRESHOLD
 # 기존 호환성을 위한 import
 from domain.analysis.service.signal_detection_service import SignalDetectionService
 # Removed dependency on static_strategies.py
-from domain.analysis.strategy.base_strategy import StrategyResult
+from domain.analysis.models.strategy_result import StrategyResult
 from domain.analysis.utils import calculate_all_indicators, calculate_fibonacci_levels
 from domain.stock.config.settings import MARKET_INDEX_TICKER
 from domain.stock.service.market_data_service import MarketDataService

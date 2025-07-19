@@ -19,7 +19,8 @@ import pandas as pd
 
 from domain.analysis.base.models import StrategyConfig, StrategyType
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
-from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
+from domain.analysis.models.strategy_result import StrategyResult
+from domain.analysis.base.models.base_strategy import BaseStrategy
 from domain.strategies.single_strategies.momentum.configs.momentum_config import MomentumStrategyConfig
 from domain.strategies.single_strategies.momentum.momentum_strategy import MomentumStrategy
 from domain.strategies.single_strategies.trend_following.configs.trend_following_config import TREND_FOLLOWING_CONFIG

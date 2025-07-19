@@ -19,7 +19,8 @@ import pandas as pd
 
 from domain.analysis.base.models import StrategyType
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
-from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
+from domain.analysis.models.strategy_result import StrategyResult
+from domain.analysis.base.models.base_strategy import BaseStrategy
 from domain.strategies.single_strategies.mean_reversion.configs.mean_reversion_config import MeanReversionStrategyConfig
 from domain.strategies.single_strategies.mean_reversion.detectors.mean_reversion_bb_detector import MeanReversionBBSignalDetector
 from domain.strategies.single_strategies.mean_reversion.detectors.mean_reversion_rsi_detector import MeanReversionRSISignalDetector

@@ -26,7 +26,8 @@ from domain.analysis.base.models import StrategyType
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
 from domain.analysis.detectors.trend_following.macd_detector import MACDSignalDetector
 from domain.analysis.detectors.volume.volume_detector import VolumeSignalDetector
-from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
+from domain.analysis.models.strategy_result import StrategyResult
+from domain.analysis.base.models.base_strategy import BaseStrategy
 from domain.strategies.single_strategies.momentum.configs.momentum_config import MomentumStrategyConfig
 from domain.strategies.single_strategies.momentum.detectors.momentum_rsi_detector import RSISignalDetector
 from domain.strategies.single_strategies.momentum.detectors.momentum_rsi_stoch_detector import RSIStochDetector
