@@ -10,7 +10,7 @@ from typing import Dict, Optional, List, Any
 
 import pandas as pd
 
-from domain.orchestration.manager import StrategyManager
+from domain.orchestration.strategy_orchestrator import StrategyOrchestrator
 from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
 from infrastructure.db.models.enums import TrendType
@@ -32,7 +32,7 @@ class SignalDetectionService:
     """
     
     def __init__(self):
-        self.strategy_manager = StrategyManager()
+        self.strategy_manager = StrategyOrchestrator()
         self.is_initialized = False
         
         # 지표 프리컴퓨팅 캐시

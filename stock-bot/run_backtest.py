@@ -37,7 +37,7 @@ sys.path.insert(0, str(project_root))
 from infrastructure.logging import get_logger
 from domain.backtesting.service.backtesting_service import BacktestingService
 from domain.signals.models.enums import StrategyType
-from domain.orchestration.manager import StrategyManager
+from domain.orchestration.strategy_orchestrator import StrategyOrchestrator
 
 # 거시지표 분석 기능 추가
 
