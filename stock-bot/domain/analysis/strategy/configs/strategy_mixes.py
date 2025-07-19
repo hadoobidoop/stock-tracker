@@ -21,9 +21,9 @@ class StrategyMixConfig:
     
     
 # Import individual mix configurations
-from domain.strategies.aggressive_mix.configs.aggressive_mix_config import AGGRESSIVE_MIX_CONFIG
-from domain.strategies.conservative_mix.configs.conservative_mix_config import CONSERVATIVE_MIX_CONFIG
-from domain.strategies.balanced_mix.configs.balanced_mix_config import BALANCED_MIX_CONFIG
+from domain.strategies.strategy_mixes.aggressive_mix.configs.aggressive_mix_config import AGGRESSIVE_MIX_CONFIG
+from domain.strategies.strategy_mixes.conservative_mix.configs.conservative_mix_config import CONSERVATIVE_MIX_CONFIG
+from domain.strategies.strategy_mixes.balanced_mix.configs.balanced_mix_config import BALANCED_MIX_CONFIG
 
 # 전략 조합 정의 - 개별 폴더에서 이관된 설정들을 중앙 집중화
 # Note: The individual configs have their own dataclass types but compatible interfaces

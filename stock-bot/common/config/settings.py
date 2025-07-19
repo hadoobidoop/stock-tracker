@@ -22,7 +22,7 @@ def get_available_static_strategies() -> List[str]:
 def get_available_dynamic_strategies() -> List[str]:
     """동적으로 사용 가능한 동적 전략 목록 조회"""
     try:
-        from domain.strategies.dynamic.configs.dynamic_strategies import get_all_strategies
+        from domain.strategies.dynamic_strategies.dynamic_strategy_manager.configs.dynamic_strategies import get_all_strategies
         return list(get_all_strategies().keys())
     except ImportError:
         # 폴백: 기본 동적 전략들만

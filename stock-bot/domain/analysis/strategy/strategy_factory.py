@@ -2,61 +2,61 @@ from typing import Dict, Optional
 
 from domain.analysis.base.models import StrategyConfig
 from domain.analysis.base.models.enums import StrategyType
-from domain.strategies.adaptive_momentum_hybrid.configs.adaptive_momentum_hybrid_config import \
+from domain.strategies.dynamic_strategies.adaptive_momentum_hybrid.configs.adaptive_momentum_hybrid_config import \
     AdaptiveMomentumHybridConfig
-from domain.strategies.aggressive.configs.aggressive_config import AggressiveStrategyConfig
-from domain.strategies.balanced.configs.balanced_config import BalancedStrategyConfig
+from domain.strategies.single_strategies.aggressive.configs.aggressive_config import AggressiveStrategyConfig
+from domain.strategies.single_strategies.balanced.configs.balanced_config import BalancedStrategyConfig
 # Strategy-specific config imports
-from domain.strategies.conservative.configs.conservative_config import ConservativeStrategyConfig
-from domain.strategies.conservative_reversion_hybrid.configs.conservative_reversion_hybrid_config import \
+from domain.strategies.single_strategies.conservative.configs.conservative_config import ConservativeStrategyConfig
+from domain.strategies.dynamic_strategies.conservative_reversion_hybrid.configs.conservative_reversion_hybrid_config import \
     ConservativeReversionHybridConfig
-from domain.strategies.dynamic.configs.dynamic_strategies import get_all_strategies, get_strategy_definition, \
+from domain.strategies.dynamic_strategies.dynamic_strategy_manager.configs.dynamic_strategies import get_all_strategies, get_strategy_definition, \
     get_all_modifiers
 # Import standardized config classes
-from domain.strategies.mean_reversion.configs.mean_reversion_config import MeanReversionStrategyConfig
-from domain.strategies.momentum.configs.momentum_config import MomentumStrategyConfig
-from domain.strategies.scalping.configs.scalping_config import ScalpingStrategyConfig
+from domain.strategies.single_strategies.mean_reversion.configs.mean_reversion_config import MeanReversionStrategyConfig
+from domain.strategies.single_strategies.momentum.configs.momentum_config import MomentumStrategyConfig
+from domain.strategies.single_strategies.scalping.configs.scalping_config import ScalpingStrategyConfig
 
 # Removed dependency on static_strategies.py - now using individual config classes
 
 # Import legacy constants for configs not yet standardized
 try:
-    from domain.strategies.swing.configs.swing_config import SWING_STRATEGY_CONFIG
+    from domain.strategies.single_strategies.swing.configs.swing_config import SWING_STRATEGY_CONFIG
 except ImportError:
     SWING_STRATEGY_CONFIG = None
     
 try:
-    from domain.strategies.multi_timeframe.configs.multi_timeframe_config import MULTI_TIMEFRAME_CONFIG
+    from domain.strategies.single_strategies.multi_timeframe.configs.multi_timeframe_config import MULTI_TIMEFRAME_CONFIG
 except ImportError:
     MULTI_TIMEFRAME_CONFIG = None
     
 try:
-    from domain.strategies.trend_following.configs.trend_following_config import TREND_FOLLOWING_CONFIG
+    from domain.strategies.single_strategies.trend_following.configs.trend_following_config import TREND_FOLLOWING_CONFIG
 except ImportError:
     TREND_FOLLOWING_CONFIG = None
     
 try:
-    from domain.strategies.market_regime_hybrid.configs.market_regime_hybrid_config import MARKET_REGIME_HYBRID_CONFIG
+    from domain.strategies.dynamic_strategies.market_regime_hybrid.configs.market_regime_hybrid_config import MARKET_REGIME_HYBRID_CONFIG
 except ImportError:
     MARKET_REGIME_HYBRID_CONFIG = None
 from domain.analysis.strategy.base_strategy import BaseStrategy
-from domain.strategies.conservative_reversion_hybrid.conservative_reversion_hybrid_strategy import ConservativeReversionHybridStrategy
-from domain.strategies.adaptive_momentum_hybrid.adaptive_momentum_hybrid_strategy import AdaptiveMomentumStrategy
-from domain.strategies.market_regime_hybrid.market_regime_hybrid_strategy import MarketRegimeHybridStrategy
-from domain.strategies.aggressive.aggressive_strategy import AggressiveStrategy
-from domain.strategies.balanced.balanced_strategy import BalancedStrategy
-from domain.strategies.momentum.momentum_strategy import MomentumStrategy
-from domain.strategies.volatility_breakout.volatility_breakout_strategy import VolatilityBreakoutStrategy
-from domain.strategies.conservative.conservative_strategy import ConservativeStrategy
-from domain.strategies.scalping.scalping_strategy import ScalpingStrategy
-from domain.strategies.swing.swing_strategy import SwingStrategy
-from domain.strategies.trend_following.trend_following_strategy import TrendFollowingStrategy
-from domain.strategies.trend_pullback.trend_pullback_strategy import TrendPullbackStrategy
-from domain.strategies.mean_reversion.mean_reversion_strategy import MeanReversionStrategy
-from domain.strategies.multi_timeframe.multi_timeframe_strategy import MultiTimeframeStrategy
+from domain.strategies.dynamic_strategies.conservative_reversion_hybrid.conservative_reversion_hybrid_strategy import ConservativeReversionHybridStrategy
+from domain.strategies.dynamic_strategies.adaptive_momentum_hybrid.adaptive_momentum_hybrid_strategy import AdaptiveMomentumStrategy
+from domain.strategies.dynamic_strategies.market_regime_hybrid.market_regime_hybrid_strategy import MarketRegimeHybridStrategy
+from domain.strategies.single_strategies.aggressive.aggressive_strategy import AggressiveStrategy
+from domain.strategies.single_strategies.balanced.balanced_strategy import BalancedStrategy
+from domain.strategies.single_strategies.momentum.momentum_strategy import MomentumStrategy
+from domain.strategies.single_strategies.volatility_breakout.volatility_breakout_strategy import VolatilityBreakoutStrategy
+from domain.strategies.single_strategies.conservative.conservative_strategy import ConservativeStrategy
+from domain.strategies.single_strategies.scalping.scalping_strategy import ScalpingStrategy
+from domain.strategies.single_strategies.swing.swing_strategy import SwingStrategy
+from domain.strategies.single_strategies.trend_following.trend_following_strategy import TrendFollowingStrategy
+from domain.strategies.single_strategies.trend_pullback.trend_pullback_strategy import TrendPullbackStrategy
+from domain.strategies.single_strategies.mean_reversion.mean_reversion_strategy import MeanReversionStrategy
+from domain.strategies.single_strategies.multi_timeframe.multi_timeframe_strategy import MultiTimeframeStrategy
 from .modifier_engine import ModifierEngine
-from domain.strategies.dynamic.dynamic_strategy import DynamicCompositeStrategy
-from domain.strategies.dynamic.modifiers.registry import ModifierFactory
+from domain.strategies.dynamic_strategies.dynamic_strategy_manager.dynamic_strategy import DynamicCompositeStrategy
+from domain.strategies.dynamic_strategies.dynamic_strategy_manager.modifiers.registry import ModifierFactory
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)

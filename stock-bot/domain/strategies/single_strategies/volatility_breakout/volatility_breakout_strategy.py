@@ -1,63 +1,63 @@
+# -*- coding: utf-8 -*-
 """
-mean_reversion 전략 실행체 (독립 패키지)
+Volatility Breakout 전략 (변동성 돌파)
+--------------------------------------
+- 완전 독립 패키지 구조(domain/strategies/volatility_breakout/)에서 관리
+- Detector, config, 전략 본체가 모두 폴더 내에서 독립적으로 관리됨
+- 볼린저밴드(BB) breakout, ADX, 거래량 신호를 조합하여 변동성 응축 후 돌파 구간을 포착
+- 각 Detector는 커스텀 래퍼 클래스로 분리되어 유지보수/확장에 용이
+- config 분리로 파라미터/가중치 조정이 용이
 
-- BB(볼린저밴드, mean_reversion), RSI, Stoch Detector를 config 기반으로 동적으로 조합
-- Detector별 가중치/파라미터는 config에서 일관 관리 (유지보수/튜닝/확장성 우수)
-- mean_reversion 전용 래퍼 Detector 클래스 사용 (prefix: MeanReversion)
-- signal_threshold: 7.0 (표준), position_management: 최대 4개, 24시간 보유(단기)
-- config: domain.strategies.mean_reversion.configs.mean_reversion_config.MeanReversionStrategyConfig
-
-활용 포인트:
-    - 과매수/과매도 후 평균 회귀 신호 포착
-    - 단기/중기 변동성 구간에서 mean reversion 기회 탐지
-    - 각 Detector의 근거(TechnicalIndicatorEvidence) 상세 기록
-    - Detector 추가/변경 시 config만 수정하면 자동 반영
+사용 예시:
+    from domain.strategies.single_strategies.volatility_breakout.volatility_breakout_strategy import VolatilityBreakoutStrategy
+    strategy = VolatilityBreakoutStrategy(config)
+    ...
 """
+
 from typing import Dict, Optional
 
 import pandas as pd
 
 from domain.analysis.base.models import StrategyType
 from domain.analysis.base.signal_orchestrator import SignalDetectionOrchestrator
-from domain.analysis.strategy.base_strategy import BaseStrategy, StrategyResult
-from domain.strategies.mean_reversion.configs.mean_reversion_config import MeanReversionStrategyConfig
-from domain.strategies.mean_reversion.detectors.mean_reversion_bb_detector import MeanReversionBBSignalDetector
-from domain.strategies.mean_reversion.detectors.mean_reversion_rsi_detector import MeanReversionRSISignalDetector
-from domain.strategies.mean_reversion.detectors.mean_reversion_stoch_detector import MeanReversionStochSignalDetector
+from domain.analysis.strategy.base_strategy import BaseStrategy
+from domain.analysis.strategy.base_strategy import StrategyResult
+from domain.strategies.single_strategies.volatility_breakout.detectors.volatility_breakout_adx_detector import \
+    VolatilityBreakoutADXDetector
+# Volatility Breakout 전략 본체
+from domain.strategies.single_strategies.volatility_breakout.detectors.volatility_breakout_bb_detector import VolatilityBreakoutBBDetector
+from domain.strategies.single_strategies.volatility_breakout.detectors.volatility_breakout_volume_detector import \
+    VolatilityBreakoutVolumeDetector
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
 
-class MeanReversionStrategy(BaseStrategy):
+
+class VolatilityBreakoutStrategy(BaseStrategy):
     """
-    mean_reversion 전략 실행체
-    - config 기반 동적 Detector 조합 (BB, RSI, Stoch)
-    - Detector별 가중치/파라미터는 config에서 관리
-    - mean_reversion 전용 래퍼 Detector 클래스 사용
+    Volatility Breakout 전략 (볼린저밴드 돌파 + ADX + 거래량)
+    - Detector, config 모두 폴더 내에서 독립 관리
+    - 변동성 응축(squeeze) 후 상단/하단 돌파 및 거래량 급증 구간을 포착
+    - 각 Detector별 신호 근거(TechnicalIndicatorEvidence)를 상세 기록
     """
-    def __init__(self, strategy_type: StrategyType = StrategyType.MEAN_REVERSION, config: Optional[MeanReversionStrategyConfig] = None):
-        default_config = MeanReversionStrategyConfig()
-        super().__init__(strategy_type, config or default_config)
-        self.config = config or default_config
-        self.orchestrator: Optional[SignalDetectionOrchestrator] = None
+    def __init__(self, strategy_type: StrategyType = StrategyType.VOLATILITY_BREAKOUT, config=None):
+        """
+        Volatility Breakout 전략 인스턴스 생성
+        :param strategy_type: 전략 타입
+        :param config: Detector 가중치, 파라미터 등 설정(dict 또는 config 객체)
+        """
+        super().__init__(strategy_type, config)
+        self.detectors = [
+            VolatilityBreakoutBBDetector(weight=7.0, detector_type="breakout"),
+            VolatilityBreakoutADXDetector(weight=4.0),
+            VolatilityBreakoutVolumeDetector(weight=5.0),
+        ]
 
     def initialize(self) -> bool:
         try:
-            # config 기반 Detector 동적 생성
-            detector_map = {
-                "MeanReversionBBSignalDetector": MeanReversionBBSignalDetector,
-                "MeanReversionRSISignalDetector": MeanReversionRSISignalDetector,
-                "MeanReversionStochSignalDetector": MeanReversionStochSignalDetector,
-            }
-            detectors = []
-            for det_cfg in self.config.detectors:
-                cls = detector_map[det_cfg["detector_class"]]
-                kwargs = dict(det_cfg)
-                kwargs.pop("detector_class")
-                detectors.append(cls(**kwargs))
             self.orchestrator = SignalDetectionOrchestrator()
-            for detector in detectors:
+            for detector in self.detectors:
                 self.orchestrator.add_detector(detector)
             self.is_initialized = True
             logger.info(f"{self.get_name()} 초기화 완료")
@@ -86,10 +86,6 @@ class MeanReversionStrategy(BaseStrategy):
             has_signal = bool(signal_result and signal_result.get('type'))
             score = signal_result.get('score', 0)
 
-            # MeanReversion 특화 점수 조정
-            if market_trend == TrendType.NEUTRAL:
-                score *= 1.15
-
             # 성능 지표 업데이트
             self.score_history.append(score)
             if len(self.score_history) > 100:
@@ -113,8 +109,6 @@ class MeanReversionStrategy(BaseStrategy):
                 sell_score *= 1.2
             # ============================
 
-            logger.debug(f"[mean_reversion] 분석 결과: has_signal={has_signal}, score={score}, buy_score={buy_score}, sell_score={sell_score}, details={signal_result.get('details', [])}")
-
             return StrategyResult(
                 strategy_name=self.get_name(),
                 strategy_type=self.strategy_type,
@@ -137,4 +131,4 @@ class MeanReversionStrategy(BaseStrategy):
                 total_score=0.0,
                 signal_strength="WEAK",
                 signals_detected=[],
-            ) 
+            )

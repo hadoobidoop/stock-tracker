@@ -20,7 +20,7 @@ from domain.analysis.strategy.configs.strategy_mixes import (
     StrategyMixMode, StrategyMixConfig, STRATEGY_MIXES
 )
 # Individual mix configs are now managed centrally via STRATEGY_MIXES
-from domain.strategies.dynamic.dynamic_strategy_manager import DynamicStrategyManager
+from domain.strategies.dynamic_strategies.dynamic_strategy_manager.dynamic_strategy_manager import DynamicStrategyManager
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from .base_strategy import BaseStrategy, StrategyResult
@@ -176,7 +176,7 @@ class StrategyManager:
             return
 
         # 전략의 종류에 따라 적절한 매니저에 할당
-        from domain.strategies.dynamic.dynamic_strategy import DynamicCompositeStrategy
+        from domain.strategies.dynamic_strategies.dynamic_strategy_manager.dynamic_strategy import DynamicCompositeStrategy
         if isinstance(strategy, DynamicCompositeStrategy):
             self.dynamic_manager.current_strategy = strategy
             self.current_strategy = None
