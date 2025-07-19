@@ -229,32 +229,3 @@ class StrategyOrchestrator:
     def get_dynamic_strategy_info(self) -> Dict[str, Any]:
         """현재 동적 전략 정보를 반환합니다."""
         return self.dynamic_manager.get_strategy_info()
-    
-    # ============================================================================
-    # 하위 호환성을 위한 레거시 속성들
-    # ============================================================================
-    
-    @property
-    def active_strategies(self) -> Dict[StrategyType, BaseStrategy]:
-        """활성화된 정적 전략들 (하위 호환성)"""
-        return self.single_manager.active_strategies
-    
-    @property
-    def current_strategy(self) -> Optional[BaseStrategy]:
-        """현재 정적 전략 (하위 호환성)"""
-        return self.single_manager.current_strategy
-    
-    @property
-    def current_mix_config(self):
-        """현재 믹스 설정 (하위 호환성)"""
-        return self.mix_manager.current_mix_config
-    
-    @property
-    def auto_strategy_selection(self) -> bool:
-        """자동 전략 선택 활성화 상태 (하위 호환성)"""
-        return self.auto_selector.is_auto_selection_enabled
-    
-    @property
-    def market_condition_detection(self) -> bool:
-        """시장 조건 감지 활성화 상태 (하위 호환성)"""
-        return self.auto_selector.is_market_detection_enabled

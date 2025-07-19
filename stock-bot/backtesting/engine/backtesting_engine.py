@@ -280,18 +280,16 @@ class BacktestingEngine:
             }
         
         # 전략 조합이 활성화되어 있는지 확인
-        if hasattr(self.signal_service.strategy_manager, 'current_mix_config') and \
-           self.signal_service.strategy_manager.current_mix_config:
-            mix_config = self.signal_service.strategy_manager.current_mix_config
+        if self.signal_service.strategy_manager.mix_manager.has_current_mix:
+            mix_config = self.signal_service.strategy_manager.mix_manager.current_mix_config
             return {
                 'name': f"Strategy Mix: {mix_config.name}",
                 'type': mix_config.name
             }
         
         # 동적 전략이 활성화되어 있는지 확인
-        if hasattr(self.signal_service.strategy_manager, 'current_dynamic_strategy') and \
-           self.signal_service.strategy_manager.current_dynamic_strategy:
-            dynamic_strategy = self.signal_service.strategy_manager.current_dynamic_strategy
+        if self.signal_service.strategy_manager.dynamic_manager.current_strategy:
+            dynamic_strategy = self.signal_service.strategy_manager.dynamic_manager.current_strategy
             return {
                 'name': f"Dynamic Strategy: {dynamic_strategy.strategy_name}",
                 'type': dynamic_strategy.strategy_name

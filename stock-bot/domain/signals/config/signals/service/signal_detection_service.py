@@ -186,8 +186,8 @@ class SignalDetectionService:
         if not self.is_initialized:
             return None
         
-        if self.strategy_manager.current_strategy:
-            return self.strategy_manager.current_strategy.strategy_type
+        if self.strategy_manager.single_manager.current_strategy:
+            return self.strategy_manager.single_manager.current_strategy.strategy_type
         return None
     
     def get_current_strategy_info(self) -> Dict[str, Any]:
