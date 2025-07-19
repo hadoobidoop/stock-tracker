@@ -53,3 +53,32 @@ class StrategyManagerUtils:
             logger.error(f"전략 초기화 실패: {strategy_type.value}")
             return False
         return True
+    
+    @staticmethod
+    def standardize_analysis_input(df_with_indicators: pd.DataFrame,
+                                  ticker: str,
+                                  market_trend: TrendType = TrendType.NEUTRAL,
+                                  long_term_trend: TrendType = TrendType.NEUTRAL,
+                                  daily_extra_indicators: Dict = None) -> Dict[str, Any]:
+        """분석 입력값을 표준화하고 검증합니다."""
+        # 입력 검증
+        if df_with_indicators.empty:
+            logger.warning(f"빈 데이터프레임이 전달됨: {ticker}")
+        
+        if not ticker:
+            logger.warning("티커가 제공되지 않음")
+        
+        # 표준화된 파라미터 반환
+        return StrategyManagerUtils.get_analysis_parameters(
+            df_with_indicators, ticker, market_trend, long_term_trend, daily_extra_indicators
+        )
+    
+    @staticmethod
+    def format_cache_key(ticker: str, analysis_type: str, **kwargs) -> str:
+        """캐시 키를 표준화된 형태로 생성합니다."""
+        base_key = f"{ticker}_{analysis_type}"
+        if kwargs:
+            # 추가 파라미터들을 정렬하여 일관된 키 생성
+            params = "_".join(f"{k}_{v}" for k, v in sorted(kwargs.items()))
+            return f"{base_key}_{params}"
+        return base_key

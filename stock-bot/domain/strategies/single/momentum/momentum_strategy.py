@@ -26,7 +26,7 @@ from domain.signals.models.enums import StrategyType
 from domain.signals.detectors.trend_following.macd_detector import MACDSignalDetector
 from domain.signals.detectors.volume.volume_detector import VolumeSignalDetector
 from domain.signals.models.strategy_result import StrategyResult
-from domain.signals.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
+from domain.signals.config.signals.service.signal_processor import SignalProcessor
 from domain.strategies.single.momentum.configs.momentum_config import MomentumStrategyConfig
 from domain.strategies.single.momentum.detectors.momentum_rsi_detector import RSISignalDetector
 from domain.strategies.single.momentum.detectors.momentum_rsi_stoch_detector import RSIStochDetector
@@ -46,7 +46,7 @@ class MomentumStrategy(BaseStrategy):
     """
     def __init__(self, strategy_type: StrategyType, config: MomentumStrategyConfig):
         super().__init__(strategy_type, config)
-        self.orchestrator: Optional[SignalDetectionOrchestrator] = None
+        self.orchestrator: Optional[SignalProcessor] = None
         self.config = config
 
     def initialize(self) -> bool:
@@ -66,7 +66,7 @@ class MomentumStrategy(BaseStrategy):
                     weight=self.config.detector_weights['composite']
                 )
             ]
-            self.orchestrator = SignalDetectionOrchestrator()
+            self.orchestrator = SignalProcessor()
             for detector in detectors:
                 self.orchestrator.add_detector(detector)
             self.is_initialized = True

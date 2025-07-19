@@ -18,8 +18,8 @@ from domain.signals.detectors.signal_detector import SignalDetector
 logger = get_logger(__name__)
 
 
-class SignalDetectionOrchestrator:
-    """여러 신호 감지기를 조율하여 최종 신호를 생성하는 오케스트레이터"""
+class SignalProcessor:
+    """여러 신호 감지기를 조율하여 최종 신호를 생성하는 신호 처리기"""
     
     def __init__(self):
         self.detectors: List[SignalDetector] = []

@@ -15,7 +15,7 @@ from domain.strategies.base import BaseStrategy
 from domain.strategies.decision_context import DecisionContext
 from domain.strategies.modifier_engine import ModifierEngine
 from domain.strategies.strategy_config import StrategyConfig
-from domain.signals.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
+from domain.signals.config.signals.service.signal_processor import SignalProcessor
 from domain.signals.models.trading_signal import (
     TradingSignal, SignalType, SignalEvidence, TechnicalIndicatorEvidence, MarketContextEvidence
 )
@@ -67,9 +67,9 @@ class DynamicCompositeStrategy(BaseStrategy):
     def _get_strategy_type(self) -> 'StrategyType':
         return StrategyType.MACRO_DRIVEN
     
-    def _create_orchestrator(self) -> SignalDetectionOrchestrator:
+    def _create_orchestrator(self) -> SignalProcessor:
         """기술적 지표 detector들을 위한 오케스트레이터 생성"""
-        orchestrator = SignalDetectionOrchestrator()
+        orchestrator = SignalProcessor()
         for detector_name, detector_config in self.strategy_config.get("detectors", {}).items():
             detector = self._create_technical_detector(detector_name, detector_config)
             if detector:

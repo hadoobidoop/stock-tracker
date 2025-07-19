@@ -17,7 +17,7 @@ from typing import Dict
 
 import pandas as pd
 
-from domain.signals.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
+from domain.signals.config.signals.service.signal_processor import SignalProcessor
 from domain.strategies.base import BaseStrategy
 from domain.strategies.strategy_config import StrategyConfig
 from domain.signals.models.enums import StrategyType
@@ -61,9 +61,9 @@ class AdaptiveMomentumStrategy(BaseStrategy):
     def _get_strategy_type(self) -> StrategyType:
         return self.strategy_type
 
-    def _create_orchestrator(self) -> SignalDetectionOrchestrator:
+    def _create_orchestrator(self) -> SignalProcessor:
         # 이 전략은 오케스트레이터를 직접 사용하지 않으므로 빈 것을 반환
-        return SignalDetectionOrchestrator()
+        return SignalProcessor()
 
     def analyze(self, df_with_indicators: pd.DataFrame, ticker: str, market_trend: TrendType,
                 long_term_trend: TrendType, daily_extra_indicators: Dict) -> StrategyResult:

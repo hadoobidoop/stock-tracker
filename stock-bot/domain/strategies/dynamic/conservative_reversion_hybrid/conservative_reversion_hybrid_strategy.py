@@ -22,7 +22,7 @@ from typing import Dict
 
 import pandas as pd
 
-from domain.signals.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
+from domain.signals.config.signals.service.signal_processor import SignalProcessor
 from domain.strategies.strategy_config import StrategyConfig
 from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
@@ -71,12 +71,12 @@ class ConservativeReversionHybridStrategy(BaseStrategy):
         """
         return self.strategy_type
 
-    def _create_orchestrator(self) -> SignalDetectionOrchestrator:
+    def _create_orchestrator(self) -> SignalProcessor:
         """
         Returns:
-            SignalDetectionOrchestrator: 신호 오케스트레이터
+            SignalProcessor: 신호 오케스트레이터
         """
-        return SignalDetectionOrchestrator()
+        return SignalProcessor()
 
     def analyze(self, df_with_indicators: pd.DataFrame, ticker: str, market_trend: TrendType,
                 long_term_trend: TrendType, daily_extra_indicators: Dict) -> StrategyResult:

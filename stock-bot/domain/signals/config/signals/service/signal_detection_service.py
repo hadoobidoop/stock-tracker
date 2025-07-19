@@ -35,8 +35,9 @@ class SignalDetectionService:
         self.strategy_manager = StrategyOrchestrator()
         self.is_initialized = False
         
-        # 지표 프리컴퓨팅 캐시
+        # 통합된 지표 및 분석 캐시 시스템
         self.precomputed_indicators: Dict[str, pd.DataFrame] = {}
+        self.analysis_cache: Dict[str, Dict] = {}
         self.cache_last_updated: Dict[str, datetime] = {}
         self.cache_ttl_minutes = 5  # 5분 캐시 유효시간
         
@@ -228,7 +229,8 @@ class SignalDetectionService:
         """
         특정 종목의 지표를 미리 계산합니다.
         """
-        cache_key = f"{ticker}_indicators"
+        from domain.orchestration.utils.strategy_manager_utils import StrategyManagerUtils
+        cache_key = StrategyManagerUtils.format_cache_key(ticker, "indicators")
         current_time = datetime.now()
         
         # 캐시 확인
@@ -254,21 +256,36 @@ class SignalDetectionService:
     
     def _update_indicator_cache(self, ticker: str, df_with_indicators: pd.DataFrame):
         """지표 캐시를 업데이트합니다."""
-        cache_key = f"{ticker}_indicators"
+        from domain.orchestration.utils.strategy_manager_utils import StrategyManagerUtils
+        cache_key = StrategyManagerUtils.format_cache_key(ticker, "indicators")
         self.precomputed_indicators[cache_key] = df_with_indicators
         self.cache_last_updated[cache_key] = datetime.now()
     
-    def clear_indicator_cache(self, ticker: str = None):
-        """지표 캐시를 삭제합니다."""
+    def clear_cache(self, ticker: str = None, cache_type: str = "all"):
+        """캐시를 삭제합니다."""
         if ticker:
-            cache_key = f"{ticker}_indicators"
-            self.precomputed_indicators.pop(cache_key, None)
-            self.cache_last_updated.pop(cache_key, None)
-            logger.info(f"지표 캐시 삭제: {ticker}")
+            from domain.orchestration.utils.strategy_manager_utils import StrategyManagerUtils
+            if cache_type in ["all", "indicators"]:
+                cache_key = StrategyManagerUtils.format_cache_key(ticker, "indicators")
+                self.precomputed_indicators.pop(cache_key, None)
+                self.cache_last_updated.pop(cache_key, None)
+            if cache_type in ["all", "analysis"]:
+                analysis_key = StrategyManagerUtils.format_cache_key(ticker, "analysis")
+                self.analysis_cache.pop(analysis_key, None)
+                self.cache_last_updated.pop(analysis_key, None)
+            logger.info(f"캐시 삭제 ({cache_type}): {ticker}")
         else:
-            self.precomputed_indicators.clear()
-            self.cache_last_updated.clear()
-            logger.info("모든 지표 캐시 삭제")
+            if cache_type in ["all", "indicators"]:
+                self.precomputed_indicators.clear()
+            if cache_type in ["all", "analysis"]:
+                self.analysis_cache.clear()
+            if cache_type == "all":
+                self.cache_last_updated.clear()
+            logger.info(f"모든 캐시 삭제 ({cache_type})")
+    
+    def clear_indicator_cache(self, ticker: str = None):
+        """지표 캐시를 삭제합니다. (하위 호환성)"""
+        self.clear_cache(ticker, "indicators")
     
     # === Static Strategy Mix 호환성 메서드 ===
     

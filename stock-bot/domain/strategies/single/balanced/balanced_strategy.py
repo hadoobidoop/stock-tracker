@@ -4,7 +4,7 @@ from typing import Dict, Optional, Any
 import pandas as pd
 
 from domain.signals.models.enums import StrategyType
-from domain.signals.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
+from domain.signals.config.signals.service.signal_processor import SignalProcessor
 from domain.signals.detectors.composite.composite_detector import CompositeSignalDetector
 # 기본 Detector import
 from domain.signals.detectors.momentum.rsi_detector import RSISignalDetector
@@ -48,7 +48,7 @@ class BalancedStrategy(BaseStrategy):
 
     def __init__(self, strategy_type: StrategyType, config: BalancedStrategyConfig):
         super().__init__(strategy_type, config)
-        self.orchestrator: Optional[SignalDetectionOrchestrator] = None
+        self.orchestrator: Optional[SignalProcessor] = None
         self.config = config  # BalancedStrategyConfig로 타입 지정
 
     def initialize(self) -> bool:
@@ -77,7 +77,7 @@ class BalancedStrategy(BaseStrategy):
                     name="Balanced_MACD_Volume_Confirm"
                 )
             ]
-            self.orchestrator = SignalDetectionOrchestrator()
+            self.orchestrator = SignalProcessor()
             for detector in detectors:
                 self.orchestrator.add_detector(detector)
             self.is_initialized = True

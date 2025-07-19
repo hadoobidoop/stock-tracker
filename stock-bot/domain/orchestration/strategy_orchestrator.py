@@ -40,8 +40,6 @@ class StrategyOrchestrator:
         
         # 성능 관리
         self.performance_history: List[Dict] = []
-        self.indicator_cache: Dict[str, Dict] = {}
-        self.cache_last_updated: Dict[str, datetime] = {}
         
         # 자동 선택기에 콜백 함수들 설정
         self._setup_auto_selector_callbacks()
@@ -167,8 +165,8 @@ class StrategyOrchestrator:
         if self.auto_selector.is_auto_selection_enabled:
             self.auto_selector.auto_select_strategy(market_trend, df_with_indicators)
         
-        # 분석 파라미터 표준화
-        analysis_params = StrategyManagerUtils.get_analysis_parameters(
+        # 분석 파라미터 표준화 및 검증
+        analysis_params = StrategyManagerUtils.standardize_analysis_input(
             df_with_indicators, ticker, market_trend, long_term_trend, daily_extra_indicators
         )
         

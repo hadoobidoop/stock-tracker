@@ -28,7 +28,7 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from domain.signals.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
+from domain.signals.config.signals.service.signal_processor import SignalProcessor
 from domain.strategies.base import BaseStrategy
 from domain.strategies.strategy_config import StrategyConfig
 from domain.signals.models.enums import StrategyType
@@ -59,7 +59,7 @@ class ScalpingStrategy(BaseStrategy):
             config (StrategyConfig): 전략 설정(config)
         """
         super().__init__(strategy_type, config)
-        self.orchestrator: Optional[SignalDetectionOrchestrator] = None
+        self.orchestrator: Optional[SignalProcessor] = None
         self.market_data_service = MarketDataService()  # VIX 등 외부 마켓 데이터 활용
 
     def initialize(self) -> bool:
@@ -75,7 +75,7 @@ class ScalpingStrategy(BaseStrategy):
                 VolumeSignalDetector(weight=5.0),
                 MACDSignalDetector(weight=3.0)
             ]
-            self.orchestrator = SignalDetectionOrchestrator()
+            self.orchestrator = SignalProcessor()
             for detector in detectors:
                 self.orchestrator.add_detector(detector)
             self.is_initialized = True

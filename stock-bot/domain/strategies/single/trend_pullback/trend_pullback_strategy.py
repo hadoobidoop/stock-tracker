@@ -4,7 +4,7 @@ import pandas as pd
 
 from domain.strategies.strategy_config import StrategyConfig
 from domain.signals.models.enums import StrategyType
-from domain.signals.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
+from domain.signals.config.signals.service.signal_processor import SignalProcessor
 from domain.signals.models.strategy_result import StrategyResult
 from domain.strategies.base import BaseStrategy
 from infrastructure.db.models.enums import TrendType
@@ -24,7 +24,7 @@ class TrendPullbackStrategy(BaseStrategy):
 
     def __init__(self, strategy_type: StrategyType, config: StrategyConfig):
         super().__init__(strategy_type, config)
-        self.orchestrator: Optional[SignalDetectionOrchestrator] = None
+        self.orchestrator: Optional[SignalProcessor] = None
 
     def initialize(self) -> bool:
         try:
@@ -33,7 +33,7 @@ class TrendPullbackStrategy(BaseStrategy):
                 TrendPullbackADXDetector(weight=ADX_WEIGHT),
                 TrendPullbackRSIDetector(weight=RSI_WEIGHT),
             ]
-            self.orchestrator = SignalDetectionOrchestrator()
+            self.orchestrator = SignalProcessor()
             for detector in detectors:
                 self.orchestrator.add_detector(detector)
             self.is_initialized = True

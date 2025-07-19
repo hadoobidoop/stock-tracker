@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Any, Coroutine
 
 from domain.orchestration.selector import get_current_strategy_config, strategy_selector
 from domain.signals.config.signals.service.signal_detection_service import SignalDetectionService
-from domain.signals.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
+from domain.signals.config.signals.service.signal_processor import SignalProcessor
 from domain.signals.models.enums import StrategyMode
 
 # 프로젝트 루트 디렉토리를 Python 경로에 추가
@@ -57,7 +57,7 @@ stock_repo: StockRepository = SQLStockRepository()
 stock_analysis_service = StockAnalysisService(stock_repo)
 
 # Static Strategy Mix를 위한 오케스트레이터 인스턴스
-orchestrator = SignalDetectionOrchestrator()
+orchestrator = SignalProcessor()
 
 
 def get_strategy_service() -> SignalDetectionService | None:

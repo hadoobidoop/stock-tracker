@@ -6,7 +6,7 @@ from domain.signals.models.strategy_result import StrategyResult
 from domain.strategies.base import BaseStrategy
 from domain.strategies.strategy_config import StrategyConfig
 from domain.signals.models.enums import StrategyType
-from domain.signals.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
+from domain.signals.config.signals.service.signal_processor import SignalProcessor
 from domain.stock.service.market_data_service import MarketDataService
 from domain.strategies.single.mean_reversion.mean_reversion_strategy import MeanReversionStrategy
 from domain.strategies.single.trend_following.trend_following_strategy import TrendFollowingStrategy
@@ -57,8 +57,8 @@ class MarketRegimeHybridStrategy(BaseStrategy):
     def _get_strategy_type(self) -> StrategyType:
         return self.strategy_type
 
-    def _create_orchestrator(self) -> SignalDetectionOrchestrator:
-        return SignalDetectionOrchestrator()
+    def _create_orchestrator(self) -> SignalProcessor:
+        return SignalProcessor()
 
     def analyze(self, df_with_indicators: pd.DataFrame, ticker: str, market_trend: TrendType,
                 long_term_trend: TrendType, daily_extra_indicators: Dict) -> StrategyResult:

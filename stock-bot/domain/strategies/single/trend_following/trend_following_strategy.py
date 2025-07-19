@@ -2,7 +2,7 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from domain.signals.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
+from domain.signals.config.signals.service.signal_processor import SignalProcessor
 from domain.strategies.strategy_config import StrategyConfig
 from domain.signals.models.enums import StrategyType
 from domain.signals.detectors.composite.composite_detector import CompositeSignalDetector
@@ -46,7 +46,7 @@ class TrendFollowingStrategy(BaseStrategy):
 
     def __init__(self, strategy_type: StrategyType, config: StrategyConfig):
         super().__init__(strategy_type, config)
-        self.orchestrator: Optional[SignalDetectionOrchestrator] = None
+        self.orchestrator: Optional[SignalProcessor] = None
 
     def initialize(self) -> bool:
         """
@@ -72,7 +72,7 @@ class TrendFollowingStrategy(BaseStrategy):
                     name="MACD_Volume_Confirm"
                 )
             ]
-            self.orchestrator = SignalDetectionOrchestrator()
+            self.orchestrator = SignalProcessor()
             for detector in detectors:
                 self.orchestrator.add_detector(detector)
             self.is_initialized = True

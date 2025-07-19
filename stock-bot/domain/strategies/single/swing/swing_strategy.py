@@ -3,7 +3,7 @@ from typing import Dict, Optional
 import pandas as pd
 
 from domain.signals.models.enums import StrategyType
-from domain.signals.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
+from domain.signals.config.signals.service.signal_processor import SignalProcessor
 from domain.signals.models.strategy_result import StrategyResult
 from domain.strategies.base import BaseStrategy
 from domain.strategies.single.swing.configs.swing_config import SWING_STRATEGY_CONFIG
@@ -45,7 +45,7 @@ class SwingStrategy(BaseStrategy):
         config = config or SWING_STRATEGY_CONFIG
         super().__init__(strategy_type, config)
         self.config = config
-        self.orchestrator: Optional[SignalDetectionOrchestrator] = None
+        self.orchestrator: Optional[SignalProcessor] = None
 
     def initialize(self) -> bool:
         """
@@ -62,7 +62,7 @@ class SwingStrategy(BaseStrategy):
                 SwingRSIDetector(weight=self.config['detector_weights']['rsi']),
                 SwingADXDetector(weight=self.config['detector_weights']['adx'])
             ]
-            self.orchestrator = SignalDetectionOrchestrator()
+            self.orchestrator = SignalProcessor()
             for detector in detectors:
                 self.orchestrator.add_detector(detector)
             self.is_initialized = True

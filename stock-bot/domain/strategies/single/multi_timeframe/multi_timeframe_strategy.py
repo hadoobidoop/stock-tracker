@@ -29,7 +29,7 @@ from typing import Dict, Optional
 import pandas as pd
 
 from domain.signals.models.enums import StrategyType
-from domain.signals.config.signals.service.signal_orchestrator import SignalDetectionOrchestrator
+from domain.signals.config.signals.service.signal_processor import SignalProcessor
 from domain.signals.detectors.composite.multi_timeframe_composite_detector import MultiTimeframeCompositeDetector
 from domain.signals.models.strategy_result import StrategyResult
 from domain.strategies.base import BaseStrategy
@@ -57,7 +57,7 @@ class MultiTimeframeStrategy(BaseStrategy):
         config = config or MULTI_TIMEFRAME_CONFIG
         super().__init__(strategy_type, config)
         self.config = config
-        self.orchestrator: Optional[SignalDetectionOrchestrator] = None
+        self.orchestrator: Optional[SignalProcessor] = None
 
     def initialize(self) -> bool:
         """
@@ -70,7 +70,7 @@ class MultiTimeframeStrategy(BaseStrategy):
             Exception: Detector/Orchestrator 생성 실패 시 False 반환 및 로그 기록
         """
         try:
-            self.orchestrator = SignalDetectionOrchestrator()
+            self.orchestrator = SignalProcessor()
             detector = MultiTimeframeCompositeDetector(weight=self.config["detector_weights"].get("composite", 7.0))
             self.orchestrator.add_detector(detector)
             self.is_initialized = True
