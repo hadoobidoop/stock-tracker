@@ -6,16 +6,8 @@
 
 from typing import Dict, Any
 from dataclasses import dataclass
-from enum import Enum
 
-from .static_strategies import StrategyType
-
-
-class StrategyMixMode(Enum):
-    """전략 조합 방식"""
-    WEIGHTED = "weighted"    # 가중치 기반 조합
-    VOTING = "voting"        # 투표 기반 조합 (과반수)
-    ENSEMBLE = "ensemble"    # 앙상블 조합 (신뢰도 기반)
+from domain.analysis.base.models.enums import StrategyType, StrategyMixMode
 
 @dataclass
 class StrategyMixConfig:

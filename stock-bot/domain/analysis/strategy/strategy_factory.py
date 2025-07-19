@@ -1,7 +1,8 @@
 from typing import Dict, Optional
 
 from domain.strategies.dynamic.configs.dynamic_strategies import get_all_strategies, get_strategy_definition, get_all_modifiers
-from domain.analysis.base.models import StrategyType, StrategyConfig
+from domain.analysis.base.models import StrategyConfig
+from domain.analysis.base.models.enums import StrategyType
 from domain.analysis.strategy.configs.static_strategies import get_strategy_config, \
     get_static_strategy_types
 

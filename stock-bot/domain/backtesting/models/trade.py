@@ -4,18 +4,8 @@ from typing import Optional, Dict, Any, List
 from enum import Enum
 
 
-class TradeType(Enum):
-    """거래 유형"""
-    BUY = "BUY"
-    SELL = "SELL"
-
-
-class TradeStatus(Enum):
-    """거래 상태"""
-    OPEN = "OPEN"           # 진행중
-    CLOSED = "CLOSED"       # 완료
-    STOP_LOSS = "STOP_LOSS" # 손절
-    TAKE_PROFIT = "TAKE_PROFIT"  # 익절
+# Trade enums moved to domain.analysis.base.models.enums.trade_enums
+from domain.analysis.base.models.enums import TradeType, TradeStatus
 
 
 @dataclass

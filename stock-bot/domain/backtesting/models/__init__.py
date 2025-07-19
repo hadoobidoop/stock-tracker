@@ -1,7 +1,8 @@
 """Backtesting models package."""
 
 from .backtest_result import BacktestResult
-from .trade import Trade, TradeStatus, TradeType
+from .trade import Trade
+from domain.analysis.base.models.enums import TradeStatus, TradeType
 from .portfolio import Portfolio
 
 __all__ = [

@@ -2,7 +2,7 @@
 공통 모델 정의
 """
 
-from .strategy_type import StrategyType
+from .enums import StrategyType
 from .detector_config import DetectorConfig
 from .strategy_config import StrategyConfig
 

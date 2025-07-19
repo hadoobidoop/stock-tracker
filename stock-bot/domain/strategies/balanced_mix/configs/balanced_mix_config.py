@@ -1,12 +1,6 @@
 from typing import Dict
 from dataclasses import dataclass
-from enum import Enum
-from domain.analysis.base.models import StrategyType
-
-class StrategyMixMode(Enum):
-    WEIGHTED = "weighted"
-    VOTING = "voting"
-    ENSEMBLE = "ensemble"
+from domain.analysis.base.models.enums import StrategyType, StrategyMixMode
 
 @dataclass
 class BalancedMixConfig:

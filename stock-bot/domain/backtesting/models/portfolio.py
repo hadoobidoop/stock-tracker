@@ -1,7 +1,8 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional
-from .trade import Trade, TradeStatus, TradeType
+from .trade import Trade
+from domain.analysis.base.models.enums import TradeStatus, TradeType
 
 
 @dataclass

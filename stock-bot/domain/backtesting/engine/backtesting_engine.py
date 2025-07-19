@@ -8,7 +8,7 @@ from infrastructure.db.models.enums import TrendType
 
 # 기존 호환성을 위한 import
 from domain.analysis.service.signal_detection_service import SignalDetectionService
-from domain.analysis.base.models import StrategyType
+from domain.analysis.base.models.enums import StrategyType
 from domain.analysis.strategy.configs.static_strategies import STRATEGY_CONFIGS
 from domain.analysis.strategy.base_strategy import StrategyResult
 
@@ -23,7 +23,8 @@ from domain.analysis.config.signals.prediction_signal_settings import (
 )
 from domain.stock.config.settings import MARKET_INDEX_TICKER
 
-from ..models.trade import Trade, TradeType, TradeStatus
+from ..models.trade import Trade
+from domain.analysis.base.models.enums import TradeType, TradeStatus
 from ..models.portfolio import Portfolio
 from ..models.backtest_result import BacktestResult
 

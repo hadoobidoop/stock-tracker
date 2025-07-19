@@ -5,7 +5,8 @@
 """
 
 from typing import Dict, Any, List
-from domain.analysis.base.models import StrategyType, StrategyConfig, DetectorConfig
+from domain.analysis.base.models import StrategyConfig, DetectorConfig
+from domain.analysis.base.models.enums import StrategyType
 
 
 

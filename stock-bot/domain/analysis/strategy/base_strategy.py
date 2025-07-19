@@ -6,7 +6,8 @@ from datetime import datetime
 
 from domain.analysis.models.trading_signal import TradingSignal, SignalType
 from infrastructure.db.models.enums import TrendType
-from domain.analysis.base.models import StrategyConfig, StrategyType
+from domain.analysis.base.models import StrategyConfig
+from domain.analysis.base.models.enums import StrategyType
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)

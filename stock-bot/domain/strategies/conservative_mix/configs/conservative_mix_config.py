@@ -12,8 +12,7 @@ conservative_mix 전략 조합 config
     - 거짓 신호 최소화, 안정적 거래
     - 각 전략별 근거가 모두 기록되어 설명력/디버깅에 유리
 """
-from domain.analysis.base.models import StrategyType
-from domain.analysis.strategy.configs.strategy_mixes import StrategyMixMode
+from domain.analysis.base.models.enums import StrategyType, StrategyMixMode
 from dataclasses import dataclass
 from typing import Dict
 
