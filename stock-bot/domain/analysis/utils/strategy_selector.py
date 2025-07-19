@@ -12,7 +12,7 @@ from common.config.settings import (
 )
 from domain.analysis.base.models.enums import StrategyType
 # MARKET_CONDITION_STRATEGIES를 strategy_mixes에서 직접 가져옵니다.
-from domain.analysis.strategy.configs.strategy_mixes import MARKET_CONDITION_STRATEGIES
+from domain.strategies.strategy_mixes import MARKET_CONDITION_STRATEGIES
 from domain.analysis.strategy.strategy_factory import StrategyFactory
 from domain.strategies.dynamic_strategies.dynamic_strategy_manager.configs.dynamic_strategies import STRATEGY_DEFINITIONS
 from infrastructure.logging import get_logger

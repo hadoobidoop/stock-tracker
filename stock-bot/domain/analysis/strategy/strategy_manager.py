@@ -14,10 +14,10 @@ from typing import Dict, List, Optional, Any, Tuple
 import pandas as pd
 
 # Import from new centralized location
-from domain.analysis.base.models.enums import StrategyType
+from domain.analysis.base.models.enums import StrategyType, StrategyMixMode
 # Static Strategy Mix 관련 설정 import
-from domain.analysis.strategy.configs.strategy_mixes import (
-    StrategyMixMode, StrategyMixConfig, STRATEGY_MIXES
+from domain.strategies.strategy_mixes import (
+    StrategyMixConfig, STRATEGY_MIXES
 )
 # Individual mix configs are now managed centrally via STRATEGY_MIXES
 from domain.strategies.dynamic_strategies.dynamic_strategy_manager.dynamic_strategy_manager import DynamicStrategyManager
