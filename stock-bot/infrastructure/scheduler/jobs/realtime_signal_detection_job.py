@@ -217,20 +217,31 @@ class RealtimeSignalDetectionJob:
     async def _detect_signals_for_ticker(self, ticker: str, strategy_config: Dict) -> Optional[Dict]:
         """개별 종목에 대한 신호 감지"""
         try:
-            # 1. 주식 데이터 및 지표 조회
-            df_with_indicators = await self.stock_analysis_service.get_stock_data_with_indicators(
-                ticker, period="3mo", interval="1h"
+            # 1. 주식 데이터 조회
+            stock_data_dict = self.stock_analysis_service.get_stock_data_for_analysis(
+                symbols=[ticker], 
+                lookback_days=90,  # 3개월 분량
+                interval="1h"
             )
             
-            if df_with_indicators.empty:
+            df = stock_data_dict.get(ticker)
+            if df is None or df.empty:
                 logger.warning(f"종목 {ticker} 데이터가 없습니다.")
                 return None
             
-            # 2. 시장 추세 분석
+            # 2. 기술적 지표 계산
+            from domain.analysis.utils import calculate_all_indicators
+            df_with_indicators = calculate_all_indicators(df)
+            
+            if df_with_indicators.empty:
+                logger.warning(f"종목 {ticker} 지표 계산에 실패했습니다.")
+                return None
+            
+            # 3. 시장 추세 분석
             market_trend = TrendType.NEUTRAL
             long_term_trend = TrendType.NEUTRAL
             
-            # 3. 전략 타입에 따른 신호 감지
+            # 4. 전략 타입에 따른 신호 감지
             strategy_type = strategy_config.get('type')
             
             if strategy_type == 'static':
@@ -625,3 +636,4 @@ if __name__ == "__main__":
 
     setup_logging()
     realtime_signal_detection_job()
+

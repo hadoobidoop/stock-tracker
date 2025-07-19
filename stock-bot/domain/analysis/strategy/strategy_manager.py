@@ -51,6 +51,56 @@ class StrategyManager:
         # 설정
         self.auto_strategy_selection = False
         self.market_condition_detection = True
+    
+    # ============================================================================
+    # 공통 유틸리티 메서드들 (중복 코드 제거)
+    # ============================================================================
+    
+    def _disable_other_modes(self):
+        """다른 모든 모드를 비활성화합니다."""
+        self.dynamic_manager.current_strategy = None
+        self.current_mix_config = None
+    
+    def _get_analysis_parameters(self, 
+                               df_with_indicators: pd.DataFrame,
+                               ticker: str,
+                               market_trend: TrendType = TrendType.NEUTRAL,
+                               long_term_trend: TrendType = TrendType.NEUTRAL,
+                               daily_extra_indicators: Dict = None) -> Dict[str, Any]:
+        """분석 파라미터를 표준화된 딕셔너리로 반환합니다."""
+        return {
+            'df_with_indicators': df_with_indicators,
+            'ticker': ticker,
+            'market_trend': market_trend,
+            'long_term_trend': long_term_trend,
+            'daily_extra_indicators': daily_extra_indicators
+        }
+    
+    def _create_strategy_info(self, 
+                            strategy_type: StrategyType, 
+                            strategy: BaseStrategy, 
+                            is_current: bool = False,
+                            strategy_class: str = "static") -> Dict[str, Any]:
+        """전략 정보를 표준화된 형태로 생성합니다."""
+        return {
+            "type": strategy_type.value,
+            "name": strategy.get_name(),
+            "description": strategy.get_description(),
+            "is_current": is_current,
+            "strategy_class": strategy_class
+        }
+    
+    def _validate_strategy_initialization(self, strategy: Optional[BaseStrategy], strategy_type: StrategyType) -> bool:
+        """전략 초기화 결과를 검증합니다."""
+        if not strategy or not strategy.initialize():
+            logger.error(f"전략 초기화 실패: {strategy_type.value}")
+            logger.debug(f"[진단] 등록 실패: {strategy_type}, 현재 등록된 전략: {[k.value for k in self.active_strategies.keys()]}")
+            return False
+        return True
+    
+    # ============================================================================
+    # 전략 초기화 및 관리
+    # ============================================================================
         
     def initialize_strategies(self, strategy_types: Optional[List[StrategyType]] = None) -> bool:
         """전략들을 초기화합니다."""
@@ -80,14 +130,11 @@ class StrategyManager:
         for strategy_type in strategy_types:
             try:
                 strategy = StrategyFactory.create_static_strategy(strategy_type)
-                if strategy and strategy.initialize():
+                if self._validate_strategy_initialization(strategy, strategy_type):
                     self.active_strategies[strategy_type] = strategy
                     success_count += 1
                     logger.info(f"정적 전략 초기화 성공: {strategy.get_name()}")
                     logger.debug(f"[진단] 등록 성공: {strategy_type}, 현재 등록된 전략: {[k.value for k in self.active_strategies.keys()]}")
-                else:
-                    logger.error(f"정적 전략 초기화 실패: {strategy_type.value}")
-                    logger.debug(f"[진단] 등록 실패: {strategy_type}, 현재 등록된 전략: {[k.value for k in self.active_strategies.keys()]}")
             except Exception as e:
                 logger.error(f"정적 전략 초기화 실패 {strategy_type}: {e}")
                 logger.debug(f"[진단] 예외 발생: {strategy_type}, 현재 등록된 전략: {[k.value for k in self.active_strategies.keys()]}")
@@ -103,8 +150,7 @@ class StrategyManager:
             self.current_strategy = list(self.active_strategies.values())[0]
         
         # 2. 다른 모든 모드 비활성화
-        self.dynamic_manager.current_strategy = None
-        self.current_mix_config = None
+        self._disable_other_modes()
         
         if self.current_strategy:
             logger.info(f"기본 전략 설정: {self.current_strategy.get_name()} (다른 모든 모드 비활성화)")
@@ -114,8 +160,7 @@ class StrategyManager:
         if strategy is None:
             strategy = StrategyFactory.create_static_strategy(strategy_type)
 
-        if not strategy or not strategy.initialize():
-            logger.error(f"전략 초기화 실패: {strategy_type}")
+        if not self._validate_strategy_initialization(strategy, strategy_type):
             return False
         
         self.active_strategies[strategy_type] = strategy
@@ -129,8 +174,6 @@ class StrategyManager:
         if strategy is None:
             # None으로 설정하면 기본 정적 전략으로 리셋
             self._set_default_strategy()
-            self.dynamic_manager.current_strategy = None
-            self.current_mix_config = None
             logger.info("전략이 None으로 설정되어 기본 전략으로 리셋합니다.")
             return
 
@@ -144,8 +187,7 @@ class StrategyManager:
         elif isinstance(strategy, BaseStrategy):
             # 정적 전략인 경우
             self.current_strategy = strategy
-            self.dynamic_manager.current_strategy = None
-            self.current_mix_config = None
+            self._disable_other_modes()
             logger.info(f"정적 전략 직접 설정: {strategy.get_name()}")
         else:
             logger.error(f"알 수 없는 타입의 전략 객체입니다: {type(strategy)}")
@@ -157,8 +199,7 @@ class StrategyManager:
             return False
         
         self.current_strategy = self.active_strategies[strategy_type]
-        self.dynamic_manager.current_strategy = None  # 동적 전략 비활성화
-        self.current_mix_config = None  # 조합 모드 비활성화
+        self._disable_other_modes()
         
         logger.info(f"전략 교체 완료: {self.current_strategy.get_name()}")
         return True
@@ -171,22 +212,27 @@ class StrategyManager:
         Returns:
             bool: 성공 여부
         """
-        if mix_name == "aggressive_mix":
-            mix_config = AGGRESSIVE_MIX_CONFIG
-        elif mix_name == "conservative_mix":
-            mix_config = CONSERVATIVE_MIX_CONFIG
-        elif mix_name == "balanced_mix":
-            mix_config = BALANCED_MIX_CONFIG
-        else:
-            mix_config = STRATEGY_MIXES.get(mix_name)
+        mix_config = self._get_mix_config(mix_name)
         if not mix_config:
+            logger.warning(f"알 수 없는 믹스 이름: {mix_name}")
             return False
+            
         self.current_mix_config = mix_config
         self.current_strategy = None  # 단일 전략 비활성화
         self.dynamic_manager.current_strategy = None  # 동적 전략 비활성화
 
         logger.info(f"전략 조합 설정 완료: {mix_name}")
         return True
+
+    def _get_mix_config(self, mix_name: str) -> Optional[StrategyMixConfig]:
+        """믹스 설정을 가져옵니다."""
+        mix_configs = {
+            "aggressive_mix": AGGRESSIVE_MIX_CONFIG,
+            "conservative_mix": CONSERVATIVE_MIX_CONFIG,
+            "balanced_mix": BALANCED_MIX_CONFIG
+        }
+        
+        return mix_configs.get(mix_name) or STRATEGY_MIXES.get(mix_name)
 
     def switch_to_dynamic_strategy(self, strategy_name: str) -> bool:
         """동적 전략으로 교체 (DynamicStrategyManager에 위임)"""
@@ -205,6 +251,10 @@ class StrategyManager:
             return self.current_strategy
         return None
 
+    # ============================================================================
+    # 전략 분석 및 실행
+    # ============================================================================
+
     def analyze_with_current_strategy(self, 
                                     df_with_indicators: pd.DataFrame,
                                     ticker: str,
@@ -217,17 +267,18 @@ class StrategyManager:
         if self.auto_strategy_selection:
             self._auto_select_strategy(market_trend, df_with_indicators)
         
+        # 분석 파라미터 표준화
+        analysis_params = self._get_analysis_parameters(
+            df_with_indicators, ticker, market_trend, long_term_trend, daily_extra_indicators
+        )
+        
         # 실제 분석을 수행할 전략 객체 가져오기
         strategy_to_run = self.active_strategy
 
         if strategy_to_run:
-             return strategy_to_run.analyze(
-                df_with_indicators, ticker, market_trend, long_term_trend, daily_extra_indicators
-            )
+             return strategy_to_run.analyze(**analysis_params)
         elif self.current_mix_config:
-            return self._analyze_with_strategy_mix(
-                df_with_indicators, ticker, market_trend, long_term_trend, daily_extra_indicators
-            )
+            return self._analyze_with_strategy_mix(**analysis_params)
         else:
             raise RuntimeError("활성화된 전략이 없습니다.")
     
@@ -238,11 +289,13 @@ class StrategyManager:
                                   long_term_trend: TrendType = TrendType.NEUTRAL,
                                   daily_extra_indicators: Dict = None) -> Dict[StrategyType, StrategyResult]:
         """모든 활성화된 정적 전략으로 분석합니다."""
+        analysis_params = self._get_analysis_parameters(
+            df_with_indicators, ticker, market_trend, long_term_trend, daily_extra_indicators
+        )
+        
         results = {}
         for strategy_type, strategy in self.active_strategies.items():
-            result = strategy.analyze(
-                df_with_indicators, ticker, market_trend, long_term_trend, daily_extra_indicators
-            )
+            result = strategy.analyze(**analysis_params)
             results[strategy_type] = result
         return results
 
@@ -252,13 +305,13 @@ class StrategyManager:
         
         # 정적 전략
         for strategy_type, strategy in self.active_strategies.items():
-            strategies.append({
-                "type": strategy_type.value,
-                "name": strategy.get_name(),
-                "description": strategy.get_description(),
-                "is_current": strategy == self.current_strategy,
-                "strategy_class": "static"
-            })
+            strategy_info = self._create_strategy_info(
+                strategy_type, 
+                strategy, 
+                is_current=(strategy == self.current_strategy),
+                strategy_class="static"
+            )
+            strategies.append(strategy_info)
         
         # 동적 전략 (위임)
         for name in self.dynamic_manager.list_strategies():
@@ -274,6 +327,10 @@ class StrategyManager:
             
         return strategies
     
+    # ============================================================================
+    # 전략 조합 (Strategy Mix) 관련 메서드들
+    # ============================================================================
+    
     def _analyze_with_strategy_mix(self, 
                                  df_with_indicators: pd.DataFrame,
                                  ticker: str,
@@ -282,9 +339,23 @@ class StrategyManager:
                                  daily_extra_indicators: Dict) -> StrategyResult:
         """전략 조합으로 분석합니다."""
         
+        # 각 전략 실행하여 개별 결과 수집
+        individual_results = self._execute_individual_strategies(
+            df_with_indicators, ticker, market_trend, long_term_trend, daily_extra_indicators
+        )
+        
+        # 결과 조합
+        return self._combine_strategy_results(individual_results)
+    
+    def _execute_individual_strategies(self,
+                                     df_with_indicators: pd.DataFrame,
+                                     ticker: str,
+                                     market_trend: TrendType,
+                                     long_term_trend: TrendType,
+                                     daily_extra_indicators: Dict) -> Dict[StrategyType, Tuple[StrategyResult, float]]:
+        """각 전략을 개별적으로 실행하여 결과를 수집합니다."""
         individual_results = {}
         
-        # 각 전략 실행
         for strategy_type, weight in self.current_mix_config.strategies.items():
             if strategy_type in self.active_strategies:
                 strategy = self.active_strategies[strategy_type]
@@ -293,8 +364,7 @@ class StrategyManager:
                 )
                 individual_results[strategy_type] = (result, weight)
         
-        # 결과 조합
-        return self._combine_strategy_results(individual_results)
+        return individual_results
     
     def _combine_strategy_results(self, 
                                 individual_results: Dict[StrategyType, Tuple[StrategyResult, float]]) -> StrategyResult:
@@ -312,66 +382,99 @@ class StrategyManager:
             # SINGLE 모드는 여기 오면 안됨
             return self._weighted_combination(individual_results)
     
+    def _extract_combination_base_data(self, individual_results: Dict[StrategyType, Tuple[StrategyResult, float]]) -> Dict[str, Any]:
+        """조합 메서드들의 공통 데이터를 추출합니다."""
+        all_signals = []
+        strategy_names = []
+        
+        for strategy_type, (result, weight) in individual_results.items():
+            all_signals.extend(result.signals_detected)
+            strategy_names.append(f"{result.strategy_name}({weight:.1f})")
+        
+        return {
+            'all_signals': all_signals,
+            'strategy_names': strategy_names,
+            'total_strategies': len(individual_results)
+        }
+    
+    def _create_combined_result(self,
+                              strategy_name: str,
+                              has_signal: bool,
+                              final_score: float,
+                              all_signals: List,
+                              confidence: float = 0.0,
+                              buy_score: float = 0.0,
+                              sell_score: float = 0.0,
+                              signal=None) -> StrategyResult:
+        """조합된 전략 결과를 생성합니다."""
+        return StrategyResult(
+            strategy_name=strategy_name,
+            strategy_type=StrategyType.BALANCED,  # 조합은 BALANCED로 분류
+            has_signal=has_signal,
+            total_score=final_score,
+            signal_strength="",  # __post_init__에서 자동 계산
+            signals_detected=all_signals,
+            signal=signal,
+            confidence=confidence,
+            buy_score=buy_score,
+            sell_score=sell_score
+        )
+    
     def _weighted_combination(self, 
                             individual_results: Dict[StrategyType, Tuple[StrategyResult, float]]) -> StrategyResult:
         """가중치 기반 조합"""
+        base_data = self._extract_combination_base_data(individual_results)
+        
+        # 가중치 계산
         total_weighted_buy_score = 0.0
         total_weighted_sell_score = 0.0
         total_weight = 0.0
-        all_signals = []
         total_confidence = 0.0
-        
-        strategy_names = []
         
         for strategy_type, (result, weight) in individual_results.items():
             total_weighted_buy_score += result.buy_score * weight
             total_weighted_sell_score += result.sell_score * weight
             total_weight += weight
             total_confidence += result.confidence * weight
-            
-            all_signals.extend(result.signals_detected)
-            strategy_names.append(f"{result.strategy_name}({weight:.1f})")
         
         # 평균 계산
         final_buy_score = total_weighted_buy_score / total_weight if total_weight > 0 else 0
         final_sell_score = total_weighted_sell_score / total_weight if total_weight > 0 else 0
         final_confidence = total_confidence / total_weight if total_weight > 0 else 0
         
-        # 임계값 조정
-        adjusted_threshold = self.current_mix_config.threshold_adjustment * 8.0  # 기본 임계값
-        
-        final_score = 0
-        has_signal = False
-        if final_buy_score > final_sell_score and final_buy_score >= adjusted_threshold:
-            final_score = final_buy_score
-            has_signal = True
-        elif final_sell_score > final_buy_score and final_sell_score >= adjusted_threshold:
-            final_score = final_sell_score
-            has_signal = True
+        # 임계값 조정 및 신호 결정
+        adjusted_threshold = self.current_mix_config.threshold_adjustment * 8.0
+        final_score, has_signal = self._determine_signal_from_scores(
+            final_buy_score, final_sell_score, adjusted_threshold
+        )
 
-        return StrategyResult(
-            strategy_name=f"Mix({'+'.join(strategy_names)})",
-            strategy_type=StrategyType.BALANCED,  # 조합은 BALANCED로 분류
+        return self._create_combined_result(
+            strategy_name=f"Mix({'+'.join(base_data['strategy_names'])})",
             has_signal=has_signal,
-            total_score=final_score,
-            signal_strength="",  # __post_init__에서 자동 계산
-            signals_detected=all_signals,
-            signal=None,  # 필요시 별도 생성
+            final_score=final_score,
+            all_signals=base_data['all_signals'],
             confidence=final_confidence,
             buy_score=final_buy_score,
             sell_score=final_sell_score
         )
     
+    def _determine_signal_from_scores(self, buy_score: float, sell_score: float, threshold: float) -> Tuple[float, bool]:
+        """매수/매도 점수에서 최종 신호와 점수를 결정합니다."""
+        if buy_score > sell_score and buy_score >= threshold:
+            return buy_score, True
+        elif sell_score > buy_score and sell_score >= threshold:
+            return sell_score, True
+        return 0, False
+    
     def _voting_combination(self, 
                           individual_results: Dict[StrategyType, Tuple[StrategyResult, float]]) -> StrategyResult:
         """투표 기반 조합"""
+        base_data = self._extract_combination_base_data(individual_results)
+        
         buy_votes = 0
         sell_votes = 0
         buy_scores = []
         sell_scores = []
-        all_signals = []
-        
-        total_strategies = len(individual_results)
         
         for strategy_type, (result, weight) in individual_results.items():
             if result.has_signal:
@@ -381,9 +484,8 @@ class StrategyManager:
                 else:
                     sell_votes += 1
                     sell_scores.append(result.total_score)
-            all_signals.extend(result.signals_detected)
 
-        majority_threshold = total_strategies / 2
+        majority_threshold = base_data['total_strategies'] / 2
         has_signal = False
         final_score = 0
         signal_type = None
@@ -399,15 +501,12 @@ class StrategyManager:
 
         best_result = max(individual_results.values(), key=lambda x: x[0].total_score)[0]
 
-        return StrategyResult(
-            strategy_name=f"Voting(B:{buy_votes},S:{sell_votes}/{total_strategies})",
-            strategy_type=StrategyType.BALANCED,
+        return self._create_combined_result(
+            strategy_name=f"Voting(B:{buy_votes},S:{sell_votes}/{base_data['total_strategies']})",
             has_signal=has_signal,
-            total_score=final_score,
-            signal_strength="",
-            signals_detected=all_signals,
-            signal=best_result.signal if has_signal else None,
-            confidence=(max(buy_votes, sell_votes) / total_strategies) if has_signal else 0,
+            final_score=final_score,
+            all_signals=base_data['all_signals'],
+            confidence=(max(buy_votes, sell_votes) / base_data['total_strategies']) if has_signal else 0,
             buy_score=sum(buy_scores) / len(buy_scores) if buy_scores else 0,
             sell_score=sum(sell_scores) / len(sell_scores) if sell_scores else 0
         )
@@ -432,41 +531,62 @@ class StrategyManager:
         
         return self._weighted_combination(filtered_results)
     
+    # ============================================================================
+    # 자동 전략 선택 및 성능 관리
+    # ============================================================================
+    
     def _auto_select_strategy(self, market_trend: TrendType, df: pd.DataFrame):
         """시장 상황에 따라 자동으로 전략을 선택합니다."""
         if not self.market_condition_detection:
             return
 
-        # 1. StrategySelector를 통해 시장 상황 분석 및 전략 추천 받기
-        # (이 프로젝트에서는 market_trend를 그대로 market_condition으로 사용)
+        # 1. 시장 상황 분석 및 전략 추천 받기
+        recommended_strategy = self._get_recommended_strategy_for_market(market_trend)
+        if not recommended_strategy:
+            return
+
+        # 2. 추천받은 전략으로 교체
+        self._apply_recommended_strategy(recommended_strategy, market_trend)
+    
+    def _get_recommended_strategy_for_market(self, market_trend: TrendType) -> Optional[Tuple[Any, str]]:
+        """시장 상황에 대한 추천 전략을 가져옵니다."""
         market_condition = market_trend.value  # 예: 'BULLISH'
         
         # StrategySelector의 전역 인스턴스 사용
         from domain.analysis.utils.strategy_selector import strategy_selector
         
         recommended_strategy = strategy_selector.get_recommended_strategy(market_condition)
-
         if not recommended_strategy:
             logger.warning(f"시장 상황 '{market_condition}'에 대한 추천 전략을 찾지 못했습니다.")
-            return
-
+            return None
+        
+        return recommended_strategy
+    
+    def _apply_recommended_strategy(self, recommended_strategy: Tuple[Any, str], market_trend: TrendType):
+        """추천받은 전략을 적용합니다."""
         strategy_id, strategy_class = recommended_strategy
+        market_condition = market_trend.value
 
-        # 2. 추천받은 전략으로 교체
         try:
             if strategy_class == 'static':
-                # 현재 전략과 다른 경우에만 교체
-                if self.current_strategy is None or self.current_strategy.strategy_type != strategy_id:
-                    self.switch_strategy(strategy_id)
-                    logger.info(f"시장 상황 '{market_condition}'에 따라 정적 전략 자동 선택: {strategy_id.value}")
-            
+                self._switch_to_static_if_different(strategy_id, market_condition)
             elif strategy_class == 'dynamic':
-                # 현재 전략과 다른 경우에만 교체
-                if self.dynamic_manager.current_strategy is None or self.dynamic_manager.current_strategy.strategy_name != strategy_id:
-                    self.switch_to_dynamic_strategy(strategy_id)
-                    logger.info(f"시장 상황 '{market_condition}'에 따라 동적 전략 자동 선택: {strategy_id}")
+                self._switch_to_dynamic_if_different(strategy_id, market_condition)
         except Exception as e:
             logger.error(f"추천 전략({strategy_id})으로 교체 중 오류 발생: {e}")
+    
+    def _switch_to_static_if_different(self, strategy_id: StrategyType, market_condition: str):
+        """현재 전략과 다른 경우에만 정적 전략으로 교체합니다."""
+        if self.current_strategy is None or self.current_strategy.strategy_type != strategy_id:
+            self.switch_strategy(strategy_id)
+            logger.info(f"시장 상황 '{market_condition}'에 따라 정적 전략 자동 선택: {strategy_id.value}")
+    
+    def _switch_to_dynamic_if_different(self, strategy_id: str, market_condition: str):
+        """현재 전략과 다른 경우에만 동적 전략으로 교체합니다."""
+        if (self.dynamic_manager.current_strategy is None or 
+            self.dynamic_manager.current_strategy.strategy_name != strategy_id):
+            self.switch_to_dynamic_strategy(strategy_id)
+            logger.info(f"시장 상황 '{market_condition}'에 따라 동적 전략 자동 선택: {strategy_id}")
     
     def get_strategy_performance_summary(self) -> Dict[str, Any]:
         """전략별 성능 요약을 반환합니다."""
@@ -477,18 +597,26 @@ class StrategyManager:
         
         return performance
     
-
-    
-
-    
     def get_current_strategy_info(self) -> Dict[str, Any]:
         """현재 전략 정보를 반환합니다."""
         if self.dynamic_manager.current_strategy:
-            return {"mode": "dynamic", "strategy": self.dynamic_manager.get_strategy_info()}
+            return {
+                "mode": "dynamic", 
+                "strategy": self.dynamic_manager.get_strategy_info()
+            }
         elif self.current_mix_config:
-            return {"mode": "mix", "mix_config": asdict(self.current_mix_config)}
+            return {
+                "mode": "mix", 
+                "mix_config": asdict(self.current_mix_config)
+            }
         elif self.current_strategy:
-            return {"mode": "single", "strategy": {"name": self.current_strategy.get_name(), "type": self.current_strategy.strategy_type.value}}
+            return {
+                "mode": "single", 
+                "strategy": {
+                    "name": self.current_strategy.get_name(), 
+                    "type": self.current_strategy.strategy_type.value
+                }
+            }
         return {"mode": "none"}
     
     def enable_auto_strategy_selection(self, enable: bool = True):
