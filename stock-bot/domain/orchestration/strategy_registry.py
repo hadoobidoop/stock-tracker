@@ -185,7 +185,7 @@ class StrategyRegistry:
 strategy_registry = StrategyRegistry()
 
 
-# 편의 함수들
+# 편의 함수들 - factory.py에서 위임하도록 변경
 def get_available_static_strategies() -> List[str]:
     """사용 가능한 정적 전략 목록"""
     return strategy_registry.get_available_strategies("static")["static"]

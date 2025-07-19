@@ -124,11 +124,6 @@ def get_strategy_specific_config(strategy_type: StrategyType):
         signal_threshold=7.0,
         risk_per_trade=0.02
     )
-    
-    config_creator = config_map.get(strategy_type)
-    if config_creator:
-        return config_creator()
-    return None
 
 class StrategyFactory:
     """
@@ -191,30 +186,11 @@ class StrategyFactory:
             logger.error(f"동적 전략 생성 실패 {strategy_name}: {e}", exc_info=True)
             return None
 
-
     @classmethod
     def create_strategy(cls, strategy_type: StrategyType,
                         config: Optional[StrategyConfig] = None) -> Optional[BaseStrategy]:
         """전략 인스턴스 생성 (하위 호환성 유지)"""
         return cls.create_static_strategy(strategy_type, config)
-
-    @classmethod
-    def get_available_static_strategies(cls) -> list[StrategyType]:
-        """사용 가능한 정적 전략 목록 반환 (레지스트리 위임)"""
-        from domain.orchestration.strategy_registry import strategy_registry
-        return [StrategyType(st) for st in strategy_registry.get_available_strategies("static")["static"]]
-
-    @classmethod
-    def get_available_dynamic(self) -> list[str]:
-        """사용 가능한 동적 전략 목록 반환 (레지스트리 위임)"""
-        from domain.orchestration.strategy_registry import strategy_registry
-        return strategy_registry.get_available_strategies("dynamic")["dynamic"]
-
-    @classmethod
-    def is_strategy_supported(cls, strategy_identifier: str) -> tuple[bool, str]:
-        """전략 지원 여부 확인 (레지스트리 위임)"""
-        from domain.orchestration.strategy_registry import strategy_registry
-        return strategy_registry.is_strategy_supported(strategy_identifier)
 
     @classmethod
     def create_multiple_strategies(cls,

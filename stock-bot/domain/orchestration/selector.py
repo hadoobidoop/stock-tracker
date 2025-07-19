@@ -40,7 +40,9 @@ class StrategySelector:
         
         # 정적 전략 로드
         if strategy_availability["static_strategies"]["enabled"]:
-            for strategy_type in StrategyFactory.get_available_static_strategies():
+            from domain.orchestration.strategy_registry import get_available_static_strategies
+            for strategy_name in get_available_static_strategies():
+                strategy_type = StrategyType(strategy_name.upper())
                 if strategy_type != StrategyType.DYNAMIC_WEIGHT:  # 동적 전략 제외
                     try:
                         config = StrategyFactory.create_static_strategy(strategy_type)

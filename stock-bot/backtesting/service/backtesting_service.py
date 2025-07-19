@@ -31,8 +31,8 @@ class BacktestingService:
         """단일 전략을 심층 분석합니다."""
         logger.info(f"Running deep-dive analysis for single strategy: {strategy_name}")
 
-        from domain.signals.strategy.strategy_factory import StrategyFactory
-        is_supported, strategy_class = StrategyFactory.is_strategy_supported(strategy_name)
+        from domain.orchestration.strategy_registry import is_strategy_supported
+        is_supported, strategy_class = is_strategy_supported(strategy_name)
 
         if not is_supported:
             raise ValueError(f"Strategy '{strategy_name}' is not supported or not found.")
@@ -52,10 +52,10 @@ class BacktestingService:
         logger.info(f"Comparing performance for strategies: {', '.join(strategies)}")
         
         all_results = {}
-        from domain.signals.strategy.strategy_factory import StrategyFactory
+        from domain.orchestration.strategy_registry import is_strategy_supported
 
         for name in strategies:
-            is_supported, strategy_class = StrategyFactory.is_strategy_supported(name)
+            is_supported, strategy_class = is_strategy_supported(name)
             if not is_supported:
                 logger.warning(f"Strategy '{name}' is not supported and will be skipped in comparison.")
                 continue
