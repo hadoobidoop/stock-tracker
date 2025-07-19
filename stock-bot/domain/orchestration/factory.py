@@ -200,33 +200,21 @@ class StrategyFactory:
 
     @classmethod
     def get_available_static_strategies(cls) -> list[StrategyType]:
-        """사용 가능한 정적 전략 목록 반환"""
-        return list(STRATEGY_CLASS_MAP.keys())
+        """사용 가능한 정적 전략 목록 반환 (레지스트리 위임)"""
+        from domain.orchestration.strategy_registry import strategy_registry
+        return [StrategyType(st) for st in strategy_registry.get_available_strategies("static")["static"]]
 
     @classmethod
     def get_available_dynamic(self) -> list[str]:
-        """사용 가능한 동적 전략 목록 반환"""
-        try:
-            return list(get_all_strategies().keys())
-        except ImportError:
-            return []
+        """사용 가능한 동적 전략 목록 반환 (레지스트리 위임)"""
+        from domain.orchestration.strategy_registry import strategy_registry
+        return strategy_registry.get_available_strategies("dynamic")["dynamic"]
 
     @classmethod
     def is_strategy_supported(cls, strategy_identifier: str) -> tuple[bool, str]:
-        """전략 지원 여부 확인"""
-        # 정적 전략 확인
-        try:
-            strategy_type = StrategyType(strategy_identifier.lower())
-            if strategy_type in STRATEGY_CLASS_MAP:
-                return True, "static"
-        except ValueError:
-            pass
-
-        # 동적 전략 확인
-        if get_strategy_definition(strategy_identifier) is not None:
-            return True, "dynamic"
-
-        return False, "none"
+        """전략 지원 여부 확인 (레지스트리 위임)"""
+        from domain.orchestration.strategy_registry import strategy_registry
+        return strategy_registry.is_strategy_supported(strategy_identifier)
 
     @classmethod
     def create_multiple_strategies(cls,

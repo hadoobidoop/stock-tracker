@@ -111,41 +111,14 @@ class StrategySelector:
         return config
     
     def get_static_strategy_config(self, strategy_name: str) -> Optional[Dict[str, Any]]:
-        """정적 전략 설정 조회"""
-        # 대소문자 구분 없이 검색
-        strategy_name_normalized = strategy_name.upper()
-        strategy_info = self.available_strategies["static"].get(strategy_name_normalized)
-        
-        # 만약 대문자로 찾을 수 없으면 소문자로도 시도
-        if not strategy_info:
-            strategy_name_normalized = strategy_name.lower()
-            strategy_info = self.available_strategies["static"].get(strategy_name_normalized)
-        
-        if strategy_info and strategy_info["available"]:
-            return {
-                "type": "static",
-                "strategy_type": strategy_info["type"],
-                "config": strategy_info["config"],
-                "name": strategy_info["config"].name,
-                "description": strategy_info["config"].description
-            }
-        return None
+        """정적 전략 설정 조회 (레지스트리 위임)"""
+        from domain.orchestration.strategy_registry import strategy_registry
+        return strategy_registry.get_strategy_config(strategy_name, "static")
     
     def get_dynamic_strategy_config(self, strategy_name: str) -> Optional[Dict[str, Any]]:
-        """동적 전략 설정 조회"""
-        strategy_info = self.available_strategies["dynamic"].get(strategy_name)
-        if strategy_info and strategy_info["available"]:
-            config = strategy_info["config"]
-            return {
-                "type": "dynamic",
-                "strategy_name": strategy_name,
-                "config": config,
-                "name": strategy_name.replace('_', ' ').title(),
-                "description": config.get("description", "동적 전략"),
-                "signal_threshold": config.get("signal_threshold", 8.0),
-                "risk_per_trade": config.get("risk_per_trade", 0.02)
-            }
-        return None
+        """동적 전략 설정 조회 (레지스트리 위임)"""
+        from domain.orchestration.strategy_registry import strategy_registry
+        return strategy_registry.get_strategy_config(strategy_name, "dynamic")
     
     def get_strategy_mix_config(self, mix_name: str) -> Optional[Dict[str, Any]]:
         """Static Strategy Mix 설정 조회"""

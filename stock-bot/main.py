@@ -25,7 +25,7 @@ def parse_arguments():
     
     # 동적으로 사용 가능한 전략 목록 가져오기
     try:
-        from domain.signals.strategy.strategy_registry import get_available_static_strategies
+        from domain.orchestration.strategy_registry import get_available_static_strategies
         available_strategies = [st.lower() for st in get_available_static_strategies()]
     except ImportError:
         # 폴백: 기본 전략들
