@@ -44,16 +44,30 @@ class StrategySelector:
         if strategy_availability["static_strategies"]["enabled"]:
             # Use strategy_registry directly
             for strategy_name in strategy_registry.get_available_strategies("static")["static"]:
-                strategy_type = StrategyType(strategy_name.upper())
+                strategy_type = StrategyType(strategy_name.lower())
                 if strategy_type != StrategyType.DYNAMIC_WEIGHT:  # 동적 전략 제외
                     try:
-                        config = StrategyFactory.create_static_strategy(strategy_type)
-                        if config and config.config:
-                            strategies["static"][strategy_type.value] = {
-                                "config": config.config,
-                                "type": strategy_type,
-                                "available": True
-                            }
+                        strategy_instance = StrategyFactory.create_static_strategy(strategy_type)
+                        if strategy_instance:
+                            # YAML 전략인지 Python 전략인지 구분
+                            if hasattr(strategy_instance, 'config') and hasattr(strategy_instance, 'strategy_name'):
+                                # YAML 전략
+                                strategies["static"][strategy_type.value] = {
+                                    "config": strategy_instance.config,  # YAML config
+                                    "strategy_instance": strategy_instance,
+                                    "type": strategy_type,
+                                    "available": True,
+                                    "is_yaml": True
+                                }
+                            elif hasattr(strategy_instance, 'config'):
+                                # Python 전략
+                                strategies["static"][strategy_type.value] = {
+                                    "config": strategy_instance.config,
+                                    "strategy_instance": strategy_instance,
+                                    "type": strategy_type,
+                                    "available": True,
+                                    "is_yaml": False
+                                }
                     except Exception as e:
                         logger.warning(f"Failed to load strategy {strategy_type}: {e}")
         
@@ -155,12 +169,27 @@ class StrategySelector:
         # 정적 전략
         for name, info in self.available_strategies["static"].items():
             if info["available"]:
+                config = info["config"]
+                is_yaml = info.get("is_yaml", False)
+                
+                # YAML 전략인지 Python 전략인지 구분
+                if is_yaml:  # YAML 전략
+                    display_name = config.strategy_info.get('name', name)
+                    description = config.strategy_info.get('description', f"{name} 전략")
+                    signal_threshold = config.signal_config.get('threshold', 8.0)
+                    risk_per_trade = config.risk_management.get('risk_per_trade', 0.02)
+                else:  # Python 전략
+                    display_name = config.name if hasattr(config, 'name') else name
+                    description = config.description if hasattr(config, 'description') else f"{name} 전략"
+                    signal_threshold = config.signal_threshold if hasattr(config, 'signal_threshold') else 8.0
+                    risk_per_trade = config.risk_per_trade if hasattr(config, 'risk_per_trade') else 0.02
+                    
                 result["static_strategies"].append({
                     "name": name,
-                    "display_name": info["config"].name,
-                    "description": info["config"].description,
-                    "signal_threshold": info["config"].signal_threshold,
-                    "risk_per_trade": info["config"].risk_per_trade
+                    "display_name": display_name,
+                    "description": description,
+                    "signal_threshold": signal_threshold,
+                    "risk_per_trade": risk_per_trade
                 })
         
         # 동적 전략

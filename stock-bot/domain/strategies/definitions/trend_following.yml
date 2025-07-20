@@ -1,0 +1,172 @@
+# TREND FOLLOWING 전략 정의
+# SMA, MACD, ADX를 활용한 추세 추종 전략
+# 확실한 추세가 형성된 시점에서 진입하여 추세를 따라가는 전략
+
+# 전략 기본 정보
+strategy_info:
+  name: "추세 추종 전략"
+  description: "SMA, MACD, ADX를 활용한 추세 추종 전략"
+  version: "1.0.0"
+  author: "Stock-Bot System"
+  created_date: "2025-01-20"
+
+# 전략 신호 설정
+signal_config:
+  threshold: 7.0                      # 신호 발생 기준점
+  score_multiplier: 1.0               # 점수 조정 배수
+  
+  # 시장 상황별 배수
+  market_multipliers:
+    long_term_bullish: 1.2            # 장기 상승장에서 유리
+    long_term_bearish: 0.9            # 장기 하락장에서 보수적
+
+# 포지션 관리 설정
+position_management:
+  max_positions: 4                    # 추세 추종 - 적극적 포지션
+  position_hold_hours: 168            # 7일 (168시간) 보유
+
+# 리스크 관리 설정
+risk_management:
+  risk_per_trade: 0.02                # 거래당 리스크 비율 (2%)
+  stop_loss_percentage: 6.0           # 손절 비율 (6%)
+  take_profit_percentage: 18.0        # 익절 비율 (18%) - 추세 추종 특성상 높게
+
+# 신호 감지기 설정
+detectors:
+  # SMA 감지기 (추세 추종 핵심)
+  sma:
+    enabled: true
+    weight: 4.0
+    parameters:
+      short_period: 20                # 단기 이평선 기간
+      long_period: 50                 # 장기 이평선 기간
+      adx_threshold: 25               # 기본 20에서 더 엄격하게
+      continuation_weight: 0.6        # 기본 0.4에서 더 적극적으로
+      trend_confirmation_required: true # 추세 확인 필요
+
+  # MACD 감지기 (추세 신호 확인)
+  macd:
+    enabled: true
+    weight: 4.0
+    parameters:
+      fast_period: 12                 # 빠른 EMA 기간
+      slow_period: 26                 # 느린 EMA 기간
+      signal_period: 9                # 신호선 기간
+      signal_sensitivity: 1.2         # 기본 1.0에서 더 민감하게
+      histogram_threshold: 0.0        # 히스토그램 임계값
+      trend_confirmation_required: true # 추세 확인 필요
+
+  # ADX 감지기 (추세 강도 확인)
+  adx:
+    enabled: true
+    weight: 3.0
+    parameters:
+      adx_threshold: 25               # ADX 임계값 (기본값)
+      period: 14                      # ADX 계산 기간
+      trend_strength_required: true   # 추세 강도 확인 필요
+
+  # 거래량 감지기 (추세 확인용)
+  volume:
+    enabled: true
+    weight: 2.0
+    parameters:
+      volume_threshold: 1.8           # 기본 2.0에서 더 낮게
+      volume_ma_period: 20            # 거래량 이평선 기간
+      volume_multiplier: 1.5          # 거래량 배수
+      price_volume_correlation: 0.7   # 가격-거래량 상관관계
+      trend_confirmation_required: true # 추세 확인 필요
+
+# 규칙 조합 (추세 추종 전략 특화)
+trading_rules:
+  # 매수 규칙들
+  buy_conditions:
+    - rule: "trend_sma_golden_cross"         # SMA 골든 크로스
+      weight: 0.35                           # 가장 중요한 신호
+      required: true                         # 필수 조건
+      
+    - rule: "trend_macd_bullish_cross"       # MACD 상승 크로스
+      weight: 0.3
+      required: false
+      
+    - rule: "trend_adx_strong"               # ADX 강한 추세
+      weight: 0.25
+      required: true                         # 필수 조건 (추세 강도)
+      
+    - rule: "volume_above_average"           # 평균 이상 거래량
+      weight: 0.1
+      required: false
+
+  # 매도 규칙들
+  sell_conditions:
+    - rule: "trend_sma_death_cross"          # SMA 데드 크로스
+      weight: 0.4                            # 가장 중요한 신호
+      required: false
+      
+    - rule: "trend_macd_bearish_cross"       # MACD 하락 크로스
+      weight: 0.3
+      required: false
+      
+    - rule: "trend_adx_weak"                 # ADX 약한 추세 (추세 종료)
+      weight: 0.2
+      required: false
+      
+    - rule: "volume_below_average"           # 평균 이하 거래량
+      weight: 0.1
+      required: false
+
+# 시장 필터 설정 (추세 추종용)
+market_filters:
+  # 최소 거래량 필터
+  min_volume:
+    enabled: true
+    value: 2000000                    # 최소 일간 거래량 (유동성 중시)
+
+  # 가격 범위 필터
+  price_range:
+    enabled: true
+    min_price: 15.0                   # 최소 주가
+    max_price: 2000.0                 # 최대 주가
+
+  # 변동성 필터 (추세에 적합한 변동성)
+  volatility:
+    enabled: true
+    min_atr_ratio: 0.025              # 최소 ATR 비율
+    max_atr_ratio: 0.15               # 최대 ATR 비율
+
+  # 추세 정렬 필터 (추세 추종 핵심)
+  trend_alignment:
+    enabled: true                     # 활성화 (시장/장기 추세 일치 확인)
+    require_market_trend: true        # 시장 추세 일치 필요
+    require_long_term_trend: true     # 장기 추세 일치 필요
+
+# 전략 모드별 설정
+mode_overrides:
+  # 백테스팅 모드 설정
+  backtest:
+    position_management:
+      max_positions: 6                # 백테스팅에서 더 많은 포지션
+    signal_config:
+      threshold: 6.5                  # 백테스팅에서 더 민감하게
+    market_filters:
+      trend_alignment:
+        enabled: false                # 백테스팅에서 추세 정렬 완화
+    
+  # 실시간 거래 모드 설정  
+  live:
+    risk_management:
+      risk_per_trade: 0.015           # 실시간에서 더 보수적
+    position_management:
+      max_positions: 3                # 실시간에서 포지션 제한
+    signal_config:
+      threshold: 7.5                  # 실시간에서 더 신중하게
+
+# 메타데이터
+metadata:
+  tags: ["trend-following", "sma-focused", "trend-confirmation", "long-term"]
+  compatible_timeframes: ["1d", "1w", "1M"]           # 장기 시간프레임
+  recommended_symbols: ["stocks", "etf", "indices"]   # 권장 심볼 유형
+  min_capital: 50000                                  # 최소 권장 자본 (높음)
+  max_daily_trades: 3                                 # 일일 최대 거래 수 (장기 특성)
+  strategy_type: "pure_trend_following"               # 전략 분류
+  optimal_market_conditions: ["strong_trending", "bullish", "bearish"] # 최적 시장 상황
+  risk_level: "medium"                                # 리스크 수준

@@ -18,6 +18,9 @@ from domain.strategies.single.momentum.configs.momentum_config import MomentumSt
 from domain.strategies.single.scalping.configs.scalping_config import ScalpingStrategyConfig
 from domain.strategies.strategy_config import StrategyConfig
 
+# YAML 전략 팩토리 import 추가
+from domain.strategies.yaml_factory import YAMLStrategyFactory
+
 # Removed dependency on static_strategies.py - now using individual config classes
 
 # Import legacy constants for configs not yet standardized
@@ -128,12 +131,43 @@ def get_strategy_specific_config(strategy_type: StrategyType):
 class StrategyFactory:
     """
     통합 전략 팩토리 - 모든 정적 전략과 동적 전략 지원
+    YAML 기반 전략과 기존 Python 전략을 모두 지원합니다.
     """
+    
+    # YAML 전략 팩토리 인스턴스 (클래스 변수)
+    _yaml_factory = None
+    
+    @classmethod
+    def _get_yaml_factory(cls) -> YAMLStrategyFactory:
+        """YAML 팩토리 인스턴스를 지연 생성하여 반환합니다."""
+        if cls._yaml_factory is None:
+            cls._yaml_factory = YAMLStrategyFactory()
+        return cls._yaml_factory
 
     @classmethod
     def create_static_strategy(cls, strategy_type: StrategyType,
                                config: Optional[StrategyConfig] = None) -> Optional[BaseStrategy]:
-        """정적 전략 인스턴스 생성"""
+        """정적 전략 인스턴스 생성 (YAML 우선, 기존 Python 클래스 폴백)"""
+        
+        # 1. YAML 전략 우선 시도
+        strategy_name = strategy_type.value.lower()
+        yaml_factory = cls._get_yaml_factory()
+        
+        try:
+            logger.info(f"YAML 전략 생성 시도: {strategy_name}")
+            yaml_strategy = yaml_factory.create_strategy(
+                strategy_name=strategy_name,
+                strategy_type=strategy_type,
+                use_yaml=True
+            )
+            if yaml_strategy:
+                logger.info(f"✅ YAML 전략 생성 성공: {strategy_name}")
+                return yaml_strategy
+        except Exception as e:
+            logger.info(f"YAML 전략 생성 실패 ({strategy_name}): {e}")
+            logger.info("기존 Python 전략으로 폴백합니다.")
+
+        # 2. 기존 Python 클래스 폴백
         if config is None:
             # 전략별 특정 config 우선 사용
             config = get_strategy_specific_config(strategy_type)
@@ -147,6 +181,8 @@ class StrategyFactory:
             if strategy_class is None:
                 logger.error(f"지원하지 않는 전략 타입입니다: {strategy_type.value}")
                 return None
+            
+            logger.info(f"🔄 Python 전략 생성: {strategy_type.value}")
             return strategy_class(strategy_type, config)
         except Exception as e:
             logger.error(f"정적 전략 생성 실패 {strategy_type.value}: {e}")

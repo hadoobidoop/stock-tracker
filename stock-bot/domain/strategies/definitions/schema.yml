@@ -1,0 +1,145 @@
+# YAML 전략 정의 스키마
+# 이 파일은 전략 YAML 파일들이 따라야 할 표준 구조를 정의합니다.
+
+# 전략 기본 정보
+strategy_info:
+  name: "전략 이름"                     # 전략 표시명
+  description: "전략 설명"              # 전략에 대한 상세 설명
+  version: "1.0.0"                     # 전략 버전
+  author: "작성자"                     # 전략 작성자
+  created_date: "2025-01-01"          # 작성일
+
+# 전략 신호 설정
+signal_config:
+  threshold: 12.0                      # 신호 발생 임계값 (기본: 8.0)
+  score_multiplier: 0.8                # 점수 조정 배수 (기본: 1.0)
+  
+  # 시장 상황별 배수
+  market_multipliers:
+    long_term_bullish: 1.1             # 장기 상승장 배수
+    long_term_bearish: 1.1             # 장기 하락장 배수
+
+# 포지션 관리 설정
+position_management:
+  max_positions: 3                     # 최대 동시 포지션 수
+  position_hold_hours: 672             # 포지션 보유 시간 (시간 단위)
+
+# 리스크 관리 설정
+risk_management:
+  risk_per_trade: 0.01                 # 거래당 리스크 비율 (1%)
+  stop_loss_percentage: 5.0            # 손절 비율 (5%)
+  take_profit_percentage: 12.0         # 익절 비율 (12%)
+
+# 신호 감지기 설정
+detectors:
+  # SMA (Simple Moving Average) 감지기
+  sma:
+    enabled: true                      # 감지기 활성화 여부
+    weight: 6.0                        # 가중치
+    parameters:                        # 감지기별 파라미터
+      short_period: 20                 # 단기 이평선 기간
+      long_period: 50                  # 장기 이평선 기간
+      adx_threshold: 25                # ADX 임계값
+      continuation_weight: 0.4         # 지속 가중치
+      trend_confirmation_required: true # 추세 확인 필요 여부
+
+  # MACD 감지기
+  macd:
+    enabled: true
+    weight: 6.0
+    parameters:
+      fast_period: 12                  # 빠른 EMA 기간
+      slow_period: 26                  # 느린 EMA 기간
+      signal_period: 9                 # 신호선 기간
+      histogram_threshold: 0.0         # 히스토그램 임계값
+
+  # Volume 감지기
+  volume:
+    enabled: true
+    weight: 5.0
+    parameters:
+      volume_ma_period: 20             # 거래량 이평선 기간
+      volume_multiplier: 1.5           # 거래량 배수
+      price_volume_correlation: 0.7    # 가격-거래량 상관관계
+
+  # Composite 감지기 (복합 지표)
+  composite:
+    enabled: true
+    weight: 8.0
+    parameters:
+      use_momentum_consensus: true     # 모멘텀 컨센서스 사용
+      use_trend_analysis: true         # 추세 분석 사용
+      use_volume_analysis: true        # 거래량 분석 사용
+      consensus_threshold: 0.6         # 컨센서스 임계값
+
+# 규칙 조합 (Phase 2에서 만든 rules 활용)
+trading_rules:
+  # 매수 규칙들
+  buy_conditions:
+    - rule: "momentum_oversold_consensus"     # rules 패키지의 규칙명
+      weight: 0.3                            # 규칙 가중치
+      required: true                         # 필수 조건 여부
+      
+    - rule: "trend_sma_golden_cross"
+      weight: 0.3
+      required: false
+      
+    - rule: "volume_above_average"
+      weight: 0.2
+      required: false
+      
+    - rule: "volatility_low_bb_squeeze"
+      weight: 0.2
+      required: false
+
+  # 매도 규칙들
+  sell_conditions:
+    - rule: "momentum_overbought_rsi"
+      weight: 0.4
+      required: false
+      
+    - rule: "trend_sma_death_cross"
+      weight: 0.3
+      required: false
+      
+    - rule: "volume_below_average"
+      weight: 0.3
+      required: false
+
+# 시장 필터 설정
+market_filters:
+  # 최소 거래량 필터
+  min_volume:
+    enabled: true
+    value: 1000000                     # 최소 일간 거래량
+
+  # 가격 범위 필터
+  price_range:
+    enabled: true
+    min_price: 5.0                     # 최소 주가
+    max_price: 1000.0                  # 최대 주가
+
+  # 변동성 필터
+  volatility:
+    enabled: true
+    min_atr_ratio: 0.02                # 최소 ATR 비율
+    max_atr_ratio: 0.10                # 최대 ATR 비율
+
+# 전략 모드별 설정 (옵션)
+mode_overrides:
+  # 백테스팅 모드 설정
+  backtest:
+    position_management:
+      max_positions: 5                 # 백테스팅에서는 더 많은 포지션 허용
+    
+  # 실시간 거래 모드 설정  
+  live:
+    risk_management:
+      risk_per_trade: 0.005            # 실시간에서는 더 보수적
+
+# 메타데이터
+metadata:
+  tags: ["conservative", "safe", "low-risk"]  # 전략 태그
+  compatible_timeframes: ["1d", "4h"]         # 호환 가능한 시간프레임
+  recommended_symbols: ["stocks", "etf"]      # 권장 심볼 유형
+  min_capital: 10000                          # 최소 권장 자본

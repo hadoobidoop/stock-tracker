@@ -1,0 +1,165 @@
+# SWING 전략 정의
+# 중기 추세 변화를 포착하는 스윙 트레이딩 전략
+# 수일~수주 기간의 추세 전환/반전 구간에서 진입/청산
+
+# 전략 기본 정보
+strategy_info:
+  name: "스윙 전략"
+  description: "중기 추세 변화를 포착하는 스윙 트레이딩 전략"
+  version: "1.0.0"
+  author: "Stock-Bot System"
+  created_date: "2025-01-20"
+
+# 전략 신호 설정
+signal_config:
+  threshold: 7.0                      # 중간 수준의 임계값 (신중한 신호 감지)
+  score_multiplier: 1.0               # 점수 조정 배수
+  
+  # 시장 상황별 배수
+  market_multipliers:
+    long_term_bullish: 1.1            # 장기 상승장에서 약간 유리
+    long_term_bearish: 1.0            # 장기 하락장에서 중립
+
+# 포지션 관리 설정
+position_management:
+  max_positions: 3                    # 중기 전략 - 소수 집중 포지션
+  position_hold_hours: 336            # 14일 (336시간) 보유
+
+# 리스크 관리 설정
+risk_management:
+  risk_per_trade: 0.025               # 거래당 리스크 비율 (2.5%)
+  stop_loss_percentage: 8.0           # 손절 비율 (8%)
+  take_profit_percentage: 15.0        # 익절 비율 (15%)
+
+# 신호 감지기 설정
+detectors:
+  # SMA 감지기 (추세 확인 중심)
+  sma:
+    enabled: true
+    weight: 5.0
+    parameters:
+      short_period: 20                # 단기 이평선 기간
+      long_period: 50                 # 장기 이평선 기간
+      adx_threshold: 20               # ADX 임계값 (기본값 유지)
+      continuation_weight: 0.5        # 기본 0.4에서 더 보수적으로
+      trend_confirmation_required: true # 추세 확인 필요
+
+  # MACD 감지기 (스윙 신호 핵심)
+  macd:
+    enabled: true
+    weight: 6.0                       # 가장 높은 가중치
+    parameters:
+      fast_period: 12                 # 빠른 EMA 기간
+      slow_period: 26                 # 느린 EMA 기간
+      signal_period: 9                # 신호선 기간
+      signal_sensitivity: 1.0         # 기본값 유지 (안정적)
+      histogram_threshold: 0.0        # 히스토그램 임계값
+      trend_confirmation_required: true # 추세 확인 필요
+
+  # RSI 감지기 (과매수/과매도 확인)
+  rsi:
+    enabled: true
+    weight: 4.0
+    parameters:
+      oversold_threshold: 35          # 과매도 임계값 (기본값)
+      overbought_threshold: 65        # 과매수 임계값 (기본값)
+      period: 14                      # RSI 계산 기간
+      trend_confirmation_required: true # 추세 확인 필요
+
+  # ADX 감지기 (추세 강도 확인)
+  adx:
+    enabled: true
+    weight: 4.0
+    parameters:
+      adx_threshold: 25               # ADX 임계값 (기본값)
+      period: 14                      # ADX 계산 기간
+      trend_strength_required: true   # 추세 강도 확인 필요
+
+# 규칙 조합 (스윙 전략 특화)
+trading_rules:
+  # 매수 규칙들
+  buy_conditions:
+    - rule: "trend_sma_golden_cross"         # SMA 골든 크로스
+      weight: 0.3
+      required: false
+      
+    - rule: "trend_macd_bullish_cross"       # MACD 상승 크로스
+      weight: 0.35                           # 가장 중요한 신호
+      required: true                         # 필수 조건
+      
+    - rule: "momentum_rsi_oversold"          # RSI 과매도
+      weight: 0.2
+      required: false
+      
+    - rule: "trend_adx_strong"               # ADX 강한 추세
+      weight: 0.15
+      required: false
+
+  # 매도 규칙들
+  sell_conditions:
+    - rule: "trend_sma_death_cross"          # SMA 데드 크로스
+      weight: 0.3
+      required: false
+      
+    - rule: "trend_macd_bearish_cross"       # MACD 하락 크로스
+      weight: 0.4                            # 가장 중요한 신호
+      required: false
+      
+    - rule: "momentum_rsi_overbought"        # RSI 과매수
+      weight: 0.2
+      required: false
+      
+    - rule: "trend_adx_weak"                 # ADX 약한 추세 (추세 종료)
+      weight: 0.1
+      required: false
+
+# 시장 필터 설정 (스윙용)
+market_filters:
+  # 최소 거래량 필터
+  min_volume:
+    enabled: true
+    value: 1000000                    # 최소 일간 거래량
+
+  # 가격 범위 필터
+  price_range:
+    enabled: true
+    min_price: 10.0                   # 최소 주가
+    max_price: 1000.0                 # 최대 주가
+
+  # 변동성 필터 (스윙에 적합한 변동성)
+  volatility:
+    enabled: true
+    min_atr_ratio: 0.02               # 최소 ATR 비율
+    max_atr_ratio: 0.12               # 최대 ATR 비율
+
+  # 추세 정렬 필터
+  trend_alignment:
+    enabled: false                    # 비활성화 (다양한 시장 상황 대응)
+
+# 전략 모드별 설정
+mode_overrides:
+  # 백테스팅 모드 설정
+  backtest:
+    position_management:
+      max_positions: 5                # 백테스팅에서 더 많은 포지션
+    signal_config:
+      threshold: 6.5                  # 백테스팅에서 더 민감하게
+    
+  # 실시간 거래 모드 설정  
+  live:
+    risk_management:
+      risk_per_trade: 0.02            # 실시간에서 더 보수적
+    position_management:
+      max_positions: 2                # 실시간에서 포지션 제한
+    signal_config:
+      threshold: 7.5                  # 실시간에서 더 신중하게
+
+# 메타데이터
+metadata:
+  tags: ["swing", "medium-term", "trend-following", "macd-focused"]
+  compatible_timeframes: ["4h", "1d", "1w"]           # 중기 시간프레임
+  recommended_symbols: ["stocks", "etf", "crypto"]    # 권장 심볼 유형
+  min_capital: 20000                                  # 최소 권장 자본
+  max_daily_trades: 5                                 # 일일 최대 거래 수 (중기 특성)
+  strategy_type: "trend_momentum"                     # 전략 분류
+  optimal_market_conditions: ["trending", "transitional"] # 최적 시장 상황

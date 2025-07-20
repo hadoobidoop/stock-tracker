@@ -1,0 +1,175 @@
+# MULTI TIMEFRAME 전략 정의
+# 다중 시간대 확인 전략 - 장기 추세(일봉)와 단기(시간봉) 진입 신호를 함께 확인
+# 여러 시간대에서 신호가 일치할 때만 진입하여 신뢰도를 높이는 전략
+
+# 전략 기본 정보
+strategy_info:
+  name: "다중 시간대 확인 전략"
+  description: "장기 추세(일봉)와 단기(시간봉) 진입 신호를 함께 확인하는 전략"
+  version: "1.0.0"
+  author: "Stock-Bot System"
+  created_date: "2025-01-20"
+
+# 전략 신호 설정
+signal_config:
+  threshold: 9.0                      # 높은 임계값 (신뢰도 높은 신호만)
+  score_multiplier: 1.0               # 점수 조정 배수
+  
+  # 시장 상황별 배수
+  market_multipliers:
+    long_term_bullish: 1.2            # 장기 상승장에서 유리
+    long_term_bearish: 1.0            # 장기 하락장에서 중립
+
+# 포지션 관리 설정
+position_management:
+  max_positions: 3                    # 신중한 포지션 관리
+  position_hold_hours: 504            # 21일 (504시간) 보유 - 장기
+
+# 리스크 관리 설정
+risk_management:
+  risk_per_trade: 0.02                # 거래당 리스크 비율 (2%)
+  stop_loss_percentage: 7.0           # 손절 비율 (7%)
+  take_profit_percentage: 20.0        # 익절 비율 (20%) - 장기 보유 특성
+
+# 신호 감지기 설정
+detectors:
+  # MACD 감지기 (다중 시간대)
+  macd:
+    enabled: true
+    weight: 3.0
+    parameters:
+      fast_period: 12                 # 빠른 EMA 기간
+      slow_period: 26                 # 느린 EMA 기간
+      signal_period: 9                # 신호선 기간
+      signal_sensitivity: 1.0         # 기본값 유지 (안정적)
+      histogram_threshold: 0.0        # 히스토그램 임계값
+      multi_timeframe_confirmation_required: true # 다중 시간대 확인 필요
+
+  # Stochastic 감지기 (다중 시간대)
+  stoch:
+    enabled: true
+    weight: 2.5
+    parameters:
+      k_period: 14                    # %K 기간
+      d_period: 3                     # %D 기간
+      oversold_threshold: 25          # 과매도 임계값
+      overbought_threshold: 75        # 과매수 임계값
+      multi_timeframe_confirmation_required: true # 다중 시간대 확인 필요
+
+  # RSI 감지기 (다중 시간대)
+  rsi:
+    enabled: true
+    weight: 2.5
+    parameters:
+      period: 14                      # RSI 계산 기간
+      oversold_threshold: 35          # 과매도 임계값
+      overbought_threshold: 65        # 과매수 임계값
+      multi_timeframe_confirmation_required: true # 다중 시간대 확인 필요
+
+  # Composite 감지기 (다중 시간대 통합)
+  composite:
+    enabled: true
+    weight: 7.0                       # 가장 높은 가중치
+    parameters:
+      use_momentum_consensus: true     # 모멘텀 컨센서스 사용
+      use_trend_analysis: true         # 추세 분석 사용
+      use_volume_analysis: true        # 거래량 분석 사용
+      consensus_threshold: 0.8         # 높은 컨센서스 임계값
+      multi_timeframe_modes: ["1h", "4h", "1d"] # 시간대 설정
+      timeframe_weights:               # 시간대별 가중치
+        "1h": 0.2                      # 단기
+        "4h": 0.3                      # 중기
+        "1d": 0.5                      # 장기 (가장 중요)
+
+# 규칙 조합 (다중 시간대 전략 특화)
+trading_rules:
+  # 매수 규칙들
+  buy_conditions:
+    - rule: "multi_timeframe_consensus_bullish" # 다중 시간대 상승 컨센서스
+      weight: 0.5                              # 가장 중요한 신호
+      required: true                           # 필수 조건
+      
+    - rule: "trend_long_term_bullish"          # 장기 상승 추세
+      weight: 0.2
+      required: true                           # 필수 조건
+      
+    - rule: "momentum_short_term_oversold"     # 단기 과매도 (진입 타이밍)
+      weight: 0.2
+      required: false
+      
+    - rule: "volume_confirmation_multi_tf"     # 다중 시간대 거래량 확인
+      weight: 0.1
+      required: false
+
+  # 매도 규칙들
+  sell_conditions:
+    - rule: "multi_timeframe_consensus_bearish" # 다중 시간대 하락 컨센서스
+      weight: 0.4
+      required: false
+      
+    - rule: "trend_long_term_bearish"           # 장기 하락 추세
+      weight: 0.3
+      required: false
+      
+    - rule: "momentum_short_term_overbought"    # 단기 과매수 (청산 타이밍)
+      weight: 0.3
+      required: false
+
+# 시장 필터 설정 (다중 시간대용)
+market_filters:
+  # 최소 거래량 필터 (높은 유동성 필요)
+  min_volume:
+    enabled: true
+    value: 5000000                    # 최소 일간 거래량 (높게 설정)
+
+  # 가격 범위 필터
+  price_range:
+    enabled: true
+    min_price: 20.0                   # 최소 주가 (높게 설정)
+    max_price: 3000.0                 # 최대 주가
+
+  # 변동성 필터 (안정적인 변동성)
+  volatility:
+    enabled: true
+    min_atr_ratio: 0.02               # 최소 ATR 비율
+    max_atr_ratio: 0.08               # 최대 ATR 비율 (과도한 변동성 제한)
+
+  # 다중 시간대 확인 필터 (핵심)
+  multi_timeframe_confirmation:
+    enabled: true                     # 활성화
+    required_timeframes: ["1h", "4h", "1d"] # 필수 확인 시간대
+    min_consensus_ratio: 0.7          # 최소 컨센서스 비율
+    long_term_trend_weight: 0.6       # 장기 추세 가중치
+
+# 전략 모드별 설정
+mode_overrides:
+  # 백테스팅 모드 설정
+  backtest:
+    position_management:
+      max_positions: 5                # 백테스팅에서 더 많은 포지션
+    signal_config:
+      threshold: 8.5                  # 백테스팅에서 더 민감하게
+    market_filters:
+      multi_timeframe_confirmation:
+        min_consensus_ratio: 0.6      # 백테스팅에서 완화
+    
+  # 실시간 거래 모드 설정  
+  live:
+    risk_management:
+      risk_per_trade: 0.015           # 실시간에서 더 보수적
+    position_management:
+      max_positions: 2                # 실시간에서 포지션 제한
+    signal_config:
+      threshold: 9.5                  # 실시간에서 더 신중하게
+
+# 메타데이터
+metadata:
+  tags: ["multi-timeframe", "consensus", "long-term", "high-confidence"]
+  compatible_timeframes: ["1h", "4h", "1d", "1w"]     # 다중 시간프레임
+  recommended_symbols: ["stocks", "etf", "indices"]   # 권장 심볼 유형
+  min_capital: 100000                                 # 최소 권장 자본 (높음)
+  max_daily_trades: 2                                 # 일일 최대 거래 수 (매우 적음)
+  strategy_type: "multi_timeframe_consensus"          # 전략 분류
+  optimal_market_conditions: ["trending", "stable", "low_volatility"] # 최적 시장 상황
+  risk_level: "low"                                   # 리스크 수준 (낮음)
+  complexity_level: "high"                            # 복잡도 수준

@@ -1,0 +1,147 @@
+# 평균 회귀 전략 (Mean Reversion Strategy)
+# 과매도/과매수 상황에서 평균으로의 회귀를 노리는 전략
+
+# 전략 기본 정보
+strategy_info:
+  name: "평균 회귀 전략"
+  description: "과매도/과매수 상황에서 평균으로의 회귀를 노리는 전략"
+  version: "1.0.0"
+  author: "Stock-Bot Team"
+  created_date: "2025-01-20"
+
+# 전략 신호 설정
+signal_config:
+  threshold: 7.0                       # 중간 임계값
+  score_multiplier: 1.1                # 약간 높은 점수 배수
+  
+  # 시장 상황별 배수
+  market_multipliers:
+    long_term_bullish: 1.0             # 상승장에서 평균 회귀 약화
+    long_term_bearish: 1.3             # 하락장에서 평균 회귀 강화
+
+# 포지션 관리 설정
+position_management:
+  max_positions: 4                     # 집중 투자
+  position_hold_hours: 120             # 중기 보유 (5일)
+
+# 리스크 관리 설정
+risk_management:
+  risk_per_trade: 0.025                # 적당한 리스크 (2.5%)
+  stop_loss_percentage: 6.0            # 약간 높은 손절
+  take_profit_percentage: 8.0          # 낮은 익절 (빠른 회귀 이익 실현)
+
+# 신호 감지기 설정 (볼린저밴드 중심)
+detectors:
+  # Bollinger Bands 감지기 (최고 가중치)
+  bb:
+    enabled: true
+    weight: 7.0                        # BB 최고 가중치
+    parameters:
+      bb_period: 20                    # BB 기간
+      bb_std: 2.0                      # 표준편차
+      squeeze_threshold: 0.1           # 스퀴즈 임계값
+      expansion_threshold: 0.3         # 확장 임계값
+
+  # RSI 감지기 (과매도/과매수 확인)
+  rsi:
+    enabled: true
+    weight: 5.0                        # RSI 높은 가중치
+    parameters:
+      rsi_period: 14
+      oversold_threshold: 25           # 더 엄격한 과매도
+      overbought_threshold: 75         # 더 엄격한 과매수
+      divergence_periods: 7
+
+  # SMA 감지기 (추세 확인용)
+  sma:
+    enabled: true
+    weight: 3.0                        # SMA 낮은 가중치
+    parameters:
+      short_period: 10
+      long_period: 30
+      adx_threshold: 30                # 높은 ADX (강한 추세 필터링)
+      trend_confirmation_required: true
+
+  # Volume 감지기 (거래량 확인)
+  volume:
+    enabled: true
+    weight: 2.0                        # Volume 최소 가중치
+    parameters:
+      volume_ma_period: 20
+      volume_multiplier: 1.2           # 낮은 거래량 배수
+      price_volume_correlation: 0.3
+
+# 규칙 조합 (평균 회귀 중심 규칙)
+trading_rules:
+  # 매수 규칙들 (과매도 + 반등 신호)
+  buy_conditions:
+    - rule: "volatility_bb_oversold"         # BB 과매도 (핵심)
+      weight: 0.35
+      required: true                         # 필수 조건
+      
+    - rule: "momentum_rsi_oversold"          # RSI 과매도 확인
+      weight: 0.25
+      required: false
+      
+    - rule: "trend_price_below_sma"          # 단기 이평선 아래 (반등 준비)
+      weight: 0.2
+      required: false
+      
+    - rule: "volume_above_average"           # 거래량 증가 (관심 증가)
+      weight: 0.2
+      required: false
+
+  # 매도 규칙들 (과매수 + 반전 신호)
+  sell_conditions:
+    - rule: "volatility_bb_overbought"       # BB 과매수 (핵심)
+      weight: 0.4
+      required: false
+      
+    - rule: "momentum_rsi_overbought"        # RSI 과매수 확인
+      weight: 0.3
+      required: false
+      
+    - rule: "trend_price_above_sma"          # 단기 이평선 위 (반전 준비)
+      weight: 0.3
+      required: false
+
+# 시장 필터 설정 (안정적인 종목 선호)
+market_filters:
+  # 최소 거래량 필터
+  min_volume:
+    enabled: true
+    value: 1200000                     # 충분한 유동성
+
+  # 가격 범위 필터
+  price_range:
+    enabled: true
+    min_price: 10.0                    # 높은 최소 주가 (안정성)
+    max_price: 500.0                   # 제한된 최대 주가
+
+  # 변동성 필터 (적당한 변동성)
+  volatility:
+    enabled: true
+    min_atr_ratio: 0.02                # 적당한 최소 변동성
+    max_atr_ratio: 0.08                # 제한된 최대 변동성
+
+# 전략 모드별 설정
+mode_overrides:
+  # 백테스팅 모드 설정
+  backtest:
+    position_management:
+      max_positions: 6
+    risk_management:
+      take_profit_percentage: 10.0     # 백테스팅에서 더 큰 이익
+    
+  # 실시간 거래 모드 설정  
+  live:
+    risk_management:
+      risk_per_trade: 0.02             # 실시간에서 보수적
+      take_profit_percentage: 6.0      # 빠른 이익 실현
+
+# 메타데이터
+metadata:
+  tags: ["mean-reversion", "bollinger-bands", "oversold", "counter-trend"]
+  compatible_timeframes: ["1d", "4h", "2h"]
+  recommended_symbols: ["large-cap", "stable-stocks", "blue-chip"]
+  min_capital: 25000                   # 평균 회귀용 자본

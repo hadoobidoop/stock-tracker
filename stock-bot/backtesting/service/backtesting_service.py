@@ -122,7 +122,7 @@ class BacktestingService:
         """동적 전략으로 백테스트 실행"""
         logger.info(f"Running backtest with dynamic strategy: {dynamic_strategy_name}")
         
-        from domain.signals.strategy.strategy_factory import StrategyFactory
+        from domain.orchestration.factory import StrategyFactory
         
         # DynamicStrategyFactory를 사용하여 동적 전략 인스턴스 생성
         dynamic_strategy = StrategyFactory.create_dynamic_strategy(dynamic_strategy_name)

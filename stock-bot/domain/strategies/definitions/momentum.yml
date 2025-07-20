@@ -1,0 +1,145 @@
+# 모멘텀 전략 (Momentum Strategy)
+# RSI, Stoch 등 모멘텀 지표 중심의 신호 감지
+
+# 전략 기본 정보
+strategy_info:
+  name: "모멘텀 전략"
+  description: "RSI, Stoch 등 모멘텀 지표 중심의 신호 감지"
+  version: "1.0.0"
+  author: "Stock-Bot Team"
+  created_date: "2025-01-20"
+
+# 전략 신호 설정
+signal_config:
+  threshold: 6.0                       # 낮은 임계값 (모멘텀 신호 민감)
+  score_multiplier: 1.0                # 기본 점수 배수
+  
+  # 시장 상황별 배수 (모멘텀 특화)
+  market_multipliers:
+    long_term_bullish: 1.15            # 상승장에서 모멘텀 강화
+    long_term_bearish: 0.9             # 하락장에서 모멘텀 약화
+
+# 포지션 관리 설정
+position_management:
+  max_positions: 4                     # 적당한 포지션 수
+  position_hold_hours: 24              # 단기 보유 (1일)
+
+# 리스크 관리 설정
+risk_management:
+  risk_per_trade: 0.025                # 모멘텀 리스크 (2.5%)
+  stop_loss_percentage: 5.0            # 손절 비율
+  take_profit_percentage: 10.0         # 익절 비율
+
+# 신호 감지기 설정 (모멘텀 중심 가중치)
+detectors:
+  # RSI 감지기 (최고 가중치)
+  rsi:
+    enabled: true
+    weight: 6.0                        # RSI 최고 가중치
+    parameters:
+      rsi_period: 14                   # 기본 RSI 기간
+      oversold_threshold: 30           # 과매도 임계값
+      overbought_threshold: 70         # 과매수 임계값
+      divergence_periods: 5            # 다이버전스 확인 기간
+
+  # Stochastic 감지기
+  stoch:
+    enabled: true
+    weight: 5.0                        # Stochastic 높은 가중치
+    parameters:
+      k_period: 14                     # %K 기간
+      d_period: 3                      # %D 기간
+      smooth: 3                        # 스무딩
+      oversold_threshold: 20           # 과매도 임계값
+      overbought_threshold: 80         # 과매수 임계값
+
+  # MACD 감지기 (보조)
+  macd:
+    enabled: true
+    weight: 4.0                        # MACD 중간 가중치
+    parameters:
+      fast_period: 12
+      slow_period: 26
+      signal_period: 9
+      histogram_threshold: 0.0
+
+  # Volume 감지기 (낮은 가중치)
+  volume:
+    enabled: true
+    weight: 3.0                        # Volume 낮은 가중치
+    parameters:
+      volume_ma_period: 20
+      volume_multiplier: 1.3           # 모멘텀용 거래량 배수
+      price_volume_correlation: 0.5
+
+# 규칙 조합 (모멘텀 중심 규칙)
+trading_rules:
+  # 매수 규칙들 (모멘텀 신호 중심)
+  buy_conditions:
+    - rule: "momentum_oversold_consensus"    # 핵심 모멘텀 규칙
+      weight: 0.4
+      required: false
+      
+    - rule: "momentum_rsi_oversold"          # RSI 과매도
+      weight: 0.25
+      required: false
+      
+    - rule: "momentum_stoch_oversold"        # Stoch 과매도
+      weight: 0.2
+      required: false
+      
+    - rule: "trend_macd_golden_cross"        # MACD 골든크로스
+      weight: 0.15
+      required: false
+
+  # 매도 규칙들 (모멘텀 과매수)
+  sell_conditions:
+    - rule: "momentum_overbought_rsi"        # RSI 과매수
+      weight: 0.4
+      required: false
+      
+    - rule: "momentum_stoch_overbought"      # Stoch 과매수
+      weight: 0.3
+      required: false
+      
+    - rule: "trend_macd_death_cross"         # MACD 데드크로스
+      weight: 0.3
+      required: false
+
+# 시장 필터 설정 (모멘텀 친화적)
+market_filters:
+  # 최소 거래량 필터
+  min_volume:
+    enabled: true
+    value: 800000                      # 모멘텀용 거래량
+
+  # 가격 범위 필터
+  price_range:
+    enabled: true
+    min_price: 3.0                     # 저가주 포함
+    max_price: 1500.0                  # 높은 가격 허용
+
+  # 변동성 필터 (높은 변동성 선호)
+  volatility:
+    enabled: true
+    min_atr_ratio: 0.03                # 높은 최소 변동성
+    max_atr_ratio: 0.15                # 높은 최대 변동성
+
+# 전략 모드별 설정
+mode_overrides:
+  # 백테스팅 모드 설정
+  backtest:
+    position_management:
+      max_positions: 6
+    
+  # 실시간 거래 모드 설정  
+  live:
+    risk_management:
+      risk_per_trade: 0.02             # 실시간에서 약간 보수적
+
+# 메타데이터
+metadata:
+  tags: ["momentum", "rsi", "stochastic", "short-term"]
+  compatible_timeframes: ["1h", "4h", "1d"]
+  recommended_symbols: ["growth-stocks", "momentum-stocks", "volatile"]
+  min_capital: 15000                   # 모멘텀 거래용 자본

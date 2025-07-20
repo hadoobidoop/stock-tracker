@@ -1,0 +1,157 @@
+# SCALPING 전략 정의
+# 초단기(4시간 이내) 매매를 위한 스캘핑 전략
+# 빠른 진입/청산, 거래량 신호, 변동성 필터에 중점
+
+# 전략 기본 정보
+strategy_info:
+  name: "스캘핑 전략"
+  description: "빠른 진입/청산을 위한 초단기 매매 전략"
+  version: "1.0.0"
+  author: "Stock-Bot System"
+  created_date: "2025-01-20"
+
+# 전략 신호 설정
+signal_config:
+  threshold: 4.0                      # 매우 낮은 임계값 (빠른 신호 감지)
+  score_multiplier: 1.1               # 점수 조정 배수
+  
+  # 시장 상황별 배수
+  market_multipliers:
+    long_term_bullish: 1.0            # 장기 상승장 배수
+    long_term_bearish: 1.0            # 장기 하락장 배수
+    vix_high_multiplier: 1.2          # VIX 25 초과 시 배수
+    vix_low_multiplier: 0.8           # VIX 15 미만 시 배수
+
+# 포지션 관리 설정
+position_management:
+  max_positions: 10                   # 초단기 다중 포지션 허용
+  position_hold_hours: 4              # 4시간 이내 보유
+
+# 리스크 관리 설정
+risk_management:
+  risk_per_trade: 0.01                # 거래당 리스크 비율 (1%)
+  stop_loss_percentage: 3.0           # 낮은 손절 비율 (3%)
+  take_profit_percentage: 6.0         # 낮은 익절 비율 (6%)
+
+# 신호 감지기 설정
+detectors:
+  # RSI 감지기 (스캘핑 특화)
+  rsi:
+    enabled: true
+    weight: 4.0
+    parameters:
+      oversold_threshold: 25          # 기본 35에서 더 민감하게
+      overbought_threshold: 75        # 기본 65에서 더 민감하게
+      scalping_mode: true             # 스캘핑 모드 활성화
+
+  # Stochastic 감지기 (스캘핑 특화)
+  stoch:
+    enabled: true
+    weight: 4.0
+    parameters:
+      oversold_threshold: 15          # 기본 25에서 더 민감하게
+      overbought_threshold: 85        # 기본 75에서 더 민감하게
+      scalping_mode: true             # 스캘핑 모드 활성화
+
+  # 거래량 감지기 (스캘핑 핵심)
+  volume:
+    enabled: true
+    weight: 5.0                       # 가장 높은 가중치
+    parameters:
+      volume_threshold: 1.2           # 기본 2.0에서 더 낮게 (민감한 감지)
+      volume_ma_period: 20            # 거래량 이평선 기간
+      volume_multiplier: 1.5          # 거래량 배수
+      price_volume_correlation: 0.7   # 가격-거래량 상관관계
+      scalping_mode: true             # 스캘핑 모드 활성화
+
+  # MACD 감지기 (스캘핑 특화)
+  macd:
+    enabled: true
+    weight: 3.0
+    parameters:
+      fast_period: 12                 # 빠른 EMA 기간
+      slow_period: 26                 # 느린 EMA 기간
+      signal_period: 9                # 신호선 기간
+      signal_sensitivity: 1.5         # 기본 1.0에서 더 민감하게
+      histogram_threshold: 0.0        # 히스토그램 임계값
+      scalping_mode: true             # 스캘핑 모드 활성화
+
+# 규칙 조합 (스캘핑 전략 특화)
+trading_rules:
+  # 매수 규칙들
+  buy_conditions:
+    - rule: "momentum_oversold_consensus"     # 과매도 컨센서스
+      weight: 0.25
+      required: false
+      
+    - rule: "volume_above_average"           # 평균 이상 거래량
+      weight: 0.35                           # 거래량 중시
+      required: true                         # 필수 조건
+      
+    - rule: "momentum_rsi_oversold"          # RSI 과매도
+      weight: 0.2
+      required: false
+      
+    - rule: "trend_macd_bullish_cross"       # MACD 상승 크로스
+      weight: 0.2
+      required: false
+
+  # 매도 규칙들
+  sell_conditions:
+    - rule: "momentum_overbought_rsi"        # RSI 과매수
+      weight: 0.3
+      required: false
+      
+    - rule: "volume_below_average"           # 평균 이하 거래량
+      weight: 0.3
+      required: false
+      
+    - rule: "trend_macd_bearish_cross"       # MACD 하락 크로스
+      weight: 0.4
+      required: false
+
+# 시장 필터 설정 (스캘핑용)
+market_filters:
+  # 최소 거래량 필터 (유동성 중시)
+  min_volume:
+    enabled: true
+    value: 500000                     # 최소 일간 거래량 (낮춰서 더 많은 기회)
+
+  # 가격 범위 필터
+  price_range:
+    enabled: true
+    min_price: 3.0                    # 최소 주가 (스캘핑용)
+    max_price: 500.0                  # 최대 주가
+
+  # 변동성 필터 (스캘핑에 적합한 변동성)
+  volatility:
+    enabled: true
+    min_atr_ratio: 0.015              # 최소 ATR 비율 (약간 낮춤)
+    max_atr_ratio: 0.08               # 최대 ATR 비율 (높은 변동성 제한)
+
+# 전략 모드별 설정
+mode_overrides:
+  # 백테스팅 모드 설정
+  backtest:
+    position_management:
+      max_positions: 15               # 백테스팅에서 더 많은 포지션
+    signal_config:
+      threshold: 3.5                  # 백테스팅에서 더 민감하게
+    
+  # 실시간 거래 모드 설정  
+  live:
+    risk_management:
+      risk_per_trade: 0.005           # 실시간에서 더 보수적
+    position_management:
+      max_positions: 5                # 실시간에서 포지션 제한
+    signal_config:
+      threshold: 4.5                  # 실시간에서 더 신중하게
+
+# 메타데이터
+metadata:
+  tags: ["scalping", "short-term", "volume-focused", "fast-trading"]
+  compatible_timeframes: ["1m", "5m", "15m", "1h"]     # 초단기 시간프레임
+  recommended_symbols: ["stocks", "etf"]               # 권장 심볼 유형
+  min_capital: 5000                                    # 최소 권장 자본 (낮음)
+  max_daily_trades: 50                                # 일일 최대 거래 수
+  strategy_type: "momentum_volume"                     # 전략 분류

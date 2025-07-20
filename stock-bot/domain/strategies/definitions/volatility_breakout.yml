@@ -1,0 +1,154 @@
+# VOLATILITY BREAKOUT 전략 정의
+# 볼린저밴드 돌파 + ADX + 거래량을 조합한 변동성 돌파 전략
+# 변동성 응축(squeeze) 후 상단/하단 돌파 및 거래량 급증 구간을 포착
+
+# 전략 기본 정보
+strategy_info:
+  name: "변동성 돌파 전략"
+  description: "볼린저밴드 돌파와 거래량 급증을 포착하는 변동성 돌파 전략"
+  version: "1.0.0"
+  author: "Stock-Bot System"
+  created_date: "2025-01-20"
+
+# 전략 신호 설정
+signal_config:
+  threshold: 8.0                      # 높은 임계값 (확실한 돌파 신호만)
+  score_multiplier: 1.0               # 점수 조정 배수
+  
+  # 시장 상황별 배수
+  market_multipliers:
+    long_term_bullish: 1.1            # 장기 상승장에서 약간 유리
+    long_term_bearish: 1.1            # 장기 하락장에서도 약간 유리 (변동성 증가)
+
+# 포지션 관리 설정
+position_management:
+  max_positions: 5                    # 돌파 기회 포착 - 적극적 포지션
+  position_hold_hours: 72             # 3일 (72시간) 보유 - 짧은 기간
+
+# 리스크 관리 설정
+risk_management:
+  risk_per_trade: 0.03                # 거래당 리스크 비율 (3%) - 높은 리스크
+  stop_loss_percentage: 4.0           # 손절 비율 (4%) - 타이트한 손절
+  take_profit_percentage: 10.0        # 익절 비율 (10%) - 빠른 수익 실현
+
+# 신호 감지기 설정
+detectors:
+  # Bollinger Bands 감지기 (핵심 돌파 신호)
+  bb:
+    enabled: true
+    weight: 7.0                       # 가장 높은 가중치
+    parameters:
+      period: 20                      # BB 기간
+      std_dev: 2.0                    # 표준편차
+      detector_type: "breakout"       # breakout 모드
+      breakout_threshold: 0.05        # 돌파 임계값
+      squeeze_confirmation_required: true # 응축 확인 필요
+
+  # ADX 감지기 (추세 강도 확인)
+  adx:
+    enabled: true
+    weight: 4.0
+    parameters:
+      adx_threshold: 25               # ADX 임계값
+      period: 14                      # ADX 계산 기간
+      trend_strength_required: true   # 추세 강도 확인 필요
+      breakout_mode: true             # 돌파 모드 활성화
+
+  # 거래량 감지기 (돌파 확인)
+  volume:
+    enabled: true
+    weight: 5.0
+    parameters:
+      volume_threshold: 1.5           # 기본 2.0에서 더 낮게
+      volume_ma_period: 20            # 거래량 이평선 기간
+      volume_multiplier: 2.0          # 거래량 배수 (돌파시 급증)
+      price_volume_correlation: 0.8   # 가격-거래량 상관관계
+      breakout_confirmation_required: true # 돌파 확인 필요
+
+# 규칙 조합 (변동성 돌파 전략 특화)
+trading_rules:
+  # 매수 규칙들
+  buy_conditions:
+    - rule: "volatility_bb_upper_breakout"   # BB 상단 돌파
+      weight: 0.4                            # 가장 중요한 신호
+      required: true                         # 필수 조건
+      
+    - rule: "volume_spike_confirmed"         # 거래량 급증 확인
+      weight: 0.3
+      required: true                         # 필수 조건
+      
+    - rule: "trend_adx_strong"               # ADX 강한 추세
+      weight: 0.2
+      required: false
+      
+    - rule: "volatility_squeeze_breakout"    # 변동성 응축 후 돌파
+      weight: 0.1
+      required: false
+
+  # 매도 규칙들
+  sell_conditions:
+    - rule: "volatility_bb_lower_breakout"   # BB 하단 돌파
+      weight: 0.4
+      required: false
+      
+    - rule: "volume_exhaustion"              # 거래량 고갈
+      weight: 0.3
+      required: false
+      
+    - rule: "volatility_mean_reversion"      # 변동성 평균 회귀
+      weight: 0.3
+      required: false
+
+# 시장 필터 설정 (변동성 돌파용)
+market_filters:
+  # 최소 거래량 필터 (유동성 매우 중요)
+  min_volume:
+    enabled: true
+    value: 3000000                    # 최소 일간 거래량 (높게 설정)
+
+  # 가격 범위 필터
+  price_range:
+    enabled: true
+    min_price: 5.0                    # 최소 주가
+    max_price: 1500.0                 # 최대 주가
+
+  # 변동성 필터 (돌파에 적합한 변동성)
+  volatility:
+    enabled: true
+    min_atr_ratio: 0.03               # 최소 ATR 비율 (변동성 필요)
+    max_atr_ratio: 0.20               # 최대 ATR 비율 (과도한 변동성 제한)
+
+  # 볼린저밴드 응축 필터
+  bb_squeeze:
+    enabled: true                     # 활성화
+    squeeze_threshold: 0.1            # 응축 임계값
+    min_squeeze_periods: 5            # 최소 응축 기간
+
+# 전략 모드별 설정
+mode_overrides:
+  # 백테스팅 모드 설정
+  backtest:
+    position_management:
+      max_positions: 8                # 백테스팅에서 더 많은 포지션
+    signal_config:
+      threshold: 7.5                  # 백테스팅에서 더 민감하게
+    
+  # 실시간 거래 모드 설정  
+  live:
+    risk_management:
+      risk_per_trade: 0.025           # 실시간에서 더 보수적
+    position_management:
+      max_positions: 3                # 실시간에서 포지션 제한
+    signal_config:
+      threshold: 8.5                  # 실시간에서 더 신중하게
+
+# 메타데이터
+metadata:
+  tags: ["volatility-breakout", "bollinger-bands", "volume-spike", "short-term"]
+  compatible_timeframes: ["15m", "1h", "4h", "1d"]    # 단기~중기 시간프레임
+  recommended_symbols: ["stocks", "etf", "crypto"]    # 권장 심볼 유형
+  min_capital: 30000                                  # 최소 권장 자본 (높음)
+  max_daily_trades: 10                                # 일일 최대 거래 수
+  strategy_type: "volatility_momentum"                # 전략 분류
+  optimal_market_conditions: ["volatile", "breakout", "range_bound_to_trending"] # 최적 시장 상황
+  risk_level: "medium_high"                           # 리스크 수준

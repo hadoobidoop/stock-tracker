@@ -1,0 +1,145 @@
+# 균형 전략 (Balanced Strategy)
+# 안정성과 수익성의 균형을 추구하는 전략
+
+# 전략 기본 정보
+strategy_info:
+  name: "균형 전략"
+  description: "안정성과 수익성의 균형을 추구하는 전략"
+  version: "1.0.0"
+  author: "Stock-Bot Team"
+  created_date: "2025-01-20"
+
+# 전략 신호 설정
+signal_config:
+  threshold: 8.0                       # 기본 임계값
+  score_multiplier: 1.0                # 기본 점수 배수
+  
+  # 시장 상황별 배수 (기본 설정)
+  market_multipliers:
+    long_term_bullish: 1.2             # 기본 장기 상승장 배수
+    long_term_bearish: 1.2             # 기본 장기 하락장 배수
+
+# 포지션 관리 설정
+position_management:
+  max_positions: 5                     # 균형잡힌 포지션 수
+  position_hold_hours: 336             # 중간 보유 기간 (14일)
+
+# 리스크 관리 설정
+risk_management:
+  risk_per_trade: 0.02                 # 중간 리스크 (2%)
+  stop_loss_percentage: 5.0            # 손절 비율
+  take_profit_percentage: 10.0         # 익절 비율 (보수적보다 낮음)
+
+# 신호 감지기 설정 (균형잡힌 가중치)
+detectors:
+  # SMA 감지기
+  sma:
+    enabled: true
+    weight: 5.0                        # 균형잡힌 가중치
+    parameters:
+      short_period: 20
+      long_period: 50
+      adx_threshold: 20                # 기본 ADX 임계값
+      continuation_weight: 0.5         # 균형잡힌 지속 가중치
+      trend_confirmation_required: true
+
+  # MACD 감지기
+  macd:
+    enabled: true
+    weight: 5.0                        # 균형잡힌 가중치
+    parameters:
+      fast_period: 12
+      slow_period: 26
+      signal_period: 9
+      histogram_threshold: 0.0         # 기본 히스토그램 임계값
+
+  # Volume 감지기
+  volume:
+    enabled: true
+    weight: 4.0                        # 균형잡힌 가중치
+    parameters:
+      volume_ma_period: 20
+      volume_multiplier: 1.5           # 기본 거래량 배수
+      price_volume_correlation: 0.6    # 기본 상관관계
+
+  # Composite 감지기
+  composite:
+    enabled: true
+    weight: 6.0                        # 균형잡힌 가중치
+    parameters:
+      use_momentum_consensus: true
+      use_trend_analysis: true
+      use_volume_analysis: true
+      consensus_threshold: 0.6         # 기본 컨센서스 임계값
+
+# 규칙 조합 (균형잡힌 규칙)
+trading_rules:
+  # 매수 규칙들
+  buy_conditions:
+    - rule: "momentum_oversold_consensus"
+      weight: 0.3
+      required: false
+      
+    - rule: "trend_sma_golden_cross"
+      weight: 0.3
+      required: false
+      
+    - rule: "volume_above_average"
+      weight: 0.2
+      required: false
+      
+    - rule: "volatility_low_bb_squeeze"
+      weight: 0.2
+      required: false
+
+  # 매도 규칙들
+  sell_conditions:
+    - rule: "momentum_overbought_rsi"
+      weight: 0.4
+      required: false
+      
+    - rule: "trend_sma_death_cross"
+      weight: 0.3
+      required: false
+      
+    - rule: "volume_below_average"
+      weight: 0.3
+      required: false
+
+# 시장 필터 설정 (기본 필터링)
+market_filters:
+  # 최소 거래량 필터
+  min_volume:
+    enabled: true
+    value: 1000000                     # 기본 최소 거래량
+
+  # 가격 범위 필터
+  price_range:
+    enabled: true
+    min_price: 5.0                     # 기본 최소 주가
+    max_price: 1000.0                  # 기본 최대 주가
+
+  # 변동성 필터
+  volatility:
+    enabled: true
+    min_atr_ratio: 0.02                # 기본 최소 변동성
+    max_atr_ratio: 0.10                # 기본 최대 변동성
+
+# 전략 모드별 설정
+mode_overrides:
+  # 백테스팅 모드 설정
+  backtest:
+    position_management:
+      max_positions: 7
+    
+  # 실시간 거래 모드 설정  
+  live:
+    risk_management:
+      risk_per_trade: 0.015            # 약간 보수적
+
+# 메타데이터
+metadata:
+  tags: ["balanced", "moderate-risk", "versatile"]
+  compatible_timeframes: ["1d", "4h", "1h"]
+  recommended_symbols: ["stocks", "etf", "mid-cap"]
+  min_capital: 20000                   # 기본 최소 자본
