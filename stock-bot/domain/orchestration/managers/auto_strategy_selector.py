@@ -2,7 +2,7 @@
 자동 전략 선택기 - 시장 조건에 따른 자동 전략 선택을 담당
 """
 
-from typing import Optional, Tuple, Any, Callable
+from typing import Optional, Tuple, Any, Callable, Dict
 import pandas as pd
 
 from domain.signals.models.enums import StrategyType
@@ -40,12 +40,30 @@ class AutoStrategySelector:
     def enable_auto_strategy_selection(self, enable: bool = True):
         """자동 전략 선택 활성화/비활성화"""
         self.auto_strategy_selection = enable
-        logger.info(f"자동 전략 선택: {'활성화' if enable else '비활성화'}")
+        status = "활성화" if enable else "비활성화"
+        logger.info(f"자동 전략 선택 {status}")
     
     def enable_market_condition_detection(self, enable: bool = True):
         """시장 조건 감지 활성화/비활성화"""
         self.market_condition_detection = enable
-        logger.info(f"시장 조건 감지: {'활성화' if enable else '비활성화'}")
+        status = "활성화" if enable else "비활성화"
+        logger.info(f"시장 조건 감지 {status}")
+    
+    def enable(self, is_enabled: bool = True):
+        """자동 전략 선택 시스템 전체 활성화/비활성화"""
+        self.auto_strategy_selection = is_enabled
+        self.market_condition_detection = is_enabled
+        status = "활성화" if is_enabled else "비활성화"
+        logger.info(f"자동 전략 선택 시스템 {status}")
+    
+    def get_current_strategy_info(self) -> Optional[Dict[str, Any]]:
+        """현재 자동 선택 설정 정보를 반환합니다."""
+        return {
+            "manager_type": self.__class__.__name__,
+            "auto_selection_enabled": self.auto_strategy_selection,
+            "market_detection_enabled": self.market_condition_detection,
+            "is_active": self.auto_strategy_selection and self.market_condition_detection
+        }
     
     def auto_select_strategy(self, market_trend: TrendType, df: pd.DataFrame):
         """시장 상황에 따라 자동으로 전략을 선택합니다."""

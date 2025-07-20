@@ -44,6 +44,25 @@ class StrategyMixManager:
         self.current_mix_config = None
         logger.info("현재 전략 조합이 해제되었습니다.")
     
+    def enable(self, is_enabled: bool = True):
+        """전략 믹스 시스템 활성화/비활성화"""
+        self.is_enabled = getattr(self, 'is_enabled', True)
+        self.is_enabled = is_enabled
+        status = "활성화" if is_enabled else "비활성화"
+        logger.info(f"전략 믹스 시스템 {status}")
+    
+    def get_current_strategy_info(self) -> Optional[Dict[str, Any]]:
+        """현재 믹스 설정 정보를 반환합니다."""
+        if not self.current_mix_config:
+            return None
+        
+        return {
+            "name": f"Mix({self.current_mix_config.name})",
+            "manager_type": self.__class__.__name__,
+            "mode": self.current_mix_config.mode.value,
+            "strategies_count": len(self.current_mix_config.strategies)
+        }
+    
     def analyze_with_strategy_mix(self, 
                                 active_strategies: Dict[StrategyType, BaseStrategy],
                                 df_with_indicators: pd.DataFrame,
@@ -55,10 +74,13 @@ class StrategyMixManager:
         if not self.current_mix_config:
             raise RuntimeError("설정된 전략 조합이 없습니다.")
         
-        # 각 전략 실행하여 개별 결과 수집
-        individual_results = self._execute_individual_strategies(
-            active_strategies, df_with_indicators, ticker, market_trend, long_term_trend, daily_extra_indicators
+        # 분석 파라미터 표준화
+        analysis_params = StrategyManagerUtils.get_analysis_parameters(
+            df_with_indicators, ticker, market_trend, long_term_trend, daily_extra_indicators
         )
+        
+        # 각 전략 실행하여 개별 결과 수집
+        individual_results = self._execute_individual_strategies(active_strategies, **analysis_params)
         
         # 결과 조합
         return self._combine_strategy_results(individual_results)
