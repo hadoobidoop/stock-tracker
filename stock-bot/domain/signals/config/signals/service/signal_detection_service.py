@@ -9,8 +9,8 @@ from datetime import datetime
 from typing import Dict, Optional, List, Any
 
 import pandas as pd
-
 from domain.orchestration.strategy_orchestrator import StrategyOrchestrator
+
 from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
 from infrastructure.db.models.enums import TrendType

@@ -5,10 +5,10 @@
 from typing import Dict, List, Optional
 
 import pandas as pd
-
 from domain.orchestration.factory import StrategyFactory
 from domain.orchestration.managers.base_strategy_manager import BaseStrategyManager
 from domain.orchestration.utils.strategy_manager_utils import StrategyManagerUtils
+
 from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
 from domain.strategies.base import BaseStrategy

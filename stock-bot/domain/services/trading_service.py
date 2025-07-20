@@ -5,19 +5,14 @@ Trading Service - 실시간 거래 유스케이스
 StrategyService로부터 전략 정의를 받고, signals의 rules와 analysis를 사용하여 
 최종 매매 신호를 생성합니다.
 """
-from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 from enum import Enum
+from typing import Dict, Any, Optional, List
 
-from .strategy_service import StrategyService, StrategyDefinition
 from domain.signals.rules import RULES
-from domain.signals.analysis import (
-    get_momentum_consensus,
-    analyze_macd_with_volume, 
-    analyze_sma_trend,
-    analyze_bb_volatility,
-    get_trend_strength
-)
+from .strategy_service import StrategyService, StrategyDefinition
+
+
 # DetectorFactory import는 나중에 필요시 추가
 
 

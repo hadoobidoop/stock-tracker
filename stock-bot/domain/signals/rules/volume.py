@@ -5,10 +5,6 @@ Volume Rules Module
 analysis/volume.py의 함수들을 활용하여 규칙을 만듭니다.
 """
 
-from typing import Dict, Any
-
-import pandas as pd
-
 from ..analysis.volume import (
     analyze_macd_with_volume,
     get_volume_pattern,

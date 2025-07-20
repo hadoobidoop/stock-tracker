@@ -5,12 +5,12 @@
 from typing import Dict, List, Optional, Any
 
 import pandas as pd
-
 from domain.orchestration.managers.auto_strategy_selector import AutoStrategySelector
 from domain.orchestration.managers.dynamic_strategy_manager import DynamicStrategyManager
 from domain.orchestration.managers.single_strategy_manager import SingleStrategyManager
 from domain.orchestration.managers.strategy_mix_manager import StrategyMixManager
 from domain.orchestration.utils.strategy_manager_utils import StrategyManagerUtils
+
 from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
 from domain.strategies.base import BaseStrategy

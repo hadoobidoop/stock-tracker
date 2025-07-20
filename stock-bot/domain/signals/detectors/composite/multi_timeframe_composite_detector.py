@@ -23,8 +23,8 @@ from typing import Dict, List, Tuple
 
 import pandas as pd
 
-from domain.signals.detectors.signal_detector import SignalDetector
 from domain.signals.analysis.multi_timeframe import analyze_multi_timeframe_signals
+from domain.signals.detectors.signal_detector import SignalDetector
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 

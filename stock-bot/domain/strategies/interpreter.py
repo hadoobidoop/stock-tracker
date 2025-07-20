@@ -5,21 +5,21 @@ YAML 파일로 정의된 전략을 읽어서 실행 가능한 전략 객체를 �
 Phase 2에서 만든 analysis, rules, detectors 모듈들을 활용합니다.
 """
 
-import yaml
-import pandas as pd
+import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass
-import logging
 
+import pandas as pd
+import yaml
+
+from domain.signals.detectors.trend_following.macd_detector import MACDSignalDetector
+from domain.signals.detectors.trend_following.sma_detector import SMASignalDetector
+from domain.signals.detectors.volume.volume_detector import VolumeSignalDetector
 from domain.signals.models import StrategyResult, TradingSignal
 from domain.signals.models.enums import StrategyType, TradeType
-from infrastructure.db.models.enums import TrendType
 from domain.signals.rules import RULES
-from domain.signals.detectors.trend_following.sma_detector import SMASignalDetector
-from domain.signals.detectors.trend_following.macd_detector import MACDSignalDetector
-from domain.signals.detectors.volume.volume_detector import VolumeSignalDetector
-from domain.signals.detectors.composite.composite_detector import CompositeSignalDetector
+from infrastructure.db.models.enums import TrendType
 
 logger = logging.getLogger(__name__)
 

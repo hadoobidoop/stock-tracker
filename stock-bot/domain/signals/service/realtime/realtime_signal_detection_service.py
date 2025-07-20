@@ -1,32 +1,26 @@
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
+import sys
 
-from domain.orchestration.selector import get_current_strategy_config, strategy_selector
+# 새로운 services 계층 import (Phase 4)
+from domain.services import StrategyService, TradingService
+
 from domain.signals.config.signals.service.signal_detection_service import SignalDetectionService
 from domain.signals.config.signals.service.signal_processor import SignalProcessor
-from domain.signals.models.enums import StrategyMode
 
 # 프로젝트 루트 디렉토리를 Python 경로에 추가
 project_root = Path(__file__).resolve().parents[4]
 sys.path.append(str(project_root))
 
-
 from infrastructure.logging import get_logger
 from infrastructure.db.models.enums import TrendType, SignalType
 
 # 새로운 전략 시스템 import
-
 from domain.indicators.calculator import (
     calculate_all_indicators,
 )
 from domain.stock.service.stock_analysis_service import StockAnalysisService
-from domain.signals.config.signals.signal_weights import  SIGNAL_THRESHOLD
-from domain.signals.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
-from domain.indicators.calculator import (
-    apply_multi_timeframe_filter,
-)
 from domain.signals.service.cache_manager import MarketDataCacheManager
 from domain.signals.service.shared.repository_factory import (
     RepositoryFactory,
@@ -50,24 +44,37 @@ indicator_persistence_service = IndicatorPersistenceService()
 # Static Strategy Mix를 위한 오케스트레이터 인스턴스
 orchestrator = SignalProcessor()
 
-
-def get_strategy_service() -> SignalDetectionService | None:
-    """main.py에서 초기화된 전략 서비스를 가져옵니다."""
+# 새로운 services 계층 인스턴스 (Phase 4)
+def get_strategy_service() -> StrategyService | None:
+    """새로운 services 계층의 전략 서비스를 가져옵니다."""
     try:
-        from main import get_strategy_service
-        return get_strategy_service()
+        from pathlib import Path
+        definitions_path = Path("domain/strategies/definitions")
+        return StrategyService(definitions_path)
     except Exception as e:
         logger.warning(f"새로운 전략 서비스를 가져올 수 없음: {e}. Static Strategy Mix 시스템 사용.")
+        return None
+
+def get_trading_service() -> TradingService | None:
+    """새로운 services 계층의 거래 서비스를 가져옵니다."""
+    try:
+        strategy_service = get_strategy_service()
+        if strategy_service:
+            from domain.signals.repository.analysis_repository import MarketDataRepository
+            market_data_repo = MarketDataRepository()
+            return TradingService(strategy_service, market_data_repo)
+    except Exception as e:
+        logger.warning(f"새로운 거래 서비스를 가져올 수 없음: {e}")
         return None
 
 
 class RealtimeSignalDetectionJob:
     """
-    실시간 신호 감지 작업
+    실시간 신호 감지 작업 (Phase 4 업데이트)
     
     개선 사항:
-    1. 통합된 전략 선택 시스템 사용
-    2. 환경변수 기반 전략 설정
+    1. 새로운 services 계층 사용
+    2. YAML 전략 지원
     3. 폴백 메커니즘 적용
     4. 중복 설정 코드 제거
     """
@@ -75,6 +82,10 @@ class RealtimeSignalDetectionJob:
     def __init__(self):
         self.stock_analysis_service = StockAnalysisService()
         self.signal_detection_service = SignalDetectionService()
+        
+        # 새로운 services 계층 사용
+        self.strategy_service = get_strategy_service()
+        self.trading_service = get_trading_service()
         
         # 통합된 전략 설정 사용
         self._load_strategy_config()
@@ -86,23 +97,44 @@ class RealtimeSignalDetectionJob:
         self.max_executions_per_hour = 12
         
     def _load_strategy_config(self):
-        """전략 설정 로드"""
+        """전략 설정 로드 (Phase 4 업데이트)"""
         try:
-            self.strategy_config = get_current_strategy_config()
-            logger.info(f"실시간 작업 전략 설정 로드 완료: {self.strategy_config['mode']}")
-            
-            if self.strategy_config.get('config'):
-                config = self.strategy_config['config']
-                logger.info(f"전략: {config.get('name', 'Unknown')}")
-                logger.info(f"타입: {config.get('type', 'Unknown')}")
+            if self.strategy_service:
+                # 새로운 services 계층 사용
+                available_strategies = self.strategy_service.get_strategy_names()
+                logger.info(f"사용 가능한 YAML 전략: {available_strategies}")
                 
-                if self.strategy_config.get('fallback_enabled') and self.strategy_config.get('fallback_config'):
-                    logger.info("폴백 메커니즘 활성화됨")
-                    
+                # 기본 전략 설정
+                self.strategy_config = {
+                    'mode': 'yaml',
+                    'config': {
+                        'name': 'conservative',
+                        'type': 'YAML_STRATEGY'
+                    }
+                }
+                logger.info(f"실시간 작업 전략 설정 로드 완료: {self.strategy_config['mode']}")
+                
+            else:
+                # 폴백: 기존 시스템 사용
+                self.strategy_config = {
+                    'mode': 'legacy',
+                    'config': {
+                        'name': 'conservative',
+                        'type': 'LEGACY_STRATEGY'
+                    }
+                }
+                logger.info("기존 전략 시스템으로 폴백")
+                
         except Exception as e:
             logger.error(f"전략 설정 로드 실패: {e}")
             # 폴백: 기본 전략 사용
-            self.strategy_config = strategy_selector.get_default_strategy_config()
+            self.strategy_config = {
+                'mode': 'fallback',
+                'config': {
+                    'name': 'conservative',
+                    'type': 'FALLBACK_STRATEGY'
+                }
+            }
             logger.info("기본 전략 설정으로 폴백")
 
     def _get_active_tickers(self) -> List[str]:
@@ -202,14 +234,34 @@ class RealtimeSignalDetectionJob:
                 "error": str(e),
                 "execution_time": (datetime.now() - execution_start_time).total_seconds()
             }
-            
         finally:
             self.is_running = False
-            return None
 
     async def _detect_signals_for_ticker(self, ticker: str, strategy_config: Dict) -> Optional[Dict]:
         """개별 종목에 대한 신호 감지"""
         try:
+            # 새로운 services 계층 사용 시도
+            if self.trading_service and strategy_config.get('type') == 'YAML_STRATEGY':
+                try:
+                    signal = self.trading_service.generate_signal_for_strategy(
+                        strategy_config.get('name', 'conservative'), 
+                        ticker
+                    )
+                    if signal:
+                        return {
+                            'ticker': ticker,
+                            'has_signal': True,
+                            'signal_type': signal.signal.value,
+                            'strength': signal.strength,
+                            'confidence': signal.confidence,
+                            'reasons': signal.reasons,
+                            'strategy': strategy_config.get('name'),
+                            'timestamp': datetime.now().isoformat()
+                        }
+                except Exception as e:
+                    logger.warning(f"새로운 services 계층 신호 감지 실패 {ticker}: {e}")
+            
+            # 폴백: 기존 시스템 사용
             # 1. 주식 데이터 조회
             stock_data_dict = self.stock_analysis_service.get_stock_data_for_analysis(
                 symbols=[ticker], 
@@ -223,7 +275,6 @@ class RealtimeSignalDetectionJob:
                 return None
             
             # 2. 기술적 지표 계산
-            from domain.signals.utils import calculate_all_indicators
             df_with_indicators = calculate_all_indicators(df)
             
             if df_with_indicators.empty:
@@ -293,304 +344,27 @@ class RealtimeSignalDetectionJob:
             raise
 
     def get_status(self) -> Dict:
-        """작업 상태 조회"""
+        """현재 작업 상태 반환"""
         return {
             "is_running": self.is_running,
             "last_execution_time": self.last_execution_time.isoformat() if self.last_execution_time else None,
             "execution_count": self.execution_count,
-            "strategy_config": {
-                "mode": self.strategy_config.get('mode'),
-                "strategy_name": self.strategy_config.get('config', {}).get('name'),
-                "strategy_type": self.strategy_config.get('config', {}).get('type'),
-                "fallback_enabled": self.strategy_config.get('fallback_enabled', False)
+            "strategy_config": self.strategy_config,
+            "services_available": {
+                "strategy_service": self.strategy_service is not None,
+                "trading_service": self.trading_service is not None
             }
         }
 
     def refresh_strategy_config(self):
-        """전략 설정 갱신"""
-        logger.info("전략 설정을 갱신합니다.")
+        """전략 설정 새로고침"""
         self._load_strategy_config()
-        strategy_selector.refresh_available_strategies()
-        logger.info("전략 설정 갱신 완료")
+        logger.info("전략 설정이 새로고침되었습니다.")
 
 
 def realtime_signal_detection_job():
-    """
-    [전략 시스템 통합] 설정 기반 전략 시스템을 사용하여 실시간 신호를 감지합니다.
-    캐시 매니저를 사용하여 데이터 관리를 효율화합니다.
-    """
-    global cache_manager
-
-    current_et = stock_analysis_service.get_current_et_time()
-    logger.info("JOB START: Real-time signal detection job (Configurable Strategy System)...")
-
-    stocks_to_analyze = stock_analysis_service.get_stocks_to_analyze()
-    if not stocks_to_analyze:
-        logger.warning("No stocks marked for analysis. Skipping job.")
-        return
-
-    # 현재 전략 설정 조회
-    strategy_config = get_current_strategy_config()
-    strategy_mode = strategy_config["mode"]
-    current_config = strategy_config["config"]
-    fallback_config = strategy_config.get("fallback_config")
-    
-    logger.info(f"🎯 활성 전략 모드: {strategy_mode.value}")
-    if current_config:
-        logger.info(f"📋 현재 전략: {current_config.get('name', 'Unknown')}")
-        logger.info(f"📝 설명: {current_config.get('description', 'No description')}")
-    
-    # 전략 시스템 결정
-    strategy_service = None
-    use_dynamic_system = False
-    use_static_system = False
-    use_static_mix_system = False
-    
-    if strategy_mode == StrategyMode.DYNAMIC:
-        strategy_service = get_strategy_service()
-        use_dynamic_system = strategy_service is not None and strategy_service.is_initialized
-        logger.info(f"🧠 동적 전략 시스템 {'활성화' if use_dynamic_system else '비활성화'}")
-        
-    elif strategy_mode == StrategyMode.STATIC:
-        use_static_system = True
-        logger.info("📊 정적 전략 시스템 활성화")
-        
-    elif strategy_mode == StrategyMode.STATIC_MIX:
-        use_static_mix_system = True
-        logger.info("🔀 Static Strategy Mix 시스템 활성화")
-    
-    # 폴백 설정 확인
-    if fallback_config and not (use_dynamic_system or use_static_system or use_static_mix_system):
-        logger.warning(f"주 전략 시스템 비활성화, 폴백 전략 사용: {fallback_config.get('name', 'Unknown')}")
-        use_static_system = True
-        current_config = fallback_config
-
-    # Step 1: 캐시 업데이트 확인
-    if not cache_manager.is_cache_valid(current_et.date()):
-        logger.info("Step 1: Refreshing daily data cache...")
-
-        # 1.1. 시장 추세 업데이트
-        market_trend = stock_analysis_service.get_market_trend()
-        cache_manager.update_market_trend(market_trend)
-
-        # 1.2. 일봉 및 시간봉 데이터 조회
-        try:
-            fib_lookback = REALTIME_SIGNAL_DETECTION["FIB_LOOKBACK_DAYS"]
-            lookback_period = REALTIME_SIGNAL_DETECTION["LOOKBACK_PERIOD_DAYS_FOR_INTRADAY"]
-
-            all_daily_data = stock_analysis_service.get_stock_data_for_analysis(stocks_to_analyze, fib_lookback, '1d')
-            all_hourly_data = stock_analysis_service.get_stock_data_for_analysis(stocks_to_analyze, lookback_period,
-                                                                                 '1h')
-
-            for symbol in stocks_to_analyze:
-                df_daily = all_daily_data.get(symbol)
-                df_hourly = all_hourly_data.get(symbol)
-
-                # 일봉 데이터 처리
-                daily_indicators = cache_manager.update_daily_data_for_symbol(
-                    symbol, df_daily, df_hourly, stock_analysis_service
-                )
-                
-                # 일봉 기술적 지표 DB 저장 (공통 서비스 사용)
-                if daily_indicators is not None and not daily_indicators.empty:
-                    indicator_persistence_service.save_latest_indicators(daily_indicators, symbol, '1d')
-
-                # 동적 전략 시스템인 경우 지표 프리컴퓨팅
-                if use_dynamic_system and df_daily is not None and not df_daily.empty:
-                    try:
-                        strategy_service.precompute_indicators_for_ticker(symbol, df_daily)
-                        logger.debug(f"Daily indicators precomputed for {symbol}")
-                    except Exception as e:
-                        logger.warning(f"Daily indicator precomputing failed for {symbol}: {e}")
-
-                # 시간봉 데이터 처리
-                if df_hourly is not None and not df_hourly.empty:
-                    cache_manager.update_hourly_data_for_symbol(symbol, df_hourly, stock_analysis_service)
-                    
-                    # 다중 시간대 분석
-                    cache_manager.update_multi_timeframe_analysis(symbol, df_daily, df_hourly)
-                else:
-                    logger.warning(f"No hourly data for {symbol}")
-
-        except Exception as e:
-            logger.error(f"An error occurred during bulk data fetching for cache: {e}")
-
-        cache_manager.finalize_cache_update(current_et.date())
-    else:
-        logger.info("Step 1: Using cached daily data.")
-
-    market_trend = cache_manager.cache.market_trend
-
-    # Step 2: 실시간 신호 감지
-    logger.info(f"Step 2: Starting HOURLY signal detection for {len(stocks_to_analyze)} stocks...")
-
-    for symbol in stocks_to_analyze:
-        try:
-            # 2.1. 시간봉 데이터 조회
-            lookback_period = REALTIME_SIGNAL_DETECTION["LOOKBACK_PERIOD_DAYS_FOR_INTRADAY"]
-            df_hourly = stock_analysis_service.get_stock_data_for_analysis([symbol], lookback_period, '1h').get(symbol)
-
-            if df_hourly is None or df_hourly.empty:
-                logger.warning(f"No hourly data available for {symbol}")
-                continue
-
-            min_data_length = REALTIME_SIGNAL_DETECTION["MIN_HOURLY_DATA_LENGTH"]
-            if len(df_hourly) < min_data_length:
-                logger.warning(f"Insufficient hourly data for {symbol}: {len(df_hourly)} < {min_data_length}")
-                continue
-
-            # 최소한의 기술적 지표 계산을 위해 추가 검증
-            if len(df_hourly) < 60:  # SMA_60을 위한 최소 길이
-                logger.warning(f"Insufficient data for SMA_60 calculation for {symbol}: {len(df_hourly)} < 60")
-                # SMA_60 없이도 다른 지표들을 계산할 수 있도록 계속 진행
-
-            # 2.2. 기술적 지표 계산
-            if use_dynamic_system:
-                # 동적 전략 시스템: 지표 프리컴퓨팅 사용
-                df_with_indicators = strategy_service.precompute_indicators_for_ticker(symbol, df_hourly)
-            else:
-                # 정적 전략 또는 Static Strategy Mix 시스템: 기존 방식
-                df_with_indicators = calculate_all_indicators(df_hourly)
-
-            if df_with_indicators.empty:
-                logger.warning(f"Failed to calculate indicators for {symbol}")
-                continue
-
-            # 디버깅: 계산된 지표들의 유효성 확인
-            logger.debug(f"Calculated indicators for {symbol}:")
-            for col in df_with_indicators.columns:
-                if col not in ['Open', 'High', 'Low', 'Close', 'Volume']:
-                    valid_count = df_with_indicators[col].notna().sum()
-                    total_count = len(df_with_indicators)
-                    logger.debug(f"  {col}: {valid_count}/{total_count} valid values")
-                    if valid_count > 0:
-                        last_value = df_with_indicators[col].iloc[-1]
-                        logger.debug(f"    Last value: {last_value}")
-                    else:
-                        logger.warning(f"    All values are null for {col}")
-
-            # 2.3. 기술적 지표 저장 (공통 서비스 사용)
-            indicator_persistence_service.save_latest_indicators(df_with_indicators, symbol, '1h')
-
-            # 2.4. 신호 감지 - 캐시 매니저에서 데이터 조회
-            symbol_data = cache_manager.get_symbol_data(symbol)
-            long_term_trend = symbol_data["long_term_trend"]
-            long_term_trend_values = symbol_data["long_term_trend_values"]
-            multi_timeframe_analysis = symbol_data["multi_timeframe_analysis"]
-            
-            # 강화된 일봉 추가 데이터 조회 (일봉 지표 + 다중 시간대 분석 포함)
-            enhanced_daily_extras = cache_manager.get_enhanced_daily_extras(symbol)
-
-            if use_dynamic_system:
-                # 동적 전략 시스템 사용
-                try:
-                    strategy_result = strategy_service.detect_signals_with_strategy(
-                        df_with_indicators, symbol, None,  # 현재 활성 전략 사용
-                        market_trend, long_term_trend, enhanced_daily_extras
-                    )
-
-                    logger.info(f"[DYNAMIC] Strategy result for {symbol}: "
-                                f"Strategy={strategy_result.strategy_name}, "
-                                f"Score={strategy_result.total_score:.2f}, "
-                                f"Signal={'YES' if strategy_result.has_signal else 'NO'}, "
-                                f"Strength={strategy_result.signal_strength}")
-
-                    # 신호가 있으면 저장
-                    if strategy_result.has_signal and strategy_result.signal:
-                        try:
-                            trading_signal_repo.save_signal(strategy_result.signal)
-                            logger.info(f"✅ Trading signal saved for {symbol} using {strategy_result.strategy_name}")
-                        except Exception as e:
-                            logger.error(f"Failed to save trading signal for {symbol}: {e}")
-
-                    # 다중 시간대 필터 적용 (기존 로직 유지)
-                    if multi_timeframe_analysis:
-                        # 기존 신호 결과를 Dict 형태로 변환하여 필터 적용
-                        legacy_signal_result = {
-                            'score': strategy_result.total_score,
-                            'type': 'BUY' if strategy_result.has_signal else None,
-                            'details': strategy_result.signals_detected,
-                            'stop_loss_price': None  # 필요시 구현
-                        }
-
-                        filtered_result = apply_multi_timeframe_filter(legacy_signal_result, multi_timeframe_analysis)
-
-                        if filtered_result != legacy_signal_result:
-                            logger.info(f"Multi-timeframe filter applied for {symbol}: "
-                                        f"Score {strategy_result.total_score:.2f} -> {filtered_result.get('score', 0):.2f}")
-
-                except Exception as e:
-                    logger.error(f"Error in dynamic strategy system for {symbol}: {e}")
-                    logger.info(f"Falling back to static/mix strategy system for {symbol}")
-                    # 이 심볼에 대해서는 아래 정적 전략 사용
-
-            if not use_dynamic_system:
-                # Static Strategy Mix 시스템 사용 (백업)
-                signal_result = orchestrator.detect_signals(
-                    df_with_indicators, symbol, market_trend, long_term_trend, enhanced_daily_extras
-                )
-
-                if signal_result and signal_result.get('score', 0) >= SIGNAL_THRESHOLD:
-                    logger.info(f"[STATIC_MIX] Signal detected for {symbol}: score={signal_result.get('score', 0):.2f}")
-
-                    # 다중 시간대 필터 적용
-                    if multi_timeframe_analysis:
-                        signal_result = apply_multi_timeframe_filter(signal_result, multi_timeframe_analysis)
-
-                    # 신호 저장 로직 (기존)
-                    try:
-                        from domain.signals.models.trading_signal import TradingSignal, SignalType
-                        from domain.signals.models.trading_signal import SignalEvidence
-
-                        signal_type = SignalType.BUY if signal_result.get('type') == 'BUY' else SignalType.SELL
-                        evidence = SignalEvidence(
-                            signal_timestamp=current_et,
-                            ticker=symbol,
-                            signal_type=signal_result.get('type', 'BUY'),
-                            final_score=int(signal_result.get('score', 0)),
-                            raw_signals=signal_result.get('details', []),
-                            applied_filters=['Static Strategy Mix system'],
-                            score_adjustments=[
-                                f"Market trend: {market_trend.value}, Long term: {long_term_trend.value}"]
-                        )
-
-                        trading_signal = TradingSignal(
-                            signal_id=None,
-                            ticker=symbol,
-                            signal_type=signal_type,
-                            signal_score=signal_result.get('score', 0),
-                            timestamp_utc=current_et,
-                            current_price=df_with_indicators['Close'].iloc[-1],
-                            market_trend=market_trend,
-                            long_term_trend=long_term_trend,
-                            details=signal_result.get('details', []),
-                            stop_loss_price=signal_result.get('stop_loss_price'),
-                            evidence=evidence
-                        )
-
-                        trading_signal_repo.save_signal(trading_signal)
-                        logger.info(f"✅ Static Strategy Mix trading signal saved for {symbol}")
-
-                    except Exception as e:
-                        logger.error(f"Failed to save Static Strategy Mix trading signal for {symbol}: {e}")
-                else:
-                    logger.debug(
-                        f"[STATIC_MIX] No significant signal for {symbol}: score={signal_result.get('score', 0) if signal_result else 0:.2f}")
-
-        except Exception as e:
-            logger.error(f"Error processing {symbol}: {e}")
-            continue
-
-    # Step 3: 작업 완료 로그
-    if use_dynamic_system:
-        # 동적 전략 시스템 성능 모니터링
-        try:
-            performance = strategy_service.get_strategy_performance_summary()
-            logger.info(f"Strategy performance summary: {performance}")
-        except Exception as e:
-            logger.warning(f"Failed to get strategy performance summary: {e}")
-
-    logger.info("JOB END: Real-time signal detection job completed successfully.")
+    """실시간 신호 감지 작업 팩토리 함수"""
+    return RealtimeSignalDetectionJob()
 
 
 if __name__ == "__main__":

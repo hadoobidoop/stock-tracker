@@ -6,7 +6,7 @@ MACD와 거래량 조합 분석 로직을 제공합니다.
 """
 
 from enum import Enum
-from typing import Dict, Optional, Tuple
+from typing import Dict, Tuple
 
 import pandas as pd
 

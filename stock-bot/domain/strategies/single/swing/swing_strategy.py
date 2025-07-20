@@ -3,10 +3,10 @@ from typing import Dict, Optional
 import pandas as pd
 
 from domain.signals.config.signals.service.signal_processor import SignalProcessor
-from domain.signals.detectors.trend_following.sma_detector import SMASignalDetector
-from domain.signals.detectors.trend_following.macd_detector import MACDSignalDetector
 from domain.signals.detectors.momentum.rsi_detector import RSISignalDetector
 from domain.signals.detectors.trend_following.adx_detector import ADXSignalDetector
+from domain.signals.detectors.trend_following.macd_detector import MACDSignalDetector
+from domain.signals.detectors.trend_following.sma_detector import SMASignalDetector
 from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
 from domain.strategies.base import BaseStrategy

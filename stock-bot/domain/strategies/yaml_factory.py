@@ -5,26 +5,24 @@ YAML 기반 전략 시스템과 기존 전략 시스템을 통합하는 팩토�
 점진적으로 기존 전략들을 YAML 전략으로 전환할 수 있도록 지원합니다.
 """
 
-from typing import Dict, Optional, Union
 from pathlib import Path
+from typing import Dict, Optional, Union
 
 from domain.signals.models.enums import StrategyType
 from domain.strategies.interpreter import YAMLStrategyInterpreter, YAMLBasedStrategy
 from domain.strategies.portfolio import PortfolioManager, PortfolioConfig
-
-# 기존 전략 import (하위 호환성)
-from domain.strategies.single.conservative.conservative_strategy import ConservativeStrategy
-from domain.strategies.single.balanced.balanced_strategy import BalancedStrategy
 from domain.strategies.single.aggressive.aggressive_strategy import AggressiveStrategy
-from domain.strategies.single.momentum.momentum_strategy import MomentumStrategy
-from domain.strategies.single.mean_reversion.mean_reversion_strategy import MeanReversionStrategy
-
+from domain.strategies.single.aggressive.configs.aggressive_config import AggressiveStrategyConfig
+from domain.strategies.single.balanced.balanced_strategy import BalancedStrategy
+from domain.strategies.single.balanced.configs.balanced_config import BalancedStrategyConfig
 # 기존 설정 import
 from domain.strategies.single.conservative.configs.conservative_config import ConservativeStrategyConfig
-from domain.strategies.single.balanced.configs.balanced_config import BalancedStrategyConfig
-from domain.strategies.single.aggressive.configs.aggressive_config import AggressiveStrategyConfig
-from domain.strategies.single.momentum.configs.momentum_config import MomentumStrategyConfig
+# 기존 전략 import (하위 호환성)
+from domain.strategies.single.conservative.conservative_strategy import ConservativeStrategy
 from domain.strategies.single.mean_reversion.configs.mean_reversion_config import MeanReversionStrategyConfig
+from domain.strategies.single.mean_reversion.mean_reversion_strategy import MeanReversionStrategy
+from domain.strategies.single.momentum.configs.momentum_config import MomentumStrategyConfig
+from domain.strategies.single.momentum.momentum_strategy import MomentumStrategy
 
 
 class YAMLStrategyFactory:

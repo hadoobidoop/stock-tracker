@@ -6,8 +6,8 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any, TypeVar, Generic
 
 import pandas as pd
-
 from domain.orchestration.utils.strategy_manager_utils import StrategyManagerUtils
+
 from domain.signals.models.enums import StrategyType
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging.logger_config import get_logger

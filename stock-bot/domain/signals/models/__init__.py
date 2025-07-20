@@ -8,14 +8,13 @@ Signal Models Package
 from .enums import (
     StrategyType, StrategyMixMode, StrategyMode, TradeType, TradeStatus
 )
-
+from .strategy_result import StrategyResult
 # Models from individual files
 from .technical_indicator import TechnicalIndicator
 from .trading_signal import (
-    TradingSignal, SignalEvidence, TechnicalIndicatorEvidence, 
+    TradingSignal, SignalEvidence, TechnicalIndicatorEvidence,
     MultiTimeframeEvidence, MarketContextEvidence, RiskManagementEvidence
 )
-from .strategy_result import StrategyResult
 
 __all__ = [
     # Enums

@@ -5,9 +5,9 @@ Backtesting Run Script
 YAML 전략을 지정하여 백테스팅을 실행하는 독립적인 진입점
 """
 import argparse
+import sys
 from datetime import datetime
 from pathlib import Path
-import sys
 
 # 프로젝트 루트를 Python path에 추가
 project_root = Path(__file__).parent.parent

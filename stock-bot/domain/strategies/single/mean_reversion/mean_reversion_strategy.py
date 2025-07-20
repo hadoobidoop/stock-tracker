@@ -18,9 +18,9 @@ from typing import Dict, Optional
 import pandas as pd
 
 from domain.signals.config.signals.service.signal_processor import SignalProcessor
-from domain.signals.detectors.volatility.bb_detector import BBSignalDetector
 from domain.signals.detectors.momentum.rsi_detector import RSISignalDetector
 from domain.signals.detectors.momentum.stoch_detector import StochSignalDetector
+from domain.signals.detectors.volatility.bb_detector import BBSignalDetector
 from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
 from domain.strategies.base import BaseStrategy

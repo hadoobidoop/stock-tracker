@@ -7,10 +7,10 @@ YAML 전략 정의의 portfolio 섹션에 정의된 규칙을 해석하고 실�
 
 from dataclasses import dataclass
 from typing import Dict, Any, List, Optional
-from decimal import Decimal
+
 import pandas as pd
 
-from domain.signals.models import TradingSignal, StrategyResult
+from domain.signals.models import TradingSignal
 from domain.signals.models.enums import TradeType
 
 

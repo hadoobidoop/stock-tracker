@@ -6,8 +6,8 @@ Rules Package
 
 from .momentum import MOMENTUM_RULES
 from .trend import TREND_RULES
-from .volume import VOLUME_RULES
 from .volatility import VOLATILITY_RULES
+from .volume import VOLUME_RULES
 
 # 모든 규칙을 통합한 딕셔너리
 RULES = {

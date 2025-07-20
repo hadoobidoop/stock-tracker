@@ -5,10 +5,6 @@ Trend Rules Module
 analysis/trend.py의 함수들을 활용하여 규칙을 만듭니다.
 """
 
-from typing import Dict, Any
-
-import pandas as pd
-
 from ..analysis.trend import (
     analyze_macd_cross,
     analyze_sma_trend,

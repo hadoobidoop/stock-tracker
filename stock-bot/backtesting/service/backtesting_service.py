@@ -1,10 +1,10 @@
 import json
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
 from pathlib import Path
+from typing import Dict, List, Optional, Any
 
 # 새로운 services 계층 import
-from domain.services import StrategyService, TradingService, TradingSignal, SignalType
+from domain.services import StrategyService, TradingService
 from domain.signals.repository.analysis_repository import MarketDataRepository
 from domain.stock.repository.stock_repository import StockRepository
 from domain.stock.service.stock_analysis_service import StockAnalysisService

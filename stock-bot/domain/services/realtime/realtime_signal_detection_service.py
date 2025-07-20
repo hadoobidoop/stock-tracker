@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from domain.orchestration.selector import get_current_strategy_config, strategy_selector
+
 from domain.signals.config.signals.service.signal_detection_service import SignalDetectionService
 from domain.signals.config.signals.service.signal_processor import SignalProcessor
 from domain.signals.models.enums import StrategyMode

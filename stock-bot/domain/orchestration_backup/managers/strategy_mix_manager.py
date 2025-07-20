@@ -5,8 +5,8 @@
 from typing import Dict, List, Optional, Tuple, Any
 
 import pandas as pd
-
 from domain.orchestration.utils.strategy_manager_utils import StrategyManagerUtils
+
 from domain.signals.models.enums import StrategyType, StrategyMixMode
 from domain.signals.models.strategy_result import StrategyResult
 from domain.strategies.base import BaseStrategy

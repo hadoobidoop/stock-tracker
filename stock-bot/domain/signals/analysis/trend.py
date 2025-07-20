@@ -6,7 +6,7 @@ MACD 크로스, SMA 추세 등 추세 지표들의 복합 분석 로직을 제�
 """
 
 from enum import Enum
-from typing import Dict, Optional, Tuple
+from typing import Dict, Tuple
 
 import pandas as pd
 
