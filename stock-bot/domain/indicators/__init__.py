@@ -1,12 +1,11 @@
-"""Analysis utilities package."""
+"""
+Technical Indicators Domain
 
-from .multi_timeframe import (
-    apply_multi_timeframe_filter,
-    validate_multi_timeframe_data,
-    get_trend_direction_multi_timeframe,
-)
-from .technical_indicators import (
-    calculate_all_indicators,
+This package contains all technical indicator calculations and related models.
+It is responsible for calculating various technical indicators from OHLCV data.
+"""
+
+from .calculator import (
     calculate_sma,
     calculate_rsi,
     calculate_macd,
@@ -15,29 +14,41 @@ from .technical_indicators import (
     calculate_atr,
     calculate_volume_sma,
     calculate_adx,
+    calculate_keltner_channels,
+    calculate_all_indicators,
     calculate_fibonacci_levels,
     get_trend_direction,
     calculate_daily_indicators,
     calculate_hourly_indicators,
-    calculate_multi_timeframe_indicators,
+    calculate_multi_timeframe_indicators
+)
+
+from .models import (
+    IndicatorValue,
+    IndicatorType,
+    TrendDirection
 )
 
 __all__ = [
-    'calculate_all_indicators',
+    # Calculator functions
     'calculate_sma',
-    'calculate_rsi',
+    'calculate_rsi', 
     'calculate_macd',
     'calculate_stochastic',
     'calculate_bollinger_bands',
     'calculate_atr',
     'calculate_volume_sma',
     'calculate_adx',
+    'calculate_keltner_channels',
+    'calculate_all_indicators',
     'calculate_fibonacci_levels',
     'get_trend_direction',
     'calculate_daily_indicators',
     'calculate_hourly_indicators',
     'calculate_multi_timeframe_indicators',
-    'apply_multi_timeframe_filter',
-    'validate_multi_timeframe_data',
-    'get_trend_direction_multi_timeframe',
+    
+    # Models
+    'IndicatorValue',
+    'IndicatorType', 
+    'TrendDirection'
 ] 

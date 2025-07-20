@@ -3,15 +3,13 @@
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Any, Union, TypeVar, Generic
+from typing import Dict, List, Optional, Any, TypeVar, Generic
+
 import pandas as pd
 
+from domain.orchestration.utils.strategy_manager_utils import StrategyManagerUtils
 from domain.signals.models.enums import StrategyType
 from infrastructure.db.models.enums import TrendType
-from domain.orchestration.factory import StrategyFactory
-from domain.strategies.base import BaseStrategy
-from domain.signals.models.strategy_result import StrategyResult
-from domain.orchestration.utils.strategy_manager_utils import StrategyManagerUtils
 from infrastructure.logging.logger_config import get_logger
 
 # 전략 타입을 위한 TypeVar

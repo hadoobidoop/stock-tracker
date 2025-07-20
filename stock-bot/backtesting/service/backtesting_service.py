@@ -31,7 +31,7 @@ class BacktestingService:
         """단일 전략을 심층 분석합니다."""
         logger.info(f"Running deep-dive analysis for single strategy: {strategy_name}")
 
-        from domain.signals.utils.strategy_utils import is_strategy_supported
+        from domain.orchestration.selector import is_strategy_supported
         is_supported, strategy_class = is_strategy_supported(strategy_name)
 
         if not is_supported:
@@ -52,7 +52,7 @@ class BacktestingService:
         logger.info(f"Comparing performance for strategies: {', '.join(strategies)}")
         
         all_results = {}
-        from domain.signals.utils.strategy_utils import is_strategy_supported
+        from domain.orchestration.selector import is_strategy_supported
 
         for name in strategies:
             is_supported, strategy_class = is_strategy_supported(name)

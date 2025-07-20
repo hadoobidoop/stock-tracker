@@ -3,11 +3,12 @@
 """
 
 from typing import Optional, Tuple, Any, Callable, Dict
+
 import pandas as pd
 
 from domain.signals.models.enums import StrategyType
-from infrastructure.db.models.enums import TrendType
 from domain.strategies.base import BaseStrategy
+from infrastructure.db.models.enums import TrendType
 from infrastructure.logging.logger_config import get_logger
 
 logger = get_logger(__name__)

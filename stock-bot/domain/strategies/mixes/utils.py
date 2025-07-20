@@ -6,9 +6,9 @@
 
 from typing import Dict
 
+from .market_conditions import MARKET_CONDITION_STRATEGIES
 from .models import StrategyMixConfig
 from .registry import STRATEGY_MIXES
-from .market_conditions import MARKET_CONDITION_STRATEGIES
 
 
 def get_strategy_mix_config(mix_name: str) -> StrategyMixConfig:

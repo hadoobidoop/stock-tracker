@@ -2,10 +2,10 @@
 import argparse
 import sys
 
-from domain.signals.config.signals.service.signal_detection_service import SignalDetectionService
-from domain.signals.models.enums import StrategyType
 from domain.orchestration.selector import list_all_strategies
 from domain.orchestration.strategy_registry import strategy_registry
+from domain.signals.config.signals.service.signal_detection_service import SignalDetectionService
+from domain.signals.models.enums import StrategyType
 # --- 새로운 전략 시스템 추가 ---
 from infrastructure.db.db_manager import create_db_and_tables
 from infrastructure.logging import setup_logging, get_logger

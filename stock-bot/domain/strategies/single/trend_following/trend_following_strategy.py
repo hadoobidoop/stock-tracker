@@ -3,11 +3,11 @@ from typing import Dict, Optional
 import pandas as pd
 
 from domain.signals.config.signals.service.signal_processor import SignalProcessor
-from domain.strategies.strategy_config import StrategyConfig
-from domain.signals.models.enums import StrategyType
 from domain.signals.detectors.composite.composite_detector import CompositeSignalDetector
+from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
 from domain.strategies.base import BaseStrategy
+from domain.strategies.strategy_config import StrategyConfig
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from .configs.trend_following_config import SMA_WEIGHT, MACD_WEIGHT, ADX_WEIGHT, VOLUME_WEIGHT

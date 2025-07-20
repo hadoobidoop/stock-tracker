@@ -5,9 +5,9 @@
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional
 
+from domain.orchestration.strategy_registry import strategy_registry
 from domain.signals.detectors.detector_config import DetectorConfig
 from domain.signals.models.enums import StrategyMode
-from domain.orchestration.strategy_registry import strategy_registry
 
 
 @dataclass

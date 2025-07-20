@@ -1,11 +1,13 @@
 from typing import Dict, Optional
 
-from domain.strategies.dynamic.dynamic_strategy_manager.configs.dynamic_strategies import get_strategy_definition, \
-    get_all_modifiers, get_all_strategies
-from domain.strategies.dynamic.engine.modifier_engine import ModifierEngine
-from domain.strategies.strategy_config import StrategyConfig
 from domain.signals.models.enums import StrategyType
-
+from domain.strategies.dynamic.adaptive_momentum_hybrid.configs.adaptive_momentum_hybrid_config import \
+    AdaptiveMomentumHybridConfig
+from domain.strategies.dynamic.conservative_reversion_hybrid.configs.conservative_reversion_hybrid_config import \
+    ConservativeReversionHybridConfig
+from domain.strategies.dynamic.dynamic_strategy_manager.configs.dynamic_strategies import get_strategy_definition, \
+    get_all_modifiers
+from domain.strategies.dynamic.engine.modifier_engine import ModifierEngine
 from domain.strategies.single.aggressive.configs.aggressive_config import AggressiveStrategyConfig
 from domain.strategies.single.balanced.configs.balanced_config import BalancedStrategyConfig
 # Strategy-specific config imports
@@ -14,9 +16,7 @@ from domain.strategies.single.conservative.configs.conservative_config import Co
 from domain.strategies.single.mean_reversion.configs.mean_reversion_config import MeanReversionStrategyConfig
 from domain.strategies.single.momentum.configs.momentum_config import MomentumStrategyConfig
 from domain.strategies.single.scalping.configs.scalping_config import ScalpingStrategyConfig
-
-from domain.strategies.dynamic.adaptive_momentum_hybrid.configs.adaptive_momentum_hybrid_config import AdaptiveMomentumHybridConfig
-from domain.strategies.dynamic.conservative_reversion_hybrid.configs.conservative_reversion_hybrid_config import ConservativeReversionHybridConfig
+from domain.strategies.strategy_config import StrategyConfig
 
 # Removed dependency on static_strategies.py - now using individual config classes
 

@@ -3,12 +3,13 @@ Repository 팩토리 패턴
 Centralized repository creation and management
 """
 from typing import Optional
+
 from domain.signals.repository.technical_indicator_repository import TechnicalIndicatorRepository
 from domain.signals.repository.trading_signal_repository import TradingSignalRepository
 from domain.stock.repository.stock_repository import StockRepository
+from infrastructure.db.repository.sql_stock_repository import SQLStockRepository
 from infrastructure.db.repository.sql_technical_indicator_repository import SQLTechnicalIndicatorRepository
 from infrastructure.db.repository.sql_trading_signal_repository import SQLTradingSignalRepository
-from infrastructure.db.repository.sql_stock_repository import SQLStockRepository
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)

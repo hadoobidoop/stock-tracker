@@ -10,17 +10,16 @@ from typing import Dict, Any, List, Optional
 
 import pandas as pd
 
+from domain.signals.config.signals.service.signal_processor import SignalProcessor
 from domain.signals.models.enums import StrategyType
+from domain.signals.models.strategy_result import StrategyResult
+from domain.signals.models.trading_signal import (
+    TradingSignal, SignalType, SignalEvidence, TechnicalIndicatorEvidence, MarketContextEvidence
+)
 from domain.strategies.base import BaseStrategy
 from domain.strategies.dynamic.engine.decision_context import DecisionContext
 from domain.strategies.dynamic.engine.modifier_engine import ModifierEngine
 from domain.strategies.strategy_config import StrategyConfig
-from domain.signals.config.signals.service.signal_processor import SignalProcessor
-from domain.signals.models.trading_signal import (
-    TradingSignal, SignalType, SignalEvidence, TechnicalIndicatorEvidence, MarketContextEvidence
-)
-from domain.signals.models.strategy_result import StrategyResult
-
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 

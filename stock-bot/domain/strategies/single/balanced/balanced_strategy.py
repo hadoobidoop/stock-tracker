@@ -3,15 +3,15 @@ from typing import Dict, Optional, Any
 
 import pandas as pd
 
-from domain.signals.models.enums import StrategyType
 from domain.signals.config.signals.service.signal_processor import SignalProcessor
 from domain.signals.detectors.composite.composite_detector import CompositeSignalDetector
 # 기본 Detector import
 from domain.signals.detectors.momentum.rsi_detector import RSISignalDetector
 from domain.signals.detectors.trend_following.adx_detector import ADXSignalDetector
 from domain.signals.detectors.trend_following.macd_detector import MACDSignalDetector
-from domain.signals.models.trading_signal import TradingSignal
+from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
+from domain.signals.models.trading_signal import TradingSignal
 from domain.strategies.base import BaseStrategy
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger

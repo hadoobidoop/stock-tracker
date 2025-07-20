@@ -17,14 +17,15 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from domain.signals.models.enums import StrategyType
 from domain.signals.config.signals.service.signal_processor import SignalProcessor
+from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
 from domain.strategies.base import BaseStrategy
 from domain.strategies.single.mean_reversion.configs.mean_reversion_config import MeanReversionStrategyConfig
 from domain.strategies.single.mean_reversion.detectors.mean_reversion_bb_detector import MeanReversionBBSignalDetector
 from domain.strategies.single.mean_reversion.detectors.mean_reversion_rsi_detector import MeanReversionRSISignalDetector
-from domain.strategies.single.mean_reversion.detectors.mean_reversion_stoch_detector import MeanReversionStochSignalDetector
+from domain.strategies.single.mean_reversion.detectors.mean_reversion_stoch_detector import \
+    MeanReversionStochSignalDetector
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 

@@ -4,8 +4,8 @@ from typing import Dict, Any
 
 import pandas as pd
 
-from domain.strategies.dynamic.engine.decision_context import DecisionContext
 from domain.strategies.dynamic.dynamic_strategy_manager.configs.dynamic_strategies import ModifierDefinition
+from domain.strategies.dynamic.engine.decision_context import DecisionContext
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)

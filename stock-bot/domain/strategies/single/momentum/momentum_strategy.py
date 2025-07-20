@@ -22,18 +22,18 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from domain.signals.models.enums import StrategyType
+from domain.signals.config.signals.service.signal_processor import SignalProcessor
 from domain.signals.detectors.trend_following.macd_detector import MACDSignalDetector
 from domain.signals.detectors.volume.volume_detector import VolumeSignalDetector
+from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
-from domain.signals.config.signals.service.signal_processor import SignalProcessor
+from domain.strategies.base import BaseStrategy
 from domain.strategies.single.momentum.configs.momentum_config import MomentumStrategyConfig
 from domain.strategies.single.momentum.detectors.momentum_rsi_detector import RSISignalDetector
 from domain.strategies.single.momentum.detectors.momentum_rsi_stoch_detector import RSIStochDetector
 from domain.strategies.single.momentum.detectors.momentum_stoch_detector import StochSignalDetector
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
-from domain.strategies.base import BaseStrategy
 
 logger = get_logger(__name__)
 

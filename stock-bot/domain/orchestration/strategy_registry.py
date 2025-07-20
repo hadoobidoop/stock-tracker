@@ -4,7 +4,7 @@
 
 from typing import Dict, List, Optional, Tuple, Any
 
-from domain.signals.models.enums import StrategyType, StrategyMode
+from domain.signals.models.enums import StrategyType
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)

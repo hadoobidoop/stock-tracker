@@ -228,7 +228,7 @@ class SignalDetectionService:
                 return self.precomputed_indicators[cache_key]
         
         # 지표 계산
-        from domain.signals.utils import calculate_all_indicators
+        from domain.indicators.calculator import calculate_all_indicators
         
         logger.info(f"지표 프리컴퓨팅 시작: {ticker}")
         df_with_indicators = calculate_all_indicators(df)

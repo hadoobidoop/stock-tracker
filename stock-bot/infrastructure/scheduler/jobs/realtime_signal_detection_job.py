@@ -2,11 +2,10 @@
 실시간 신호 감지 스케줄러 작업
 Infrastructure layer에서 Domain layer의 서비스를 호출하는 얇은 래퍼
 """
-from infrastructure.logging import get_logger
 from domain.signals.service.realtime.realtime_signal_detection_service import (
-    RealtimeSignalDetectionJob,
     realtime_signal_detection_job
 )
+from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
 

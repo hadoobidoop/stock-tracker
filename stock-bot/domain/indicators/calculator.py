@@ -1,11 +1,16 @@
 """
-기술적 지표 계산을 위한 유틸리티 모듈
+Technical Indicator Calculator
+
+This module contains all technical indicator calculation functions.
+It consolidates all indicator calculations from the previous utils structure.
 """
+
 from typing import Dict
 
 import numpy as np
 import pandas as pd
 
+from domain.signals.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
 from domain.signals.detectors.technical_indicator_settings import TECHNICAL_INDICATORS, FIBONACCI_LEVELS, \
     HOURLY_INDICATORS
 from infrastructure.logging import get_logger
@@ -254,10 +259,23 @@ def get_trend_direction(df: pd.DataFrame, short_period: int = 20, long_period: i
 
 
 def calculate_daily_indicators(df: pd.DataFrame) -> pd.DataFrame:
-    """일봉 기반 장기 추세 지표를 계산합니다."""
+    """일봉 데이터에 대한 지표를 계산합니다."""
     try:
-        # 모든 기술적 지표를 계산 (시간봉과 동일하게)
-        df = calculate_all_indicators(df)
+        df = df.copy()
+        
+        # 일봉 전용 설정값 가져오기
+        daily_sma_periods = TECHNICAL_INDICATORS.get("DAILY_SMA_PERIODS", [20, 50, 200])
+        daily_rsi_period = TECHNICAL_INDICATORS.get("DAILY_RSI_PERIOD", 14)
+        
+        # 일봉 지표 계산
+        df = calculate_sma(df, daily_sma_periods)
+        df = calculate_rsi(df, daily_rsi_period)
+        df = calculate_macd(df)
+        df = calculate_bollinger_bands(df)
+        df = calculate_atr(df)
+        df = calculate_volume_sma(df)
+        df = calculate_adx(df)
+        
         return df
     except Exception as e:
         logger.error(f"Error calculating daily indicators: {e}")
@@ -265,28 +283,24 @@ def calculate_daily_indicators(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def calculate_hourly_indicators(df: pd.DataFrame) -> pd.DataFrame:
-    """시간봉 기반 단기 신호 지표를 계산합니다."""
+    """시간봉 데이터에 대한 지표를 계산합니다."""
     try:
         df = df.copy()
         
-        # 설정값 가져오기
-        sma_periods = HOURLY_INDICATORS["SMA_PERIODS"]
-        rsi_period = HOURLY_INDICATORS["RSI_PERIOD"]
-        macd_fast = HOURLY_INDICATORS["MACD_FAST"]
-        macd_slow = HOURLY_INDICATORS["MACD_SLOW"]
-        macd_signal = HOURLY_INDICATORS["MACD_SIGNAL"]
-        stoch_k_period = HOURLY_INDICATORS["STOCH_K_PERIOD"]
-        stoch_d_period = HOURLY_INDICATORS["STOCH_D_PERIOD"]
-        atr_period = HOURLY_INDICATORS["ATR_PERIOD"]
-        volume_sma_period = HOURLY_INDICATORS["VOLUME_SMA_PERIOD"]
+        # 시간봉 전용 설정값 가져오기
+        hourly_sma_periods = HOURLY_INDICATORS.get("SMA_PERIODS", [5, 20, 60])
+        hourly_rsi_period = HOURLY_INDICATORS.get("RSI_PERIOD", 14)
+        hourly_stoch_period = HOURLY_INDICATORS.get("STOCH_PERIOD", 14)
         
-        # 단기 신호 지표들 계산
-        df = calculate_sma(df, sma_periods)
-        df = calculate_rsi(df, rsi_period)
-        df = calculate_macd(df, macd_fast, macd_slow, macd_signal)
-        df = calculate_stochastic(df, stoch_k_period, stoch_d_period)
-        df = calculate_atr(df, atr_period)
-        df = calculate_volume_sma(df, volume_sma_period)
+        # 시간봉 지표 계산
+        df = calculate_sma(df, hourly_sma_periods)
+        df = calculate_rsi(df, hourly_rsi_period)
+        df = calculate_stochastic(df, hourly_stoch_period)
+        df = calculate_macd(df)
+        df = calculate_bollinger_bands(df)
+        df = calculate_atr(df)
+        df = calculate_volume_sma(df)
+        df = calculate_adx(df)
         
         return df
     except Exception as e:
@@ -295,30 +309,143 @@ def calculate_hourly_indicators(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def calculate_multi_timeframe_indicators(daily_df: pd.DataFrame, hourly_df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
-    """
-    다중 시간대 지표를 계산합니다.
-    
-    Args:
-        daily_df: 일봉 데이터
-        hourly_df: 시간봉 데이터
-    
-    Returns:
-        Dict: {'daily': 일봉지표, 'hourly': 시간봉지표}
-    """
+    """다중 시간대 지표를 계산합니다."""
     try:
-        result = {}
+        # 각 시간대별 지표 계산
+        daily_indicators = calculate_daily_indicators(daily_df)
+        hourly_indicators = calculate_hourly_indicators(hourly_df)
         
-        # 일봉 지표 계산
-        if not daily_df.empty:
-            result['daily'] = calculate_daily_indicators(daily_df)
-            logger.debug(f"Calculated daily indicators: {len(result['daily'])} bars")
-        
-        # 시간봉 지표 계산
-        if not hourly_df.empty:
-            result['hourly'] = calculate_hourly_indicators(hourly_df)
-            logger.debug(f"Calculated hourly indicators: {len(result['hourly'])} bars")
-        
-        return result
+        return {
+            'daily': daily_indicators,
+            'hourly': hourly_indicators
+        }
     except Exception as e:
         logger.error(f"Error calculating multi-timeframe indicators: {e}")
-        return {'daily': pd.DataFrame(), 'hourly': pd.DataFrame()} 
+        return {
+            'daily': daily_df,
+            'hourly': hourly_df
+        }
+
+
+# Multi-timeframe utilities (from multi_timeframe.py)
+def apply_multi_timeframe_filter(signal_result: Dict, multi_timeframe_analysis: Dict) -> Dict:
+    """
+    다중 시간대 분석 결과를 바탕으로 신호를 필터링합니다.
+    Args:
+        signal_result: 기존 신호 감지 결과
+        multi_timeframe_analysis: 다중 시간대 분석 결과
+    Returns:
+        Dict: 필터링된 신호 결과 (조건에 맞지 않으면 빈 딕셔너리)
+    """
+    try:
+        if not signal_result or not multi_timeframe_analysis:
+            return signal_result
+
+        signal_type = signal_result.get('type')
+        consensus = multi_timeframe_analysis.get('consensus', 'NEUTRAL')
+        daily_trend = multi_timeframe_analysis.get('daily_trend', 'NEUTRAL')
+        hourly_trend = multi_timeframe_analysis.get('hourly_trend', 'NEUTRAL')
+
+        # 매수 신호 필터링
+        if signal_type == 'BUY':
+            if consensus == 'BULLISH':
+                signal_result['score'] = int(signal_result['score'] * 1.2)
+                signal_result['details'].append("다중시간대 상승 확인으로 신호 강화")
+                return signal_result
+            elif hourly_trend == 'BULLISH' and daily_trend == 'NEUTRAL':
+                signal_result['score'] = int(signal_result['score'] * 0.9)
+                signal_result['details'].append("단기 상승 신호 (장기 추세 중립)")
+                return signal_result
+            elif daily_trend == 'BEARISH':
+                logger.warning(f"Filtered out BUY signal due to bearish daily trend")
+                return {}
+        elif signal_type == 'SELL':
+            if consensus == 'BEARISH':
+                signal_result['score'] = int(signal_result['score'] * 1.2)
+                signal_result['details'].append("다중시간대 하락 확인으로 신호 강화")
+                return signal_result
+            elif hourly_trend == 'BEARISH' and daily_trend == 'NEUTRAL':
+                signal_result['score'] = int(signal_result['score'] * 0.9)
+                signal_result['details'].append("단기 하락 신호 (장기 추세 중립)")
+                return signal_result
+            elif daily_trend == 'BULLISH':
+                logger.warning(f"Filtered out SELL signal due to bullish daily trend")
+                return {}
+        return signal_result
+    except Exception as e:
+        logger.error(f"Error in multi-timeframe filter: {e}")
+        return signal_result
+
+
+def get_trend_direction_multi_timeframe(daily_indicators: pd.DataFrame, hourly_indicators: pd.DataFrame) -> Dict[str, str]:
+    """
+    다중 시간대 추세 방향을 분석합니다.
+    Returns:
+        Dict: {'daily_trend': '상승/하락/중립', 'hourly_trend': '상승/하락/중립', 'consensus': '일치/불일치'}
+    """
+    try:
+        result = {
+            'daily_trend': 'NEUTRAL',
+            'hourly_trend': 'NEUTRAL',
+            'consensus': 'NEUTRAL'
+        }
+        if not daily_indicators.empty and 'SMA_50' in daily_indicators.columns:
+            latest_close = daily_indicators.iloc[-1]['Close']
+            latest_sma50 = daily_indicators.iloc[-1]['SMA_50']
+            if not pd.isna(latest_sma50):
+                if latest_close > latest_sma50 * 1.01:
+                    result['daily_trend'] = 'BULLISH'
+                elif latest_close < latest_sma50 * 0.99:
+                    result['daily_trend'] = 'BEARISH'
+        if not hourly_indicators.empty and 'SMA_20' in hourly_indicators.columns:
+            latest_close = hourly_indicators.iloc[-1]['Close']
+            latest_sma20 = hourly_indicators.iloc[-1]['SMA_20']
+            if not pd.isna(latest_sma20):
+                rsi_14 = hourly_indicators.iloc[-1].get('RSI_14', 50)
+                if latest_close > latest_sma20:
+                    if rsi_14 > 50:
+                        result['hourly_trend'] = 'BULLISH'
+                elif latest_close < latest_sma20:
+                    if rsi_14 < 50:
+                        result['hourly_trend'] = 'BEARISH'
+        if result['daily_trend'] == result['hourly_trend']:
+            result['consensus'] = result['daily_trend']
+        elif result['daily_trend'] != 'NEUTRAL':
+            result['consensus'] = result['daily_trend']
+        elif result['hourly_trend'] != 'NEUTRAL':
+            result['consensus'] = result['hourly_trend']
+        else:
+            result['consensus'] = 'NEUTRAL'
+        return result
+    except Exception as e:
+        logger.error(f"Error analyzing multi-timeframe trend: {e}")
+        return {'daily_trend': 'NEUTRAL', 'hourly_trend': 'NEUTRAL', 'consensus': 'NEUTRAL'}
+
+
+def validate_multi_timeframe_data(daily_df: pd.DataFrame, hourly_df: pd.DataFrame) -> Dict[str, bool]:
+    """
+    다중 시간대 데이터의 유효성을 검증합니다.
+    Returns:
+        Dict: {'daily_valid': bool, 'hourly_valid': bool, 'sufficient_for_analysis': bool}
+    """
+    try:
+        min_daily_length = REALTIME_SIGNAL_DETECTION["MIN_DAILY_DATA_LENGTH"]
+        min_hourly_length = REALTIME_SIGNAL_DETECTION["MIN_HOURLY_DATA_LENGTH"]
+        daily_valid = not daily_df.empty and len(daily_df) >= min_daily_length
+        hourly_valid = not hourly_df.empty and len(hourly_df) >= min_hourly_length
+        return {
+            'daily_valid': daily_valid,
+            'hourly_valid': hourly_valid,
+            'sufficient_for_analysis': daily_valid and hourly_valid,
+            'daily_length': len(daily_df) if not daily_df.empty else 0,
+            'hourly_length': len(hourly_df) if not hourly_df.empty else 0
+        }
+    except Exception as e:
+        logger.error(f"Error validating multi-timeframe data: {e}")
+        return {
+            'daily_valid': False,
+            'hourly_valid': False,
+            'sufficient_for_analysis': False,
+            'daily_length': 0,
+            'hourly_length': 0
+        } 

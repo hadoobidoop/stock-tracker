@@ -1,5 +1,6 @@
 import os
 from typing import Dict, Any
+
 from domain.signals.models.enums import StrategyMode
 from domain.strategies.strategy_config import DefaultStrategyConfig
 

@@ -8,8 +8,8 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from domain.strategies.strategy_config import StrategyConfig
 from domain.signals.models.enums import StrategyType
+from domain.strategies.strategy_config import StrategyConfig
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 

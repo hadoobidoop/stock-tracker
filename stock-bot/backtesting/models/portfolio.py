@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 from domain.signals.base.models.enums import TradeStatus
+
 from .trade import Trade
 
 

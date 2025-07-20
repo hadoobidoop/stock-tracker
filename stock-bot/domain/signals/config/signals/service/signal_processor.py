@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 import pandas as pd
 
 from domain.signals.config.signals.signal_weights import SIGNAL_THRESHOLD
+from domain.signals.detectors.signal_detector import SignalDetector
 from domain.signals.models.trading_signal import (
     SignalEvidence,
     TechnicalIndicatorEvidence,
@@ -13,7 +14,6 @@ from domain.signals.models.trading_signal import (
 )
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
-from domain.signals.detectors.signal_detector import SignalDetector
 
 logger = get_logger(__name__)
 

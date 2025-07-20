@@ -2,8 +2,10 @@
 공통 데이터 처리 유틸리티
 Shared data processing utilities for signal detection services
 """
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Any
+
 import pandas as pd
+
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)

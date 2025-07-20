@@ -2,7 +2,7 @@ import math
 import time
 from datetime import datetime, timedelta
 
-from domain.signals.utils import calculate_all_indicators
+from domain.indicators.calculator import calculate_all_indicators
 from domain.stock.config.settings import OHLCV_COLLECTION
 from infrastructure.db.repository.sql_stock_repository import SQLStockRepository
 from infrastructure.db.repository.sql_technical_indicator_repository import SQLTechnicalIndicatorRepository

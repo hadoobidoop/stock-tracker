@@ -2,15 +2,15 @@ from typing import Dict
 
 import pandas as pd
 
-from domain.signals.models.strategy_result import StrategyResult
-from domain.strategies.base import BaseStrategy
-from domain.strategies.strategy_config import StrategyConfig
-from domain.signals.models.enums import StrategyType
 from domain.signals.config.signals.service.signal_processor import SignalProcessor
+from domain.signals.models.enums import StrategyType
+from domain.signals.models.strategy_result import StrategyResult
 from domain.stock.service.market_data_service import MarketDataService
+from domain.strategies.base import BaseStrategy
 from domain.strategies.single.mean_reversion.mean_reversion_strategy import MeanReversionStrategy
 from domain.strategies.single.trend_following.trend_following_strategy import TrendFollowingStrategy
 from domain.strategies.single.volatility_breakout.volatility_breakout_strategy import VolatilityBreakoutStrategy
+from domain.strategies.strategy_config import StrategyConfig
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from .configs.market_regime_hybrid_config import (

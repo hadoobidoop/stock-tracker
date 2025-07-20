@@ -3,9 +3,9 @@ from typing import Dict, List, Tuple
 import pandas as pd
 
 from domain.signals.config.signals.realtime_signal_settings import VOLUME_SURGE_FACTOR
+from domain.signals.detectors.signal_detector import SignalDetector
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
-from domain.signals.detectors.signal_detector import SignalDetector
 
 logger = get_logger(__name__)
 

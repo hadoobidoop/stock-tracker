@@ -2,11 +2,10 @@
 
 from typing import Dict, List, Optional, Any
 
+from domain.orchestration.managers.base_strategy_manager import BaseStrategyManager
 from domain.strategies.dynamic.dynamic_strategy_manager import DynamicCompositeStrategy
 from domain.strategies.dynamic.dynamic_strategy_manager.configs.dynamic_strategies import get_all_strategies
-from domain.orchestration.managers.base_strategy_manager import BaseStrategyManager
 from infrastructure.logging import get_logger
-
 
 logger = get_logger(__name__)
 

@@ -18,14 +18,15 @@ from typing import Dict, Optional
 
 import pandas as pd
 
-from domain.signals.models.enums import StrategyType
 from domain.signals.config.signals.service.signal_processor import SignalProcessor
+from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
 from domain.strategies.base import BaseStrategy
 from domain.strategies.single.volatility_breakout.detectors.volatility_breakout_adx_detector import \
     VolatilityBreakoutADXDetector
 # Volatility Breakout 전략 본체
-from domain.strategies.single.volatility_breakout.detectors.volatility_breakout_bb_detector import VolatilityBreakoutBBDetector
+from domain.strategies.single.volatility_breakout.detectors.volatility_breakout_bb_detector import \
+    VolatilityBreakoutBBDetector
 from domain.strategies.single.volatility_breakout.detectors.volatility_breakout_volume_detector import \
     VolatilityBreakoutVolumeDetector
 from infrastructure.db.models.enums import TrendType

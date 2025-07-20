@@ -10,10 +10,10 @@
 - utils: 유틸리티 함수들
 """
 
+from .market_conditions import MARKET_CONDITION_STRATEGIES
 # 외부 API - 기존 import 경로와의 호환성 유지
 from .models import StrategyMixConfig
 from .registry import STRATEGY_MIXES
-from .market_conditions import MARKET_CONDITION_STRATEGIES
 from .utils import (
     get_strategy_mix_config,
     get_available_strategy_mixes,

@@ -3,14 +3,15 @@
 """
 
 from typing import Dict, List, Optional, Tuple, Any
+
 import pandas as pd
 
-from domain.signals.models.enums import StrategyType, StrategyMixMode
-from infrastructure.db.models.enums import TrendType
-from domain.strategies.mixes import StrategyMixConfig, STRATEGY_MIXES
-from domain.strategies.base import BaseStrategy
-from domain.signals.models.strategy_result import StrategyResult
 from domain.orchestration.utils.strategy_manager_utils import StrategyManagerUtils
+from domain.signals.models.enums import StrategyType, StrategyMixMode
+from domain.signals.models.strategy_result import StrategyResult
+from domain.strategies.base import BaseStrategy
+from domain.strategies.mixes import StrategyMixConfig, STRATEGY_MIXES
+from infrastructure.db.models.enums import TrendType
 from infrastructure.logging.logger_config import get_logger
 
 logger = get_logger(__name__)

@@ -3,6 +3,12 @@
 Shared utilities for signal detection services
 """
 
+from .constants import (
+    DataProcessingConstants,
+    CacheConstants,
+    SignalDetectionConstants,
+    LoggingConstants
+)
 from .data_processing_utils import (
     DataFrameValidator,
     IndicatorColumnFilter,
@@ -12,12 +18,6 @@ from .data_processing_utils import (
 from .repository_factory import (
     RepositoryFactory,
     IndicatorPersistenceService
-)
-from .constants import (
-    DataProcessingConstants,
-    CacheConstants,
-    SignalDetectionConstants,
-    LoggingConstants
 )
 
 __all__ = [

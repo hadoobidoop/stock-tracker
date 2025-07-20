@@ -1,7 +1,7 @@
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Coroutine
+from typing import Dict, List, Optional
 
 from domain.orchestration.selector import get_current_strategy_config, strategy_selector
 from domain.signals.config.signals.service.signal_detection_service import SignalDetectionService
@@ -15,36 +15,19 @@ sys.path.append(str(project_root))
 
 from infrastructure.logging import get_logger
 from infrastructure.db.models.enums import TrendType, SignalType
-from infrastructure.db.repository.sql_technical_indicator_repository import SQLTechnicalIndicatorRepository
-from infrastructure.db.repository.sql_trading_signal_repository import SQLTradingSignalRepository
 
 # 새로운 전략 시스템 import
 
-from domain.signals.utils import (
+from domain.indicators.calculator import (
     calculate_all_indicators,
 )
-from domain.signals.repository.technical_indicator_repository import TechnicalIndicatorRepository
-from domain.signals.repository.trading_signal_repository import TradingSignalRepository
 from domain.stock.service.stock_analysis_service import StockAnalysisService
-from domain.stock.repository.stock_repository import StockRepository
-from infrastructure.db.repository.sql_stock_repository import SQLStockRepository
 from domain.signals.config.signals.signal_weights import  SIGNAL_THRESHOLD
 from domain.signals.config.signals.realtime_signal_settings import REALTIME_SIGNAL_DETECTION
-from domain.signals.utils.multi_timeframe import (
+from domain.indicators.calculator import (
     apply_multi_timeframe_filter,
 )
 from domain.signals.service.cache_manager import MarketDataCacheManager
-from domain.signals.service.shared import (
-    DataFrameValidator,
-    IndicatorColumnFilter,
-    DataProcessingHelper,
-    IndicatorCalculationService
-)
-from domain.signals.service.shared.constants import (
-    DataProcessingConstants,
-    SignalDetectionConstants,
-    LoggingConstants
-)
 from domain.signals.service.shared.repository_factory import (
     RepositoryFactory,
     IndicatorPersistenceService
