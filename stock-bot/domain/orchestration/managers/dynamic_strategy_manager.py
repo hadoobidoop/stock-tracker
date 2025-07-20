@@ -85,7 +85,7 @@ class DynamicStrategyManager(BaseStrategyManager[DynamicCompositeStrategy, str])
         
         # 최근 분석 컨텍스트 요약 포함(있을 경우)
         if strategy.last_context:
-            info["last_analysis"] = strategy.get_context_summary()
+            info["last_analysis"] = strategy.last_context.get_summary()
         return info
 
     def get_detailed_log(self, name: str = None) -> List[Dict[str, Any]]:
@@ -97,4 +97,6 @@ class DynamicStrategyManager(BaseStrategyManager[DynamicCompositeStrategy, str])
             list: 분석 로그(딕셔너리 리스트)
         """
         strategy = self.strategies.get(name) if name else self.current_strategy
-        return strategy.get_detailed_log() if strategy else []
+        if strategy and strategy.last_context:
+            return strategy.last_context.get_detailed_log()
+        return []

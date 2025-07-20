@@ -12,7 +12,7 @@ import pandas as pd
 
 from domain.signals.models.enums import StrategyType
 from domain.strategies.base import BaseStrategy
-from domain.strategies.dynamic.context.decision_context import DecisionContext
+from domain.strategies.dynamic.engine.decision_context import DecisionContext
 from domain.strategies.dynamic.engine.modifier_engine import ModifierEngine
 from domain.strategies.strategy_config import StrategyConfig
 from domain.signals.config.signals.service.signal_processor import SignalProcessor
@@ -341,8 +341,3 @@ class DynamicCompositeStrategy(BaseStrategy):
             return self.last_context.get_summary()
         return None
     
-    def get_detailed_log(self) -> List[Dict[str, Any]]:
-        """상세 분석 로그 반환"""
-        if self.last_context:
-            return self.last_context.get_detailed_log()
-        return []

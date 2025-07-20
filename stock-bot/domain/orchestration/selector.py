@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional, List, Union, Callable, Tuple
 
 from domain.signals.models.enums import StrategyType, StrategyMode
 from domain.strategies.dynamic.dynamic_strategy_manager.configs.dynamic_strategies import STRATEGY_DEFINITIONS
-from domain.strategies.environment import EnvironmentConfig
+from domain.orchestration.config.environment import EnvironmentConfig
 from domain.strategies.strategy_config import get_strategy_availability, DefaultStrategyConfig
 from domain.orchestration.factory import StrategyFactory
 from domain.orchestration.strategy_registry import strategy_registry
