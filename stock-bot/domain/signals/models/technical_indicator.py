@@ -1,3 +1,7 @@
+"""
+기술적 지표 도메인 모델
+"""
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, Any, Optional

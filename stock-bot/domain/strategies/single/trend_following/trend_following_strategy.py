@@ -3,7 +3,10 @@ from typing import Dict, Optional
 import pandas as pd
 
 from domain.signals.config.signals.service.signal_processor import SignalProcessor
-from domain.signals.detectors.composite.composite_detector import CompositeSignalDetector
+from domain.signals.detectors.trend_following.sma_detector import SMASignalDetector
+from domain.signals.detectors.trend_following.macd_detector import MACDSignalDetector
+from domain.signals.detectors.trend_following.adx_detector import ADXSignalDetector
+from domain.signals.detectors.volume.volume_detector import VolumeSignalDetector
 from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
 from domain.strategies.base import BaseStrategy
@@ -11,28 +14,24 @@ from domain.strategies.strategy_config import StrategyConfig
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from .configs.trend_following_config import SMA_WEIGHT, MACD_WEIGHT, ADX_WEIGHT, VOLUME_WEIGHT
-from .detectors.trend_following_adx_detector import ADXSignalDetector
-from .detectors.trend_following_macd_detector import MACDSignalDetector
-from .detectors.trend_following_sma_detector import SMASignalDetector
-from .detectors.trend_following_volume_detector import VolumeSignalDetector
 
 logger = get_logger(__name__)
 
 
 class TrendFollowingStrategy(BaseStrategy):
     """
-    Trend Following(추세추종) 전략 - SMA, MACD, ADX 등 추세 지표 기반
+    Trend Following(추세추종) 전략 - 중앙 Detector(SMA, MACD, ADX, Volume) + 파라미터 주입 방식
 
     [구조 및 특징]
-    - 커스텀 Detector: trend_following_sma_detector, trend_following_macd_detector, trend_following_adx_detector, trend_following_volume_detector
-    - Composite Detector: MACD+Volume 컨펌(신호 신뢰도 강화)
+    - 중앙 Detector: SMASignalDetector, MACDSignalDetector, ADXSignalDetector, VolumeSignalDetector
+    - 파라미터 주입: 전략별 특화 설정 적용
     - Detector별 가중치는 코드 내에서 직접 관리(예: SMA 7.0, MACD 6.0 등)
     - 시장/장기 추세 일치(trend_alignment) 필터 적용 가능
     - 점수는 시장/장기 추세 일치 여부에 따라 가중치 조정
 
     [주요 파라미터]
     - signal_threshold: 신호 발생 기준점(기본 7.0)
-    - detector별 가중치: SMA(7.0), MACD(6.0), ADX(6.0), Volume(4.0), Composite(8.0)
+    - detector별 가중치: SMA(7.0), MACD(6.0), ADX(6.0), Volume(4.0)
     - trend_alignment: 시장/장기 추세 일치 필터(설정에서 on/off)
 
     [사용 예시]
@@ -50,33 +49,62 @@ class TrendFollowingStrategy(BaseStrategy):
 
     def initialize(self) -> bool:
         """
-        Trend Following 전략의 Detector 조합 및 orchestrator 초기화
-        - 커스텀 Detector: trend_following_sma_detector, trend_following_macd_detector, trend_following_adx_detector, trend_following_volume_detector
-        - Composite Detector: MACD+Volume 컨펌(신호 신뢰도 강화)
+        Trend Following 전략의 중앙 Detector 조합 및 orchestrator 초기화
+        - 중앙 Detector: SMASignalDetector, MACDSignalDetector, ADXSignalDetector, VolumeSignalDetector
+        - 파라미터 주입: 전략별 특화 설정 적용
         - Detector별 가중치는 코드 내에서 직접 관리
         """
         try:
+            # TrendFollowing 전략용 파라미터 설정
+            trend_following_sma_params = {
+                'adx_threshold': 25,  # 기본 20에서 더 엄격하게
+                'continuation_weight': 0.6,  # 기본 0.4에서 더 적극적으로
+                'trend_confirmation_required': True  # 추세 확인 필요
+            }
+            
+            trend_following_macd_params = {
+                'signal_sensitivity': 1.2,  # 기본 1.0에서 더 민감하게
+                'trend_confirmation_required': True  # 추세 확인 필요
+            }
+            
+            trend_following_adx_params = {
+                'adx_threshold': 25,  # 기본 25 유지
+                'trend_strength_required': True  # 추세 강도 확인 필요
+            }
+            
+            trend_following_volume_params = {
+                'volume_threshold': 1.8,  # 기본 2.0에서 더 낮게
+                'trend_confirmation_required': True  # 추세 확인 필요
+            }
+            
             # 설정 파일에 정의된 detector들을 코드로 직접 생성
             detectors = [
-                SMASignalDetector(weight=SMA_WEIGHT),
-                MACDSignalDetector(weight=MACD_WEIGHT),
-                ADXSignalDetector(weight=ADX_WEIGHT),
-                VolumeSignalDetector(weight=VOLUME_WEIGHT),
-                CompositeSignalDetector(
-                    detectors=[
-                        MACDSignalDetector(weight=0),  # 가중치는 CompositeDetector에서 관리
-                        VolumeSignalDetector(weight=0)
-                    ],
-                    weight=8.0,
-                    require_all=True,
-                    name="MACD_Volume_Confirm"
+                SMASignalDetector(
+                    weight=SMA_WEIGHT,
+                    name="TrendFollowing_SMA_Detector",
+                    parameters=trend_following_sma_params
+                ),
+                MACDSignalDetector(
+                    weight=MACD_WEIGHT,
+                    name="TrendFollowing_MACD_Detector",
+                    parameters=trend_following_macd_params
+                ),
+                ADXSignalDetector(
+                    weight=ADX_WEIGHT,
+                    name="TrendFollowing_ADX_Detector",
+                    parameters=trend_following_adx_params
+                ),
+                VolumeSignalDetector(
+                    weight=VOLUME_WEIGHT,
+                    name="TrendFollowing_Volume_Detector",
+                    parameters=trend_following_volume_params
                 )
             ]
             self.orchestrator = SignalProcessor()
             for detector in detectors:
                 self.orchestrator.add_detector(detector)
             self.is_initialized = True
-            logger.info(f"{self.get_name()} 초기화 완료")
+            logger.info(f"{self.get_name()} 초기화 완료 (중앙 Detector + 파라미터 주입)")
             return True
         except Exception as e:
             logger.error(f"{self.get_name()} 초기화 실패: {e}")

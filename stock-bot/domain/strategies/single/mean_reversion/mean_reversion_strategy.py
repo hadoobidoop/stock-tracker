@@ -1,9 +1,9 @@
 """
 mean_reversion 전략 실행체 (독립 패키지)
 
-- BB(볼린저밴드, mean_reversion), RSI, Stoch Detector를 config 기반으로 동적으로 조합
+- 중앙 Detector(BB, RSI, Stoch) + 파라미터 주입 방식
 - Detector별 가중치/파라미터는 config에서 일관 관리 (유지보수/튜닝/확장성 우수)
-- mean_reversion 전용 래퍼 Detector 클래스 사용 (prefix: MeanReversion)
+- mean_reversion 전용 파라미터 설정 적용
 - signal_threshold: 7.0 (표준), position_management: 최대 4개, 24시간 보유(단기)
 - config: domain.strategies.mean_reversion.configs.mean_reversion_config.MeanReversionStrategyConfig
 
@@ -18,14 +18,13 @@ from typing import Dict, Optional
 import pandas as pd
 
 from domain.signals.config.signals.service.signal_processor import SignalProcessor
+from domain.signals.detectors.volatility.bb_detector import BBSignalDetector
+from domain.signals.detectors.momentum.rsi_detector import RSISignalDetector
+from domain.signals.detectors.momentum.stoch_detector import StochSignalDetector
 from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
 from domain.strategies.base import BaseStrategy
 from domain.strategies.single.mean_reversion.configs.mean_reversion_config import MeanReversionStrategyConfig
-from domain.strategies.single.mean_reversion.detectors.mean_reversion_bb_detector import MeanReversionBBSignalDetector
-from domain.strategies.single.mean_reversion.detectors.mean_reversion_rsi_detector import MeanReversionRSISignalDetector
-from domain.strategies.single.mean_reversion.detectors.mean_reversion_stoch_detector import \
-    MeanReversionStochSignalDetector
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 
@@ -34,9 +33,9 @@ logger = get_logger(__name__)
 class MeanReversionStrategy(BaseStrategy):
     """
     mean_reversion 전략 실행체
-    - config 기반 동적 Detector 조합 (BB, RSI, Stoch)
+    - 중앙 Detector + 파라미터 주입 방식
     - Detector별 가중치/파라미터는 config에서 관리
-    - mean_reversion 전용 래퍼 Detector 클래스 사용
+    - mean_reversion 전용 파라미터 설정 적용
     """
     def __init__(self, strategy_type: StrategyType = StrategyType.MEAN_REVERSION, config: Optional[MeanReversionStrategyConfig] = None):
         default_config = MeanReversionStrategyConfig()
@@ -46,23 +45,49 @@ class MeanReversionStrategy(BaseStrategy):
 
     def initialize(self) -> bool:
         try:
-            # config 기반 Detector 동적 생성
-            detector_map = {
-                "MeanReversionBBSignalDetector": MeanReversionBBSignalDetector,
-                "MeanReversionRSISignalDetector": MeanReversionRSISignalDetector,
-                "MeanReversionStochSignalDetector": MeanReversionStochSignalDetector,
+            # MeanReversion 전략용 파라미터 설정
+            mean_reversion_bb_params = {
+                'detector_type': 'mean_reversion',  # mean_reversion 모드
+                'bb_period': 20,
+                'bb_std': 2.0,
+                'mean_reversion_threshold': 0.1,  # 평균 회귀 임계값
+                'mean_reversion_confirmation_required': True  # 평균 회귀 확인 필요
             }
-            detectors = []
-            for det_cfg in self.config.detectors:
-                cls = detector_map[det_cfg["detector_class"]]
-                kwargs = dict(det_cfg)
-                kwargs.pop("detector_class")
-                detectors.append(cls(**kwargs))
+            
+            mean_reversion_rsi_params = {
+                'oversold_threshold': 35,  # 기본 35 유지
+                'overbought_threshold': 65,  # 기본 65 유지
+                'mean_reversion_confirmation_required': True  # 평균 회귀 확인 필요
+            }
+            
+            mean_reversion_stoch_params = {
+                'oversold_threshold': 25,  # 기본 25 유지
+                'overbought_threshold': 75,  # 기본 75 유지
+                'mean_reversion_confirmation_required': True  # 평균 회귀 확인 필요
+            }
+            
+            detectors = [
+                BBSignalDetector(
+                    weight=self.config.detector_weights['bb'],
+                    name="MeanReversion_BB_Detector",
+                    parameters=mean_reversion_bb_params
+                ),
+                RSISignalDetector(
+                    weight=self.config.detector_weights['rsi'],
+                    name="MeanReversion_RSI_Detector",
+                    parameters=mean_reversion_rsi_params
+                ),
+                StochSignalDetector(
+                    weight=self.config.detector_weights['stoch'],
+                    name="MeanReversion_Stoch_Detector",
+                    parameters=mean_reversion_stoch_params
+                )
+            ]
             self.orchestrator = SignalProcessor()
             for detector in detectors:
                 self.orchestrator.add_detector(detector)
             self.is_initialized = True
-            logger.info(f"{self.get_name()} 초기화 완료")
+            logger.info(f"{self.get_name()} 초기화 완료 (중앙 Detector + 파라미터 주입)")
             return True
         except Exception as e:
             logger.error(f"{self.get_name()} 초기화 실패: {e}")

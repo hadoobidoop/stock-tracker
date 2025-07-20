@@ -1,3 +1,7 @@
+"""
+전략 실행 결과 모델
+"""
+
 from dataclasses import dataclass
 from typing import List, Optional
 

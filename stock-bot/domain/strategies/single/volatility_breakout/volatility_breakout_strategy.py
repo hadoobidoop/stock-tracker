@@ -2,10 +2,9 @@
 """
 Volatility Breakout 전략 (변동성 돌파)
 --------------------------------------
-- 완전 독립 패키지 구조(domain/strategies/volatility_breakout/)에서 관리
-- Detector, config, 전략 본체가 모두 폴더 내에서 독립적으로 관리됨
+- 중앙 Detector(BB, ADX, Volume) + 파라미터 주입 방식
 - 볼린저밴드(BB) breakout, ADX, 거래량 신호를 조합하여 변동성 응축 후 돌파 구간을 포착
-- 각 Detector는 커스텀 래퍼 클래스로 분리되어 유지보수/확장에 용이
+- 각 Detector는 중앙 detector를 사용하여 일관성 있게 관리
 - config 분리로 파라미터/가중치 조정이 용이
 
 사용 예시:
@@ -19,16 +18,12 @@ from typing import Dict, Optional
 import pandas as pd
 
 from domain.signals.config.signals.service.signal_processor import SignalProcessor
+from domain.signals.detectors.volatility.bb_detector import BBSignalDetector
+from domain.signals.detectors.trend_following.adx_detector import ADXSignalDetector
+from domain.signals.detectors.volume.volume_detector import VolumeSignalDetector
 from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
 from domain.strategies.base import BaseStrategy
-from domain.strategies.single.volatility_breakout.detectors.volatility_breakout_adx_detector import \
-    VolatilityBreakoutADXDetector
-# Volatility Breakout 전략 본체
-from domain.strategies.single.volatility_breakout.detectors.volatility_breakout_bb_detector import \
-    VolatilityBreakoutBBDetector
-from domain.strategies.single.volatility_breakout.detectors.volatility_breakout_volume_detector import \
-    VolatilityBreakoutVolumeDetector
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 
@@ -38,7 +33,7 @@ logger = get_logger(__name__)
 class VolatilityBreakoutStrategy(BaseStrategy):
     """
     Volatility Breakout 전략 (볼린저밴드 돌파 + ADX + 거래량)
-    - Detector, config 모두 폴더 내에서 독립 관리
+    - 중앙 Detector + 파라미터 주입 방식
     - 변동성 응축(squeeze) 후 상단/하단 돌파 및 거래량 급증 구간을 포착
     - 각 Detector별 신호 근거(TechnicalIndicatorEvidence)를 상세 기록
     """
@@ -49,19 +44,52 @@ class VolatilityBreakoutStrategy(BaseStrategy):
         :param config: Detector 가중치, 파라미터 등 설정(dict 또는 config 객체)
         """
         super().__init__(strategy_type, config)
-        self.detectors = [
-            VolatilityBreakoutBBDetector(weight=7.0, detector_type="breakout"),
-            VolatilityBreakoutADXDetector(weight=4.0),
-            VolatilityBreakoutVolumeDetector(weight=5.0),
-        ]
+        self.orchestrator: Optional[SignalProcessor] = None
 
     def initialize(self) -> bool:
         try:
+            # VolatilityBreakout 전략용 파라미터 설정
+            volatility_breakout_bb_params = {
+                'detector_type': 'breakout',  # breakout 모드
+                'bb_period': 20,
+                'bb_std': 2.0,
+                'breakout_threshold': 0.05,  # 돌파 임계값
+                'squeeze_confirmation_required': True  # 응축 확인 필요
+            }
+            
+            volatility_breakout_adx_params = {
+                'adx_threshold': 25,  # 기본 25 유지
+                'trend_strength_required': True,  # 추세 강도 확인 필요
+                'breakout_mode': True  # 돌파 모드 활성화
+            }
+            
+            volatility_breakout_volume_params = {
+                'volume_threshold': 1.5,  # 기본 2.0에서 더 낮게
+                'breakout_confirmation_required': True  # 돌파 확인 필요
+            }
+            
+            detectors = [
+                BBSignalDetector(
+                    weight=7.0,
+                    name="VolatilityBreakout_BB_Detector",
+                    parameters=volatility_breakout_bb_params
+                ),
+                ADXSignalDetector(
+                    weight=4.0,
+                    name="VolatilityBreakout_ADX_Detector",
+                    parameters=volatility_breakout_adx_params
+                ),
+                VolumeSignalDetector(
+                    weight=5.0,
+                    name="VolatilityBreakout_Volume_Detector",
+                    parameters=volatility_breakout_volume_params
+                )
+            ]
             self.orchestrator = SignalProcessor()
-            for detector in self.detectors:
+            for detector in detectors:
                 self.orchestrator.add_detector(detector)
             self.is_initialized = True
-            logger.info(f"{self.get_name()} 초기화 완료")
+            logger.info(f"{self.get_name()} 초기화 완료 (중앙 Detector + 파라미터 주입)")
             return True
         except Exception as e:
             logger.error(f"{self.get_name()} 초기화 실패: {e}")

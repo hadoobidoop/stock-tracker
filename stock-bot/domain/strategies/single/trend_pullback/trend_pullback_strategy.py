@@ -3,6 +3,9 @@ from typing import Dict, Optional
 import pandas as pd
 
 from domain.signals.config.signals.service.signal_processor import SignalProcessor
+from domain.signals.detectors.trend_following.sma_detector import SMASignalDetector
+from domain.signals.detectors.trend_following.adx_detector import ADXSignalDetector
+from domain.signals.detectors.momentum.rsi_detector import RSISignalDetector
 from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
 from domain.strategies.base import BaseStrategy
@@ -10,9 +13,6 @@ from domain.strategies.strategy_config import StrategyConfig
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from .configs.trend_pullback_config import SMA_WEIGHT, ADX_WEIGHT, RSI_WEIGHT
-from .detectors.trend_pullback_adx_detector import TrendPullbackADXDetector
-from .detectors.trend_pullback_rsi_detector import TrendPullbackRSIDetector
-from .detectors.trend_pullback_sma_detector import TrendPullbackSMADetector
 
 logger = get_logger(__name__)
 
@@ -20,6 +20,7 @@ logger = get_logger(__name__)
 class TrendPullbackStrategy(BaseStrategy):
     """
     상승 추세 중 일시적 하락(눌림목) 시 매수하는 전략.
+    - 중앙 Detector(SMA, ADX, RSI) + 파라미터 주입 방식
     """
 
     def __init__(self, strategy_type: StrategyType, config: StrategyConfig):
@@ -28,16 +29,48 @@ class TrendPullbackStrategy(BaseStrategy):
 
     def initialize(self) -> bool:
         try:
+            # TrendPullback 전략용 파라미터 설정
+            trend_pullback_sma_params = {
+                'adx_threshold': 20,  # 기본 20 유지
+                'continuation_weight': 0.5,  # 기본 0.4에서 더 보수적으로
+                'trend_confirmation_required': True,  # 추세 확인 필요
+                'pullback_mode': True  # 눌림목 모드 활성화
+            }
+            
+            trend_pullback_adx_params = {
+                'adx_threshold': 25,  # 기본 25 유지
+                'trend_strength_required': True,  # 추세 강도 확인 필요
+                'pullback_mode': True  # 눌림목 모드 활성화
+            }
+            
+            trend_pullback_rsi_params = {
+                'oversold_threshold': 40,  # 기본 35에서 더 관대하게
+                'overbought_threshold': 60,  # 기본 65에서 더 관대하게
+                'pullback_mode': True  # 눌림목 모드 활성화
+            }
+            
             detectors = [
-                TrendPullbackSMADetector(weight=SMA_WEIGHT),
-                TrendPullbackADXDetector(weight=ADX_WEIGHT),
-                TrendPullbackRSIDetector(weight=RSI_WEIGHT),
+                SMASignalDetector(
+                    weight=SMA_WEIGHT,
+                    name="TrendPullback_SMA_Detector",
+                    parameters=trend_pullback_sma_params
+                ),
+                ADXSignalDetector(
+                    weight=ADX_WEIGHT,
+                    name="TrendPullback_ADX_Detector",
+                    parameters=trend_pullback_adx_params
+                ),
+                RSISignalDetector(
+                    weight=RSI_WEIGHT,
+                    name="TrendPullback_RSI_Detector",
+                    parameters=trend_pullback_rsi_params
+                )
             ]
             self.orchestrator = SignalProcessor()
             for detector in detectors:
                 self.orchestrator.add_detector(detector)
             self.is_initialized = True
-            logger.info(f"{self.get_name()} 초기화 완료")
+            logger.info(f"{self.get_name()} 초기화 완료 (중앙 Detector + 파라미터 주입)")
             return True
         except Exception as e:
             logger.error(f"{self.get_name()} 초기화 실패: {e}")

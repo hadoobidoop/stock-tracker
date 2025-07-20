@@ -2,363 +2,358 @@
 Volatility Analysis Module
 
 BB(볼린저밴드), ADX 등 변동성 지표들의 복합 분석 로직을 제공합니다.
-기존 BBDetector와 관련 로직에서 분리된 변동성 분석 함수들을 포함합니다.
+기존 CompositeDetector에서 분리된 변동성 분석 함수들을 포함합니다.
 """
 
 from enum import Enum
 from typing import Dict, Optional, Tuple
 
 import pandas as pd
-import numpy as np
 
 from infrastructure.logging import get_logger
 
 logger = get_logger(__name__)
 
 
-class BBVolatilityEvidence(Enum):
-    """볼린저밴드 + ADX 변동성 조합 근거"""
-    SQUEEZE_WITH_STRONG_TREND = "밴드 스퀴즈 중 강한 추세 형성"
-    BREAKOUT_WITH_STRONG_TREND = "상단 돌파 및 강한 상승 추세"
-    BREAKDOWN_WITH_STRONG_TREND = "하단 돌파 및 강한 하락 추세"
-    SQUEEZE_WITH_WEAK_TREND = "밴드 스퀴즈 중 약한 추세"
-    EXPANSION_WITH_MODERATE_TREND = "밴드 확장 및 보통 추세"
-    MEAN_REVERSION_STRONG = "강한 평균 회귀 신호"
-    MEAN_REVERSION_WEAK = "약한 평균 회귀 신호"
+class BBEvidence(Enum):
+    """볼린저밴드 근거"""
+    SQUEEZE_BREAKOUT_UP = "BB Squeeze 후 상단 돌파"
+    SQUEEZE_BREAKOUT_DOWN = "BB Squeeze 후 하단 돌파"
+    UPPER_BAND_TOUCH = "BB 상단 터치"
+    LOWER_BAND_TOUCH = "BB 하단 터치"
+    MEAN_REVERSION_UP = "BB 평균 회귀 상승"
+    MEAN_REVERSION_DOWN = "BB 평균 회귀 하락"
+    NEUTRAL = "BB 중립"
+
+
+class ADXEvidence(Enum):
+    """ADX 근거"""
+    STRONG_TREND_UP = "ADX 강한 상승 추세"
+    STRONG_TREND_DOWN = "ADX 강한 하락 추세"
+    WEAK_TREND_UP = "ADX 약한 상승 추세"
+    WEAK_TREND_DOWN = "ADX 약한 하락 추세"
+    TREND_STRENGTHENING = "ADX 추세 강화"
+    TREND_WEAKENING = "ADX 추세 약화"
+    NEUTRAL = "ADX 중립"
+
+
+class VolatilityPattern(Enum):
+    """변동성 패턴 분류"""
+    HIGH_VOLATILITY = "고변동성"
+    LOW_VOLATILITY = "저변동성"
+    INCREASING_VOLATILITY = "변동성 증가"
+    DECREASING_VOLATILITY = "변동성 감소"
+    SQUEEZE = "변동성 압축"
+    EXPANSION = "변동성 확장"
     NEUTRAL = "중립"
-    NO_SIGNAL = "신호 없음"
 
 
-class VolatilityRegime(Enum):
-    """변동성 체제 분류"""
-    HIGH_VOLATILITY_TRENDING = "고변동성 추세"
-    HIGH_VOLATILITY_SIDEWAYS = "고변동성 횡보"
-    MODERATE_VOLATILITY = "보통 변동성"
-    LOW_VOLATILITY_SQUEEZE = "저변동성 압축"
-    EXPANDING_VOLATILITY = "변동성 확장"
-
-
-class BBBandPosition(Enum):
-    """볼린저밴드 내 위치"""
-    ABOVE_UPPER = "상단 밴드 위"
-    NEAR_UPPER = "상단 밴드 근처"
-    MIDDLE_UPPER = "중간선 위"
-    MIDDLE_LOWER = "중간선 아래"
-    NEAR_LOWER = "하단 밴드 근처"
-    BELOW_LOWER = "하단 밴드 아래"
-
-
-def analyze_bb_volatility_with_trend(data: pd.DataFrame,
-                                   bb_upper_column: str = 'BBU_20_2.0',
-                                   bb_middle_column: str = 'BBM_20_2.0',
-                                   bb_lower_column: str = 'BBL_20_2.0',
-                                   bb_bandwidth_column: str = 'BBB_20_2.0',
-                                   bb_percent_column: str = 'BBP_20_2.0',
-                                   adx_column: str = 'ADX_14',
-                                   adx_strong_threshold: float = 25.0,
-                                   adx_weak_threshold: float = 20.0,
-                                   price_column: str = 'Close') -> BBVolatilityEvidence:
+def analyze_bb_volatility(data: pd.DataFrame,
+                         bb_lower_column: str = 'BBL_20_2.0',
+                         bb_middle_column: str = 'BBM_20_2.0',
+                         bb_upper_column: str = 'BBU_20_2.0',
+                         bb_bandwidth_column: str = 'BBB_20_2.0',
+                         analysis_type: str = 'breakout') -> Tuple[BBEvidence, float]:
     """
-    볼린저밴드와 ADX를 종합하여 변동성 기반 신호를 분석합니다.
+    볼린저밴드 변동성을 분석합니다.
     
     Args:
         data: OHLCV 및 지표 데이터
-        bb_upper_column: 볼린저밴드 상단 컬럼명
-        bb_middle_column: 볼린저밴드 중간선 컬럼명  
-        bb_lower_column: 볼린저밴드 하단 컬럼명
-        bb_bandwidth_column: 볼린저밴드 대역폭 컬럼명
-        bb_percent_column: 볼린저밴드 %B 컬럼명
-        adx_column: ADX 컬럼명
-        adx_strong_threshold: ADX 강한 추세 임계값
-        adx_weak_threshold: ADX 약한 추세 임계값
-        price_column: 가격 컬럼명
+        bb_lower_column: BB 하단 컬럼명
+        bb_middle_column: BB 중간 컬럼명
+        bb_upper_column: BB 상단 컬럼명
+        bb_bandwidth_column: BB 밴드폭 컬럼명
+        analysis_type: 분석 타입 ('breakout' 또는 'mean_reversion')
         
     Returns:
-        BBVolatilityEvidence: 변동성 분석 결과
+        Tuple[BBEvidence, float]: (근거, 신호 강도)
+    """
+    try:
+        if len(data) < 3:
+            return BBEvidence.NEUTRAL, 0.0
+            
+        latest = data.iloc[-1]
+        prev = data.iloc[-2]
+        prev2 = data.iloc[-3]
+        
+        current_price = latest['Close']
+        bb_lower = latest[bb_lower_column]
+        bb_middle = latest[bb_middle_column]
+        bb_upper = latest[bb_upper_column]
+        bb_bandwidth = latest[bb_bandwidth_column]
+        
+        # Squeeze 상태 확인 (밴드폭이 좁은 상태)
+        avg_bandwidth = data[bb_bandwidth_column].rolling(20).mean().iloc[-1]
+        is_squeezed = bb_bandwidth < avg_bandwidth * 0.8
+        
+        if analysis_type == 'breakout':
+            return _analyze_bb_breakout(current_price, bb_lower, bb_upper, bb_bandwidth, 
+                                      prev['Close'], prev[bb_upper_column], prev[bb_lower_column],
+                                      is_squeezed)
+        else:  # mean_reversion
+            return _analyze_bb_mean_reversion(current_price, bb_lower, bb_middle, bb_upper,
+                                            prev['Close'], prev[bb_lower_column], prev[bb_upper_column])
+            
+    except Exception as e:
+        logger.error(f"BB 변동성 분석 실패: {e}")
+        return BBEvidence.NEUTRAL, 0.0
+
+
+def analyze_adx_trend(data: pd.DataFrame,
+                     adx_column: str = 'ADX_14',
+                     dmp_column: str = 'DMP_14',
+                     dmn_column: str = 'DMN_14') -> Tuple[ADXEvidence, float]:
+    """
+    ADX 추세 강도를 분석합니다.
+    
+    Args:
+        data: OHLCV 및 지표 데이터
+        adx_column: ADX 컬럼명
+        dmp_column: +DI 컬럼명
+        dmn_column: -DI 컬럼명
+        
+    Returns:
+        Tuple[ADXEvidence, float]: (근거, 신호 강도)
     """
     try:
         if len(data) < 2:
-            return BBVolatilityEvidence.NO_SIGNAL
+            return ADXEvidence.NEUTRAL, 0.0
             
-        # 필요한 컬럼 확인
-        required_columns = [bb_upper_column, bb_middle_column, bb_lower_column, 
-                          bb_bandwidth_column, bb_percent_column, adx_column, price_column]
-        missing_columns = [col for col in required_columns if col not in data.columns]
-        if missing_columns:
-            logger.warning(f"Missing columns for BB volatility analysis: {missing_columns}")
-            return BBVolatilityEvidence.NO_SIGNAL
-            
-        current_data = data.iloc[-1]
-        prev_data = data.iloc[-2]
+        latest = data.iloc[-1]
+        prev = data.iloc[-2]
         
-        # 현재 지표값들
-        current_price = current_data[price_column]
-        current_bb_upper = current_data[bb_upper_column]
-        current_bb_middle = current_data[bb_middle_column]
-        current_bb_lower = current_data[bb_lower_column]
-        current_bandwidth = current_data[bb_bandwidth_column]
-        current_bb_percent = current_data[bb_percent_column]
-        current_adx = current_data[adx_column]
+        adx_current = latest[adx_column]
+        adx_prev = prev[adx_column]
+        dmp = latest.get(dmp_column, 0)
+        dmn = latest.get(dmn_column, 0)
         
-        # 이전 지표값들
-        prev_bandwidth = prev_data[bb_bandwidth_column]
-        prev_bb_percent = prev_data[bb_percent_column]
-        
-        # 밴드 스퀴즈 여부 (bandwidth가 낮은 수준)
-        bandwidth_ma = data[bb_bandwidth_column].rolling(20).mean().iloc[-1]
-        is_squeeze = current_bandwidth < bandwidth_ma * 0.8
-        
-        # 밴드 확장 여부
-        is_expanding = current_bandwidth > prev_bandwidth * 1.1
-        
-        # 돌파 확인
-        upper_breakout = current_price > current_bb_upper and prev_data[price_column] <= prev_data[bb_upper_column]
-        lower_breakout = current_price < current_bb_lower and prev_data[price_column] >= prev_data[bb_lower_column]
-        
-        # ADX 기반 추세 강도 분류
-        if current_adx >= adx_strong_threshold:
-            trend_strength = "STRONG"
-        elif current_adx >= adx_weak_threshold:
-            trend_strength = "MODERATE"
-        else:
-            trend_strength = "WEAK"
-            
-        # 조합 분석
-        if is_squeeze and trend_strength == "STRONG":
-            return BBVolatilityEvidence.SQUEEZE_WITH_STRONG_TREND
-        elif is_squeeze and trend_strength == "WEAK":
-            return BBVolatilityEvidence.SQUEEZE_WITH_WEAK_TREND
-        elif upper_breakout and trend_strength == "STRONG":
-            return BBVolatilityEvidence.BREAKOUT_WITH_STRONG_TREND
-        elif lower_breakout and trend_strength == "STRONG":
-            return BBVolatilityEvidence.BREAKDOWN_WITH_STRONG_TREND
-        elif is_expanding and trend_strength == "MODERATE":
-            return BBVolatilityEvidence.EXPANSION_WITH_MODERATE_TREND
-        elif current_bb_percent <= 0.2 and trend_strength in ["MODERATE", "STRONG"]:
-            return BBVolatilityEvidence.MEAN_REVERSION_STRONG
-        elif current_bb_percent >= 0.8 and trend_strength in ["MODERATE", "STRONG"]:
-            return BBVolatilityEvidence.MEAN_REVERSION_STRONG
-        elif current_bb_percent <= 0.3 or current_bb_percent >= 0.7:
-            return BBVolatilityEvidence.MEAN_REVERSION_WEAK
-        else:
-            return BBVolatilityEvidence.NEUTRAL
-            
-    except Exception as e:
-        logger.error(f"Error in BB volatility analysis: {e}")
-        return BBVolatilityEvidence.NO_SIGNAL
-
-
-def get_volatility_regime(data: pd.DataFrame,
-                         bb_bandwidth_column: str = 'BBB_20_2.0',
-                         adx_column: str = 'ADX_14',
-                         atr_column: str = 'ATR_14',
-                         lookback_period: int = 20) -> VolatilityRegime:
-    """
-    변동성 체제를 분석합니다.
-    
-    Args:
-        data: OHLCV 및 지표 데이터
-        bb_bandwidth_column: 볼린저밴드 대역폭 컬럼명
-        adx_column: ADX 컬럼명
-        atr_column: ATR 컬럼명 (없으면 생략)
-        lookback_period: 변동성 비교 기간
-        
-    Returns:
-        VolatilityRegime: 변동성 체제 분류
-    """
-    try:
-        if len(data) < lookback_period:
-            return VolatilityRegime.MODERATE_VOLATILITY
-            
-        # 필요한 컬럼 확인
-        required_columns = [bb_bandwidth_column, adx_column]
-        missing_columns = [col for col in required_columns if col not in data.columns]
-        if missing_columns:
-            logger.warning(f"Missing columns for volatility regime analysis: {missing_columns}")
-            return VolatilityRegime.MODERATE_VOLATILITY
-            
-        current_data = data.iloc[-1]
-        current_bandwidth = current_data[bb_bandwidth_column]
-        current_adx = current_data[adx_column]
-        
-        # 최근 기간 평균과 비교
-        bandwidth_ma = data[bb_bandwidth_column].rolling(lookback_period).mean().iloc[-1]
-        bandwidth_std = data[bb_bandwidth_column].rolling(lookback_period).std().iloc[-1]
-        
-        # 변동성 수준 분류
-        high_volatility_threshold = bandwidth_ma + bandwidth_std
-        low_volatility_threshold = bandwidth_ma - bandwidth_std * 0.5
-        
-        # 변동성 확장 여부
-        recent_bandwidth_trend = data[bb_bandwidth_column].rolling(5).mean().iloc[-1]
-        prev_bandwidth_trend = data[bb_bandwidth_column].rolling(5).mean().iloc[-6]
-        is_expanding = recent_bandwidth_trend > prev_bandwidth_trend * 1.1
-        
-        # 조합 분석
-        if current_bandwidth > high_volatility_threshold:
-            if current_adx >= 25:
-                return VolatilityRegime.HIGH_VOLATILITY_TRENDING
+        # ADX 강도 분석
+        if adx_current >= 25:
+            if dmp > dmn:
+                return ADXEvidence.STRONG_TREND_UP, 1.0
             else:
-                return VolatilityRegime.HIGH_VOLATILITY_SIDEWAYS
-        elif current_bandwidth < low_volatility_threshold:
-            return VolatilityRegime.LOW_VOLATILITY_SQUEEZE
-        elif is_expanding:
-            return VolatilityRegime.EXPANDING_VOLATILITY
+                return ADXEvidence.STRONG_TREND_DOWN, 1.0
+        elif adx_current >= 20:
+            if dmp > dmn:
+                return ADXEvidence.WEAK_TREND_UP, 0.7
+            else:
+                return ADXEvidence.WEAK_TREND_DOWN, 0.7
         else:
-            return VolatilityRegime.MODERATE_VOLATILITY
-            
+            # 추세 강화/약화 확인
+            if adx_current > adx_prev:
+                return ADXEvidence.TREND_STRENGTHENING, 0.5
+            elif adx_current < adx_prev:
+                return ADXEvidence.TREND_WEAKENING, 0.3
+            else:
+                return ADXEvidence.NEUTRAL, 0.0
+                
     except Exception as e:
-        logger.error(f"Error in volatility regime analysis: {e}")
-        return VolatilityRegime.MODERATE_VOLATILITY
+        logger.error(f"ADX 추세 분석 실패: {e}")
+        return ADXEvidence.NEUTRAL, 0.0
 
 
-def get_bb_band_position(data: pd.DataFrame,
-                        bb_upper_column: str = 'BBU_20_2.0',
-                        bb_middle_column: str = 'BBM_20_2.0',
-                        bb_lower_column: str = 'BBL_20_2.0',
-                        bb_percent_column: str = 'BBP_20_2.0',
-                        price_column: str = 'Close',
-                        near_threshold: float = 0.1) -> BBBandPosition:
+def get_volatility_pattern(data: pd.DataFrame,
+                          bb_bandwidth_column: str = 'BBB_20_2.0',
+                          lookback_periods: int = 20) -> VolatilityPattern:
     """
-    현재 가격의 볼린저밴드 내 위치를 분석합니다.
+    변동성 패턴을 분석합니다.
     
     Args:
         data: OHLCV 및 지표 데이터
-        bb_upper_column: 볼린저밴드 상단 컬럼명
-        bb_middle_column: 볼린저밴드 중간선 컬럼명
-        bb_lower_column: 볼린저밴드 하단 컬럼명
-        bb_percent_column: 볼린저밴드 %B 컬럼명
-        price_column: 가격 컬럼명
-        near_threshold: '근처' 판단 임계값
+        bb_bandwidth_column: BB 밴드폭 컬럼명
+        lookback_periods: 분석 기간
         
     Returns:
-        BBBandPosition: 밴드 내 위치
+        VolatilityPattern: 변동성 패턴
     """
     try:
-        if len(data) < 1:
-            return BBBandPosition.MIDDLE_LOWER
+        if len(data) < lookback_periods + 1:
+            return VolatilityPattern.NEUTRAL
             
-        # 필요한 컬럼 확인
-        required_columns = [bb_upper_column, bb_middle_column, bb_lower_column, 
-                          bb_percent_column, price_column]
-        missing_columns = [col for col in required_columns if col not in data.columns]
-        if missing_columns:
-            logger.warning(f"Missing columns for BB position analysis: {missing_columns}")
-            return BBBandPosition.MIDDLE_LOWER
-            
-        current_data = data.iloc[-1]
-        current_price = current_data[price_column]
-        current_bb_upper = current_data[bb_upper_column]
-        current_bb_middle = current_data[bb_middle_column]
-        current_bb_lower = current_data[bb_lower_column]
-        current_bb_percent = current_data[bb_percent_column]
+        recent_data = data[bb_bandwidth_column].iloc[-lookback_periods:]
+        current_bandwidth = recent_data.iloc[-1]
+        avg_bandwidth = recent_data.mean()
+        min_bandwidth = recent_data.min()
+        max_bandwidth = recent_data.max()
         
-        # %B 기반 위치 분석
-        if current_bb_percent > 1.0:
-            return BBBandPosition.ABOVE_UPPER
-        elif current_bb_percent > (1.0 - near_threshold):
-            return BBBandPosition.NEAR_UPPER
-        elif current_bb_percent > 0.5:
-            return BBBandPosition.MIDDLE_UPPER
-        elif current_bb_percent > near_threshold:
-            return BBBandPosition.MIDDLE_LOWER
-        elif current_bb_percent > 0.0:
-            return BBBandPosition.NEAR_LOWER
-        else:
-            return BBBandPosition.BELOW_LOWER
-            
+        # Squeeze 상태 (밴드폭이 매우 좁음)
+        if current_bandwidth < avg_bandwidth * 0.7:
+            return VolatilityPattern.SQUEEZE
+        
+        # 고변동성 상태
+        if current_bandwidth > avg_bandwidth * 1.3:
+            return VolatilityPattern.HIGH_VOLATILITY
+        
+        # 저변동성 상태
+        if current_bandwidth < avg_bandwidth * 0.8:
+            return VolatilityPattern.LOW_VOLATILITY
+        
+        # 변동성 증가/감소 추세
+        recent_trend = recent_data.iloc[-5:].pct_change().mean()
+        if recent_trend > 0.05:
+            return VolatilityPattern.INCREASING_VOLATILITY
+        elif recent_trend < -0.05:
+            return VolatilityPattern.DECREASING_VOLATILITY
+        
+        return VolatilityPattern.NEUTRAL
+        
     except Exception as e:
-        logger.error(f"Error in BB position analysis: {e}")
-        return BBBandPosition.MIDDLE_LOWER
+        logger.error(f"변동성 패턴 분석 실패: {e}")
+        return VolatilityPattern.NEUTRAL
 
 
-def analyze_squeeze_breakout_potential(data: pd.DataFrame,
-                                     bb_bandwidth_column: str = 'BBB_20_2.0',
-                                     adx_column: str = 'ADX_14',
-                                     volume_column: str = 'Volume',
-                                     lookback_period: int = 20) -> Dict[str, any]:
+def analyze_bb_adx_combination(data: pd.DataFrame,
+                              bb_lower_column: str = 'BBL_20_2.0',
+                              bb_upper_column: str = 'BBU_20_2.0',
+                              bb_bandwidth_column: str = 'BBB_20_2.0',
+                              adx_column: str = 'ADX_14',
+                              dmp_column: str = 'DMP_14',
+                              dmn_column: str = 'DMN_14') -> Dict[str, any]:
     """
-    스퀴즈 상태에서 돌파 가능성을 분석합니다.
+    BB와 ADX의 조합을 분석합니다.
     
     Args:
         data: OHLCV 및 지표 데이터
-        bb_bandwidth_column: 볼린저밴드 대역폭 컬럼명
+        bb_lower_column: BB 하단 컬럼명
+        bb_upper_column: BB 상단 컬럼명
+        bb_bandwidth_column: BB 밴드폭 컬럼명
         adx_column: ADX 컬럼명
-        volume_column: 거래량 컬럼명
-        lookback_period: 분석 기간
+        dmp_column: +DI 컬럼명
+        dmn_column: -DI 컬럼명
         
     Returns:
-        Dict: 돌파 가능성 분석 결과
+        Dict[str, any]: 조합 분석 결과
     """
     try:
-        if len(data) < lookback_period:
-            return {"potential": "unknown", "confidence": 0.0, "factors": []}
+        if len(data) < 2:
+            return {"signal": "분석 불가", "strength": 0.0, "evidence": []}
             
-        # 필요한 컬럼 확인
-        required_columns = [bb_bandwidth_column, adx_column, volume_column]
-        missing_columns = [col for col in required_columns if col not in data.columns]
-        if missing_columns:
-            logger.warning(f"Missing columns for squeeze analysis: {missing_columns}")
-            return {"potential": "unknown", "confidence": 0.0, "factors": []}
-            
-        current_data = data.iloc[-1]
-        current_bandwidth = current_data[bb_bandwidth_column]
-        current_adx = current_data[adx_column]
-        current_volume = current_data[volume_column]
+        # 개별 분석 수행
+        bb_evidence, bb_strength = analyze_bb_volatility(data, bb_lower_column, bb_middle_column, 
+                                                        bb_upper_column, bb_bandwidth_column)
+        adx_evidence, adx_strength = analyze_adx_trend(data, adx_column, dmp_column, dmn_column)
+        volatility_pattern = get_volatility_pattern(data, bb_bandwidth_column)
         
-        # 스퀴즈 강도 분석
-        bandwidth_ma = data[bb_bandwidth_column].rolling(lookback_period).mean().iloc[-1]
-        bandwidth_percentile = data[bb_bandwidth_column].rolling(50).rank(pct=True).iloc[-1]
+        # 조합 신호 생성
+        combined_strength = (bb_strength + adx_strength) / 2
+        evidences = [bb_evidence.value, adx_evidence.value, volatility_pattern.value]
         
-        # 거래량 패턴 분석
-        volume_ma = data[volume_column].rolling(lookback_period).mean().iloc[-1]
-        volume_ratio = current_volume / volume_ma if volume_ma > 0 else 1.0
-        
-        # 분석 요소들
-        factors = []
-        confidence = 0.0
-        
-        # 스퀴즈 강도 (낮을수록 강한 스퀴즈)
-        if bandwidth_percentile < 0.2:
-            factors.append("매우 강한 스퀴즈")
-            confidence += 0.3
-        elif bandwidth_percentile < 0.4:
-            factors.append("강한 스퀴즈")
-            confidence += 0.2
-        
-        # ADX 상승 추세
-        adx_trend = data[adx_column].rolling(5).mean().iloc[-1] - data[adx_column].rolling(5).mean().iloc[-6]
-        if adx_trend > 0:
-            factors.append("ADX 상승 중")
-            confidence += 0.15
-            
-        # 거래량 증가
-        if volume_ratio > 1.2:
-            factors.append("거래량 증가")
-            confidence += 0.2
-        elif volume_ratio > 1.0:
-            factors.append("거래량 보통")
-            confidence += 0.1
-            
-        # 잠재력 분류
-        if confidence >= 0.5:
-            potential = "high"
-        elif confidence >= 0.3:
-            potential = "moderate"
-        elif confidence >= 0.1:
-            potential = "low"
+        # 신호 방향 결정
+        if bb_evidence in [BBEvidence.SQUEEZE_BREAKOUT_UP, BBEvidence.MEAN_REVERSION_UP] and \
+           adx_evidence in [ADXEvidence.STRONG_TREND_UP, ADXEvidence.WEAK_TREND_UP]:
+            signal = "강한 매수 신호"
+        elif bb_evidence in [BBEvidence.SQUEEZE_BREAKOUT_DOWN, BBEvidence.MEAN_REVERSION_DOWN] and \
+             adx_evidence in [ADXEvidence.STRONG_TREND_DOWN, ADXEvidence.WEAK_TREND_DOWN]:
+            signal = "강한 매도 신호"
+        elif bb_evidence in [BBEvidence.SQUEEZE_BREAKOUT_UP, BBEvidence.MEAN_REVERSION_UP]:
+            signal = "약한 매수 신호"
+        elif bb_evidence in [BBEvidence.SQUEEZE_BREAKOUT_DOWN, BBEvidence.MEAN_REVERSION_DOWN]:
+            signal = "약한 매도 신호"
         else:
-            potential = "minimal"
-            
+            signal = "중립"
+            combined_strength *= 0.5
+        
         return {
-            "potential": potential,
-            "confidence": confidence,
-            "factors": factors,
-            "squeeze_strength": 1.0 - bandwidth_percentile,
-            "volume_ratio": volume_ratio,
-            "adx_trend": adx_trend
+            "signal": signal,
+            "strength": combined_strength,
+            "evidence": evidences,
+            "bb_evidence": bb_evidence.value,
+            "adx_evidence": adx_evidence.value,
+            "volatility_pattern": volatility_pattern.value
         }
         
     except Exception as e:
-        logger.error(f"Error in squeeze breakout analysis: {e}")
-        return {"potential": "unknown", "confidence": 0.0, "factors": []} 
+        logger.error(f"BB-ADX 조합 분석 실패: {e}")
+        return {"signal": "분석 실패", "strength": 0.0, "evidence": []}
+
+
+def calculate_volatility_strength(data: pd.DataFrame,
+                                bb_bandwidth_column: str = 'BBB_20_2.0',
+                                lookback_periods: int = 20) -> float:
+    """
+    변동성 강도를 계산합니다.
+    
+    Args:
+        data: OHLCV 및 지표 데이터
+        bb_bandwidth_column: BB 밴드폭 컬럼명
+        lookback_periods: 분석 기간
+        
+    Returns:
+        float: 변동성 강도 (0.0 ~ 2.0)
+    """
+    try:
+        if len(data) < lookback_periods:
+            return 0.0
+            
+        recent_bandwidth = data[bb_bandwidth_column].iloc[-lookback_periods:]
+        current_bandwidth = recent_bandwidth.iloc[-1]
+        avg_bandwidth = recent_bandwidth.mean()
+        
+        # 변동성 강도 계산
+        volatility_ratio = current_bandwidth / avg_bandwidth
+        
+        if volatility_ratio > 1.5:
+            return 2.0  # 매우 높은 변동성
+        elif volatility_ratio > 1.2:
+            return 1.5  # 높은 변동성
+        elif volatility_ratio > 0.8:
+            return 1.0  # 보통 변동성
+        elif volatility_ratio > 0.5:
+            return 0.5  # 낮은 변동성
+        else:
+            return 0.0  # 매우 낮은 변동성
+            
+    except Exception as e:
+        logger.error(f"변동성 강도 계산 실패: {e}")
+        return 0.0
+
+
+def _analyze_bb_breakout(current_price: float, bb_lower: float, bb_upper: float, bb_bandwidth: float,
+                        prev_price: float, prev_bb_upper: float, prev_bb_lower: float,
+                        is_squeezed: bool) -> Tuple[BBEvidence, float]:
+    """BB 돌파 분석"""
+    # 상단 돌파
+    if prev_price < prev_bb_upper and current_price > bb_upper:
+        strength = 1.0 if is_squeezed else 0.7
+        return BBEvidence.SQUEEZE_BREAKOUT_UP, strength
+    
+    # 하단 돌파
+    elif prev_price > prev_bb_lower and current_price < bb_lower:
+        strength = 1.0 if is_squeezed else 0.7
+        return BBEvidence.SQUEEZE_BREAKOUT_DOWN, strength
+    
+    # 상단 터치
+    elif current_price >= bb_upper:
+        return BBEvidence.UPPER_BAND_TOUCH, 0.5
+    
+    # 하단 터치
+    elif current_price <= bb_lower:
+        return BBEvidence.LOWER_BAND_TOUCH, 0.5
+    
+    else:
+        return BBEvidence.NEUTRAL, 0.0
+
+
+def _analyze_bb_mean_reversion(current_price: float, bb_lower: float, bb_middle: float, bb_upper: float,
+                              prev_price: float, prev_bb_lower: float, prev_bb_upper: float) -> Tuple[BBEvidence, float]:
+    """BB 평균 회귀 분석"""
+    # 하단에서 평균으로 회귀
+    if prev_price < prev_bb_lower and current_price > bb_lower:
+        strength = (current_price - bb_lower) / (bb_middle - bb_lower)
+        return BBEvidence.MEAN_REVERSION_UP, min(strength, 1.0)
+    
+    # 상단에서 평균으로 회귀
+    elif prev_price > prev_bb_upper and current_price < bb_upper:
+        strength = (bb_upper - current_price) / (bb_upper - bb_middle)
+        return BBEvidence.MEAN_REVERSION_DOWN, min(strength, 1.0)
+    
+    # 하단 근처에서 반등
+    elif current_price <= bb_lower:
+        return BBEvidence.LOWER_BAND_TOUCH, 0.6
+    
+    # 상단 근처에서 하락
+    elif current_price >= bb_upper:
+        return BBEvidence.UPPER_BAND_TOUCH, 0.6
+    
+    else:
+        return BBEvidence.NEUTRAL, 0.0 

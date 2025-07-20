@@ -8,17 +8,20 @@ Signals Analysis Package
 - momentum.py: RSI, Stoch, MACD 조합 모멘텀 분석 ✅
 - trend.py: SMA, MACD, ADX 추세 분석 ✅
 - volume.py: MACD와 거래량 조합 분석 ✅
-- volatility.py: BB, ADX 변동성 분석 🔄 예정
+- volatility.py: BB, ADX 변동성 분석 ✅
+- multi_timeframe.py: 다중 시간대 분석 ✅
 """
 
 from . import momentum
 from . import trend
 from . import volume
-# from . import volatility  # 아직 구현 예정
+from . import volatility
+from . import multi_timeframe
 
 __all__ = [
     'momentum',
     'trend', 
     'volume',
-    # 'volatility'  # 아직 구현 예정
+    'volatility',
+    'multi_timeframe'
 ] 

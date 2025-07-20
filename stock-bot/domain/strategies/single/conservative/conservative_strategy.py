@@ -5,14 +5,14 @@ import pandas as pd
 from domain.signals.config.signals.service.signal_processor import SignalProcessor
 from domain.signals.detectors.composite.composite_detector import CompositeSignalDetector
 from domain.signals.detectors.trend_following.macd_detector import MACDSignalDetector
+from domain.signals.detectors.trend_following.sma_detector import SMASignalDetector
+from domain.signals.detectors.volume.volume_detector import VolumeSignalDetector
 from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
 from domain.strategies.base import BaseStrategy
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from .configs.conservative_config import ConservativeStrategyConfig
-from .detectors.conservative_sma_detector import ConservativeSMADetector
-from .detectors.conservative_volume_detector import ConservativeVolumeDetector
 
 logger = get_logger(__name__)
 
@@ -22,8 +22,7 @@ class ConservativeStrategy(BaseStrategy):
     Conservative(보수적) 전략 - 신뢰도 최우선, 신호 빈도 최소화
 
     [구조 및 특징]
-    - 커스텀 Detector: ConservativeSMADetector, ConservativeVolumeDetector
-    - 기본 Detector: MACDSignalDetector
+    - 중앙 Detector: SMASignalDetector, MACDSignalDetector, VolumeSignalDetector
     - Composite Detector: MACD+Volume 컨펌(신호 신뢰도 강화)
     - Detector별 가중치는 config.detector_weights에서 관리
     - 점수는 score_multiplier(기본 0.8)로 20% 감소(매우 보수적)
@@ -52,20 +51,19 @@ class ConservativeStrategy(BaseStrategy):
     def initialize(self) -> bool:
         """
         Conservative 전략의 Detector 조합 및 orchestrator 초기화
-        - 커스텀 Detector: ConservativeSMADetector, ConservativeVolumeDetector
-        - 기본 Detector: MACDSignalDetector
+        - 중앙 Detector: SMASignalDetector, MACDSignalDetector, VolumeSignalDetector
         - Composite Detector: MACD+Volume 컨펌(신호 신뢰도 강화)
         - Detector별 가중치는 config.detector_weights에서 관리
         """
         try:
             detectors = [
-                ConservativeSMADetector(weight=self.config.detector_weights['sma']),
+                SMASignalDetector(weight=self.config.detector_weights['sma']),
                 MACDSignalDetector(weight=self.config.detector_weights['macd']),
-                ConservativeVolumeDetector(weight=self.config.detector_weights['volume']),
+                VolumeSignalDetector(weight=self.config.detector_weights['volume']),
                 CompositeSignalDetector(
                     detectors=[
                         MACDSignalDetector(weight=0),
-                        ConservativeVolumeDetector(weight=0)
+                        VolumeSignalDetector(weight=0)
                     ],
                     weight=self.config.detector_weights['composite'],
                     require_all=True,
@@ -76,7 +74,7 @@ class ConservativeStrategy(BaseStrategy):
             for detector in detectors:
                 self.orchestrator.add_detector(detector)
             self.is_initialized = True
-            logger.info(f"{self.get_name()} 초기화 완료 (커스텀 Detector 사용)")
+            logger.info(f"{self.get_name()} 초기화 완료 (중앙 Detector 사용)")
             return True
         except Exception as e:
             logger.error(f"{self.get_name()} 초기화 실패: {e}")

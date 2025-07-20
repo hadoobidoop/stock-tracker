@@ -3,7 +3,7 @@
 SCALPING 전략 (독립 패키지)
 
 - 초단기(4시간 이내) 매매를 위한 스캘핑 전략
-- 주요 Detector: RSI, Stoch, Volume, MACD (가중치 조합)
+- 중앙 Detector(RSI, Stoch, Volume, MACD) + 파라미터 주입 방식
 - VIX(변동성지수) 기반 점수 조정(25 초과: 1.2배, 15 미만: 0.8배)
 - 빠른 진입/청산, 거래량 신호, 변동성 필터에 중점
 - 전략 파라미터, 신호 근거, 포지션 관리 등은 config에서 관리
@@ -48,7 +48,7 @@ class ScalpingStrategy(BaseStrategy):
     """
     SCALPING(스캘핑) 전략 구현체
     - 초단기(4시간 이내) 매매, 빠른 진입/청산
-    - RSI, Stoch, Volume, MACD Detector 가중치 조합
+    - 중앙 Detector(RSI, Stoch, Volume, MACD) + 파라미터 주입 방식
     - VIX(변동성지수) 기반 점수 조정
     """
 
@@ -64,22 +64,61 @@ class ScalpingStrategy(BaseStrategy):
 
     def initialize(self) -> bool:
         """
-        Detector 조합 및 오케스트레이터 초기화
+        중앙 Detector 조합 및 오케스트레이터 초기화
         Returns:
             bool: 초기화 성공 여부
         """
         try:
+            # Scalping 전략용 파라미터 설정
+            scalping_rsi_params = {
+                'oversold_threshold': 25,  # 기본 35에서 더 민감하게
+                'overbought_threshold': 75,  # 기본 65에서 더 민감하게
+                'scalping_mode': True  # 스캘핑 모드 활성화
+            }
+            
+            scalping_stoch_params = {
+                'oversold_threshold': 15,  # 기본 25에서 더 민감하게
+                'overbought_threshold': 85,  # 기본 75에서 더 민감하게
+                'scalping_mode': True  # 스캘핑 모드 활성화
+            }
+            
+            scalping_volume_params = {
+                'volume_threshold': 1.2,  # 기본 2.0에서 더 낮게
+                'scalping_mode': True  # 스캘핑 모드 활성화
+            }
+            
+            scalping_macd_params = {
+                'signal_sensitivity': 1.5,  # 기본 1.0에서 더 민감하게
+                'scalping_mode': True  # 스캘핑 모드 활성화
+            }
+            
             detectors = [
-                RSISignalDetector(weight=4.0),
-                StochSignalDetector(weight=4.0),
-                VolumeSignalDetector(weight=5.0),
-                MACDSignalDetector(weight=3.0)
+                RSISignalDetector(
+                    weight=4.0,
+                    name="Scalping_RSI_Detector",
+                    parameters=scalping_rsi_params
+                ),
+                StochSignalDetector(
+                    weight=4.0,
+                    name="Scalping_Stoch_Detector",
+                    parameters=scalping_stoch_params
+                ),
+                VolumeSignalDetector(
+                    weight=5.0,
+                    name="Scalping_Volume_Detector",
+                    parameters=scalping_volume_params
+                ),
+                MACDSignalDetector(
+                    weight=3.0,
+                    name="Scalping_MACD_Detector",
+                    parameters=scalping_macd_params
+                )
             ]
             self.orchestrator = SignalProcessor()
             for detector in detectors:
                 self.orchestrator.add_detector(detector)
             self.is_initialized = True
-            logger.info(f"{self.get_name()} 초기화 완료 (Detector 조합: RSI, Stoch, Volume, MACD)")
+            logger.info(f"{self.get_name()} 초기화 완료 (중앙 Detector + 파라미터 주입)")
             return True
         except Exception as e:
             logger.error(f"{self.get_name()} 초기화 실패: {e}")

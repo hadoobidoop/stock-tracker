@@ -1,228 +1,221 @@
 """
 Volatility Rules Module
 
-변동성 지표(BB, ADX) 기반 거래 규칙들을 정의합니다.
-analysis.volatility 모듈의 함수들을 활용하여 재사용 가능한 규칙을 제공합니다.
+변동성 관련 규칙 함수들을 정의합니다.
+analysis/volatility.py의 함수들을 활용하여 규칙을 만듭니다.
 """
 
+from typing import Dict, Any
+
 import pandas as pd
-from typing import Callable
 
 from ..analysis.volatility import (
-    analyze_bb_volatility_with_trend,
-    get_volatility_regime,
-    get_bb_band_position,
-    analyze_squeeze_breakout_potential,
-    BBVolatilityEvidence,
-    VolatilityRegime,
-    BBBandPosition
+    analyze_bb_volatility,
+    analyze_adx_trend,
+    get_volatility_pattern,
+    analyze_bb_adx_combination,
+    calculate_volatility_strength,
+    BBEvidence,
+    ADXEvidence,
+    VolatilityPattern
 )
 
-
-def bb_squeeze_with_strong_trend(data: pd.DataFrame) -> bool:
-    """밴드 스퀴즈 중 강한 추세 형성 확인"""
-    evidence = analyze_bb_volatility_with_trend(data)
-    return evidence == BBVolatilityEvidence.SQUEEZE_WITH_STRONG_TREND
-
-
-def bb_breakout_with_strong_trend(data: pd.DataFrame) -> bool:
-    """상단 돌파 및 강한 상승 추세 확인"""
-    evidence = analyze_bb_volatility_with_trend(data)
-    return evidence == BBVolatilityEvidence.BREAKOUT_WITH_STRONG_TREND
-
-
-def bb_breakdown_with_strong_trend(data: pd.DataFrame) -> bool:
-    """하단 돌파 및 강한 하락 추세 확인"""
-    evidence = analyze_bb_volatility_with_trend(data)
-    return evidence == BBVolatilityEvidence.BREAKDOWN_WITH_STRONG_TREND
-
-
-def bb_expansion_with_moderate_trend(data: pd.DataFrame) -> bool:
-    """밴드 확장 및 보통 추세 확인"""
-    evidence = analyze_bb_volatility_with_trend(data)
-    return evidence == BBVolatilityEvidence.EXPANSION_WITH_MODERATE_TREND
-
-
-def bb_mean_reversion_strong_signal(data: pd.DataFrame) -> bool:
-    """강한 평균 회귀 신호 확인"""
-    evidence = analyze_bb_volatility_with_trend(data)
-    return evidence == BBVolatilityEvidence.MEAN_REVERSION_STRONG
-
-
-def bb_mean_reversion_weak_signal(data: pd.DataFrame) -> bool:
-    """약한 평균 회귀 신호 확인"""
-    evidence = analyze_bb_volatility_with_trend(data)
-    return evidence == BBVolatilityEvidence.MEAN_REVERSION_WEAK
-
-
-def high_volatility_trending_regime(data: pd.DataFrame) -> bool:
-    """고변동성 추세 체제 확인"""
-    regime = get_volatility_regime(data)
-    return regime == VolatilityRegime.HIGH_VOLATILITY_TRENDING
-
-
-def high_volatility_sideways_regime(data: pd.DataFrame) -> bool:
-    """고변동성 횡보 체제 확인"""
-    regime = get_volatility_regime(data)
-    return regime == VolatilityRegime.HIGH_VOLATILITY_SIDEWAYS
-
-
-def low_volatility_squeeze_regime(data: pd.DataFrame) -> bool:
-    """저변동성 압축 체제 확인"""
-    regime = get_volatility_regime(data)
-    return regime == VolatilityRegime.LOW_VOLATILITY_SQUEEZE
-
-
-def expanding_volatility_regime(data: pd.DataFrame) -> bool:
-    """변동성 확장 체제 확인"""
-    regime = get_volatility_regime(data)
-    return regime == VolatilityRegime.EXPANDING_VOLATILITY
-
-
-def bb_price_above_upper_band(data: pd.DataFrame) -> bool:
-    """가격이 상단 밴드 위에 위치"""
-    position = get_bb_band_position(data)
-    return position == BBBandPosition.ABOVE_UPPER
-
-
-def bb_price_below_lower_band(data: pd.DataFrame) -> bool:
-    """가격이 하단 밴드 아래에 위치"""
-    position = get_bb_band_position(data)
-    return position == BBBandPosition.BELOW_LOWER
-
-
-def bb_price_near_upper_band(data: pd.DataFrame) -> bool:
-    """가격이 상단 밴드 근처에 위치"""
-    position = get_bb_band_position(data)
-    return position in [BBBandPosition.ABOVE_UPPER, BBBandPosition.NEAR_UPPER]
-
-
-def bb_price_near_lower_band(data: pd.DataFrame) -> bool:
-    """가격이 하단 밴드 근처에 위치"""
-    position = get_bb_band_position(data)
-    return position in [BBBandPosition.BELOW_LOWER, BBBandPosition.NEAR_LOWER]
-
-
-def bb_price_middle_zone(data: pd.DataFrame) -> bool:
-    """가격이 중간 영역에 위치"""
-    position = get_bb_band_position(data)
-    return position in [BBBandPosition.MIDDLE_UPPER, BBBandPosition.MIDDLE_LOWER]
-
-
-def squeeze_breakout_high_potential(data: pd.DataFrame) -> bool:
-    """스퀴즈 돌파 높은 가능성 확인"""
-    analysis = analyze_squeeze_breakout_potential(data)
-    return analysis.get("potential") == "high"
-
-
-def squeeze_breakout_moderate_potential(data: pd.DataFrame) -> bool:
-    """스퀴즈 돌파 보통 가능성 확인"""
-    analysis = analyze_squeeze_breakout_potential(data)
-    return analysis.get("potential") in ["high", "moderate"]
-
-
-def volatility_breakout_bullish(data: pd.DataFrame,
-                              bb_upper_column: str = 'BBU_20_2.0',
-                              volume_column: str = 'Volume',
-                              price_column: str = 'Close') -> bool:
-    """변동성 돌파 매수 신호 (상단 돌파 + 거래량)"""
-    if len(data) < 2:
-        return False
-    
-    required_columns = [bb_upper_column, volume_column, price_column]
-    if not all(col in data.columns for col in required_columns):
-        return False
-    
-    current_price = data[price_column].iloc[-1]
-    prev_price = data[price_column].iloc[-2]
-    current_bb_upper = data[bb_upper_column].iloc[-1]
-    prev_bb_upper = data[bb_upper_column].iloc[-2]
-    
-    # 상단 밴드 돌파
-    upper_breakout = (prev_price <= prev_bb_upper and 
-                     current_price > current_bb_upper)
-    
-    # 거래량 증가 확인
-    volume_surge = analyze_squeeze_breakout_potential(data).get("volume_ratio", 1.0) > 1.1
-    
-    return upper_breakout and volume_surge
-
-
-def volatility_breakout_bearish(data: pd.DataFrame,
-                              bb_lower_column: str = 'BBL_20_2.0',
-                              volume_column: str = 'Volume',
-                              price_column: str = 'Close') -> bool:
-    """변동성 돌파 매도 신호 (하단 돌파 + 거래량)"""
-    if len(data) < 2:
-        return False
-    
-    required_columns = [bb_lower_column, volume_column, price_column]
-    if not all(col in data.columns for col in required_columns):
-        return False
-    
-    current_price = data[price_column].iloc[-1]
-    prev_price = data[price_column].iloc[-2]
-    current_bb_lower = data[bb_lower_column].iloc[-1]
-    prev_bb_lower = data[bb_lower_column].iloc[-2]
-    
-    # 하단 밴드 돌파
-    lower_breakout = (prev_price >= prev_bb_lower and 
-                     current_price < current_bb_lower)
-    
-    # 거래량 증가 확인
-    volume_surge = analyze_squeeze_breakout_potential(data).get("volume_ratio", 1.0) > 1.1
-    
-    return lower_breakout and volume_surge
-
-
-def volatility_mean_reversion_bullish(data: pd.DataFrame) -> bool:
-    """변동성 평균 회귀 매수 신호"""
-    # 하단 밴드 근처에서 평균 회귀 신호
-    near_lower = bb_price_near_lower_band(data)
-    mean_reversion = bb_mean_reversion_strong_signal(data) or bb_mean_reversion_weak_signal(data)
-    
-    return near_lower and mean_reversion
-
-
-def volatility_mean_reversion_bearish(data: pd.DataFrame) -> bool:
-    """변동성 평균 회귀 매도 신호"""
-    # 상단 밴드 근처에서 평균 회귀 신호
-    near_upper = bb_price_near_upper_band(data)
-    mean_reversion = bb_mean_reversion_strong_signal(data) or bb_mean_reversion_weak_signal(data)
-    
-    return near_upper and mean_reversion
-
-
-# 변동성 규칙 딕셔너리
+# 변동성 관련 규칙들
 VOLATILITY_RULES = {
-    # BB + ADX 조합 규칙
-    'bb_squeeze_with_strong_trend': bb_squeeze_with_strong_trend,
-    'bb_breakout_with_strong_trend': bb_breakout_with_strong_trend,
-    'bb_breakdown_with_strong_trend': bb_breakdown_with_strong_trend,
-    'bb_expansion_with_moderate_trend': bb_expansion_with_moderate_trend,
-    'bb_mean_reversion_strong_signal': bb_mean_reversion_strong_signal,
-    'bb_mean_reversion_weak_signal': bb_mean_reversion_weak_signal,
+    # BB Squeeze 후 상단 돌파
+    'bb_squeeze_breakout_up':
+        lambda data: analyze_bb_volatility(data)[0] == BBEvidence.SQUEEZE_BREAKOUT_UP,
     
-    # 변동성 체제 규칙
-    'high_volatility_trending_regime': high_volatility_trending_regime,
-    'high_volatility_sideways_regime': high_volatility_sideways_regime,
-    'low_volatility_squeeze_regime': low_volatility_squeeze_regime,
-    'expanding_volatility_regime': expanding_volatility_regime,
+    # BB Squeeze 후 하단 돌파
+    'bb_squeeze_breakout_down':
+        lambda data: analyze_bb_volatility(data)[0] == BBEvidence.SQUEEZE_BREAKOUT_DOWN,
     
-    # BB 밴드 위치 규칙
-    'bb_price_above_upper_band': bb_price_above_upper_band,
-    'bb_price_below_lower_band': bb_price_below_lower_band,
-    'bb_price_near_upper_band': bb_price_near_upper_band,
-    'bb_price_near_lower_band': bb_price_near_lower_band,
-    'bb_price_middle_zone': bb_price_middle_zone,
+    # BB 상단 터치
+    'bb_upper_band_touch':
+        lambda data: analyze_bb_volatility(data)[0] == BBEvidence.UPPER_BAND_TOUCH,
     
-    # 스퀴즈 돌파 규칙
-    'squeeze_breakout_high_potential': squeeze_breakout_high_potential,
-    'squeeze_breakout_moderate_potential': squeeze_breakout_moderate_potential,
+    # BB 하단 터치
+    'bb_lower_band_touch':
+        lambda data: analyze_bb_volatility(data)[0] == BBEvidence.LOWER_BAND_TOUCH,
     
-    # 변동성 거래 규칙
-    'volatility_breakout_bullish': volatility_breakout_bullish,
-    'volatility_breakout_bearish': volatility_breakout_bearish,
-    'volatility_mean_reversion_bullish': volatility_mean_reversion_bullish,
-    'volatility_mean_reversion_bearish': volatility_mean_reversion_bearish,
+    # BB 평균 회귀 상승
+    'bb_mean_reversion_up':
+        lambda data: analyze_bb_volatility(data)[0] == BBEvidence.MEAN_REVERSION_UP,
+    
+    # BB 평균 회귀 하락
+    'bb_mean_reversion_down':
+        lambda data: analyze_bb_volatility(data)[0] == BBEvidence.MEAN_REVERSION_DOWN,
+    
+    # ADX 강한 상승 추세
+    'adx_strong_trend_up':
+        lambda data: analyze_adx_trend(data)[0] == ADXEvidence.STRONG_TREND_UP,
+    
+    # ADX 강한 하락 추세
+    'adx_strong_trend_down':
+        lambda data: analyze_adx_trend(data)[0] == ADXEvidence.STRONG_TREND_DOWN,
+    
+    # ADX 약한 상승 추세
+    'adx_weak_trend_up':
+        lambda data: analyze_adx_trend(data)[0] == ADXEvidence.WEAK_TREND_UP,
+    
+    # ADX 약한 하락 추세
+    'adx_weak_trend_down':
+        lambda data: analyze_adx_trend(data)[0] == ADXEvidence.WEAK_TREND_DOWN,
+    
+    # ADX 추세 강화
+    'adx_trend_strengthening':
+        lambda data: analyze_adx_trend(data)[0] == ADXEvidence.TREND_STRENGTHENING,
+    
+    # ADX 추세 약화
+    'adx_trend_weakening':
+        lambda data: analyze_adx_trend(data)[0] == ADXEvidence.TREND_WEAKENING,
+    
+    # 고변동성 패턴
+    'volatility_high_pattern':
+        lambda data: get_volatility_pattern(data) == VolatilityPattern.HIGH_VOLATILITY,
+    
+    # 저변동성 패턴
+    'volatility_low_pattern':
+        lambda data: get_volatility_pattern(data) == VolatilityPattern.LOW_VOLATILITY,
+    
+    # 변동성 증가 패턴
+    'volatility_increasing_pattern':
+        lambda data: get_volatility_pattern(data) == VolatilityPattern.INCREASING_VOLATILITY,
+    
+    # 변동성 감소 패턴
+    'volatility_decreasing_pattern':
+        lambda data: get_volatility_pattern(data) == VolatilityPattern.DECREASING_VOLATILITY,
+    
+    # 변동성 압축 패턴
+    'volatility_squeeze_pattern':
+        lambda data: get_volatility_pattern(data) == VolatilityPattern.SQUEEZE,
+    
+    # 변동성 확장 패턴
+    'volatility_expansion_pattern':
+        lambda data: get_volatility_pattern(data) == VolatilityPattern.EXPANSION,
+    
+    # 변동성 강도 높음
+    'volatility_strength_high':
+        lambda data: calculate_volatility_strength(data) > 1.5,
+    
+    # 변동성 강도 보통
+    'volatility_strength_moderate':
+        lambda data: 0.5 < calculate_volatility_strength(data) <= 1.5,
+    
+    # 변동성 강도 낮음
+    'volatility_strength_low':
+        lambda data: calculate_volatility_strength(data) <= 0.5,
+    
+    # BB-ADX 강한 매수 신호
+    'bb_adx_strong_bullish':
+        lambda data: analyze_bb_adx_combination(data)['signal'] == "강한 매수 신호",
+    
+    # BB-ADX 강한 매도 신호
+    'bb_adx_strong_bearish':
+        lambda data: analyze_bb_adx_combination(data)['signal'] == "강한 매도 신호",
+    
+    # BB-ADX 약한 매수 신호
+    'bb_adx_weak_bullish':
+        lambda data: analyze_bb_adx_combination(data)['signal'] == "약한 매수 신호",
+    
+    # BB-ADX 약한 매도 신호
+    'bb_adx_weak_bearish':
+        lambda data: analyze_bb_adx_combination(data)['signal'] == "약한 매도 신호",
+    
+    # BB 상단 밴드 위
+    'bb_above_upper_band':
+        lambda data: (len(data) > 0 and 
+                     data.iloc[-1].get('Close', 0) > data.iloc[-1].get('BBU_20_2.0', 0)),
+    
+    # BB 하단 밴드 아래
+    'bb_below_lower_band':
+        lambda data: (len(data) > 0 and 
+                     data.iloc[-1].get('Close', 0) < data.iloc[-1].get('BBL_20_2.0', 0)),
+    
+    # BB 중간선 위
+    'bb_above_middle_band':
+        lambda data: (len(data) > 0 and 
+                     data.iloc[-1].get('Close', 0) > data.iloc[-1].get('BBM_20_2.0', 0)),
+    
+    # BB 중간선 아래
+    'bb_below_middle_band':
+        lambda data: (len(data) > 0 and 
+                     data.iloc[-1].get('Close', 0) < data.iloc[-1].get('BBM_20_2.0', 0)),
+    
+    # BB 밴드폭 좁음 (Squeeze)
+    'bb_bandwidth_narrow':
+        lambda data: (len(data) > 20 and 
+                     data.iloc[-1].get('BBB_20_2.0', 0) < data['BBB_20_2.0'].rolling(20).mean().iloc[-1] * 0.8),
+    
+    # BB 밴드폭 넓음 (Expansion)
+    'bb_bandwidth_wide':
+        lambda data: (len(data) > 20 and 
+                     data.iloc[-1].get('BBB_20_2.0', 0) > data['BBB_20_2.0'].rolling(20).mean().iloc[-1] * 1.2),
+    
+    # ADX 25 이상 (강한 추세)
+    'adx_above_25':
+        lambda data: len(data) > 0 and data.iloc[-1].get('ADX_14', 0) >= 25,
+    
+    # ADX 20 이상 (약한 추세)
+    'adx_above_20':
+        lambda data: len(data) > 0 and data.iloc[-1].get('ADX_14', 0) >= 20,
+    
+    # ADX 15 이하 (약한 추세)
+    'adx_below_15':
+        lambda data: len(data) > 0 and data.iloc[-1].get('ADX_14', 0) <= 15,
+    
+    # ADX 상승 중
+    'adx_rising':
+        lambda data: (len(data) > 1 and 
+                     data.iloc[-1].get('ADX_14', 0) > data.iloc[-2].get('ADX_14', 0)),
+    
+    # ADX 하락 중
+    'adx_falling':
+        lambda data: (len(data) > 1 and 
+                     data.iloc[-1].get('ADX_14', 0) < data.iloc[-2].get('ADX_14', 0)),
+    
+    # +DI > -DI (상승 추세)
+    'di_plus_above_minus':
+        lambda data: (len(data) > 0 and 
+                     data.iloc[-1].get('DMP_14', 0) > data.iloc[-1].get('DMN_14', 0)),
+    
+    # +DI < -DI (하락 추세)
+    'di_plus_below_minus':
+        lambda data: (len(data) > 0 and 
+                     data.iloc[-1].get('DMP_14', 0) < data.iloc[-1].get('DMN_14', 0)),
+    
+    # BB Squeeze + ADX 강세
+    'bb_squeeze_with_strong_adx':
+        lambda data: (len(data) > 20 and 
+                     data.iloc[-1].get('BBB_20_2.0', 0) < data['BBB_20_2.0'].rolling(20).mean().iloc[-1] * 0.8 and
+                     data.iloc[-1].get('ADX_14', 0) >= 25),
+    
+    # BB Expansion + ADX 약세
+    'bb_expansion_with_weak_adx':
+        lambda data: (len(data) > 20 and 
+                     data.iloc[-1].get('BBB_20_2.0', 0) > data['BBB_20_2.0'].rolling(20).mean().iloc[-1] * 1.2 and
+                     data.iloc[-1].get('ADX_14', 0) <= 20),
+    
+    # BB 상단 돌파 + 거래량 급증
+    'bb_upper_breakout_with_volume_surge':
+        lambda data: (len(data) > 1 and 
+                     data.iloc[-1].get('Close', 0) > data.iloc[-1].get('BBU_20_2.0', 0) and
+                     data.iloc[-2].get('Close', 0) <= data.iloc[-2].get('BBU_20_2.0', 0) and
+                     data.iloc[-1].get('Volume', 0) > data.iloc[-1].get('Volume_SMA_20', 0) * 1.5),
+    
+    # BB 하단 돌파 + 거래량 급증
+    'bb_lower_breakout_with_volume_surge':
+        lambda data: (len(data) > 1 and 
+                     data.iloc[-1].get('Close', 0) < data.iloc[-1].get('BBL_20_2.0', 0) and
+                     data.iloc[-2].get('Close', 0) >= data.iloc[-2].get('BBL_20_2.0', 0) and
+                     data.iloc[-1].get('Volume', 0) > data.iloc[-1].get('Volume_SMA_20', 0) * 1.5),
+    
+    # BB 평균 회귀 + ADX 약세
+    'bb_mean_reversion_with_weak_adx':
+        lambda data: (len(data) > 1 and 
+                     ((data.iloc[-1].get('Close', 0) > data.iloc[-1].get('BBL_20_2.0', 0) and
+                       data.iloc[-2].get('Close', 0) <= data.iloc[-2].get('BBL_20_2.0', 0)) or
+                      (data.iloc[-1].get('Close', 0) < data.iloc[-1].get('BBU_20_2.0', 0) and
+                       data.iloc[-2].get('Close', 0) >= data.iloc[-2].get('BBU_20_2.0', 0))) and
+                     data.iloc[-1].get('ADX_14', 0) <= 20),
 } 

@@ -1,3 +1,7 @@
+"""
+거래 신호 및 관련 Evidence 모델들
+"""
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, Any, Optional, List
@@ -270,4 +274,4 @@ class TradingSignal:
         elif self.signal_score >= 10:
             return "MEDIUM"
         else:
-            return "WEAK" 
+            return "WEAK"

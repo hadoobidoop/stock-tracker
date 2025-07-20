@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Momentum 전략 구현체
-- 커스텀/기본 Detector(RSI, Stoch, MACD, Volume, Composite) 조합
+- 중앙 Detector(RSI, Stoch, MACD, Volume) + 파라미터 주입 방식
 - 신호/점수/근거/로깅/쿨다운/예외처리 등 robust하게 구현
 - 설계 의도: 모멘텀 신호 중심, 신호 빈도와 신뢰도 균형
 
@@ -13,7 +13,7 @@ Momentum 전략 구현체
 
 주요 튜닝 포인트:
     - signal_threshold: 신호 발생 기준점(기본 6.0)
-    - detector_weights: 각 Detector별 가중치(RSI > Stoch > MACD > Volume > Composite)
+    - detector_weights: 각 Detector별 가중치(RSI > Stoch > MACD > Volume)
     - score_multiplier: 점수 조정(기본 1.0)
     - max_positions/position_hold_hours: 포지션 관리(4개/24시간)
 """
@@ -23,15 +23,14 @@ from typing import Dict, Optional
 import pandas as pd
 
 from domain.signals.config.signals.service.signal_processor import SignalProcessor
+from domain.signals.detectors.momentum.rsi_detector import RSISignalDetector
+from domain.signals.detectors.momentum.stoch_detector import StochSignalDetector
 from domain.signals.detectors.trend_following.macd_detector import MACDSignalDetector
 from domain.signals.detectors.volume.volume_detector import VolumeSignalDetector
 from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
 from domain.strategies.base import BaseStrategy
 from domain.strategies.single.momentum.configs.momentum_config import MomentumStrategyConfig
-from domain.strategies.single.momentum.detectors.momentum_rsi_detector import RSISignalDetector
-from domain.strategies.single.momentum.detectors.momentum_rsi_stoch_detector import RSIStochDetector
-from domain.strategies.single.momentum.detectors.momentum_stoch_detector import StochSignalDetector
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 
@@ -40,7 +39,7 @@ logger = get_logger(__name__)
 class MomentumStrategy(BaseStrategy):
     """
     RSI, Stoch 등 모멘텀 지표를 중심으로 신호를 감지하는 전략
-    - 커스텀/기본 Detector 조합, Composite(RSI+Stoch) 컨펌
+    - 중앙 Detector + 파라미터 주입 방식
     - 신호/점수/근거/로깅/쿨다운/예외처리 robust
     - 설계 의도: 신호 빈도와 신뢰도의 균형
     """
@@ -51,26 +50,62 @@ class MomentumStrategy(BaseStrategy):
 
     def initialize(self) -> bool:
         """
-        Detector 조합 및 orchestrator 초기화
-        - 커스텀/기본 Detector: RSISignalDetector, StochSignalDetector, MACDSignalDetector, VolumeSignalDetector
-        - Composite Detector: RSI+Stoch 컨펌(신호 신뢰도 강화)
+        중앙 Detector 조합 및 orchestrator 초기화
+        - 중앙 Detector: RSISignalDetector, StochSignalDetector, MACDSignalDetector, VolumeSignalDetector
+        - 파라미터 주입: 전략별 특화 설정 적용
         - Detector별 가중치는 config.detector_weights에서 관리
         """
         try:
+            # Momentum 전략용 파라미터 설정
+            momentum_rsi_params = {
+                'oversold_threshold': 30,  # 기본 35에서 더 민감하게
+                'overbought_threshold': 70,  # 기본 65에서 더 민감하게
+                'momentum_confirmation_required': True  # 모멘텀 확인 필요
+            }
+            
+            momentum_stoch_params = {
+                'oversold_threshold': 20,  # 기본 25에서 더 민감하게
+                'overbought_threshold': 80,  # 기본 75에서 더 민감하게
+                'momentum_confirmation_required': True  # 모멘텀 확인 필요
+            }
+            
+            momentum_macd_params = {
+                'signal_sensitivity': 1.2,  # 기본 1.0에서 더 민감하게
+                'momentum_confirmation_required': True  # 모멘텀 확인 필요
+            }
+            
+            momentum_volume_params = {
+                'volume_threshold': 1.5,  # 기본 2.0에서 더 낮게
+                'momentum_confirmation_required': True  # 모멘텀 확인 필요
+            }
+            
             detectors = [
-                RSISignalDetector(weight=self.config.detector_weights['rsi']),
-                StochSignalDetector(weight=self.config.detector_weights['stoch']),
-                MACDSignalDetector(weight=self.config.detector_weights['macd']),
-                VolumeSignalDetector(weight=self.config.detector_weights['volume']),
-                RSIStochDetector(
-                    weight=self.config.detector_weights['composite']
+                RSISignalDetector(
+                    weight=self.config.detector_weights['rsi'],
+                    name="Momentum_RSI_Detector",
+                    parameters=momentum_rsi_params
+                ),
+                StochSignalDetector(
+                    weight=self.config.detector_weights['stoch'],
+                    name="Momentum_Stoch_Detector",
+                    parameters=momentum_stoch_params
+                ),
+                MACDSignalDetector(
+                    weight=self.config.detector_weights['macd'],
+                    name="Momentum_MACD_Detector",
+                    parameters=momentum_macd_params
+                ),
+                VolumeSignalDetector(
+                    weight=self.config.detector_weights['volume'],
+                    name="Momentum_Volume_Detector",
+                    parameters=momentum_volume_params
                 )
             ]
             self.orchestrator = SignalProcessor()
             for detector in detectors:
                 self.orchestrator.add_detector(detector)
             self.is_initialized = True
-            logger.info(f"{self.get_name()} 초기화 완료 (커스텀/기본 Detector 사용)")
+            logger.info(f"{self.get_name()} 초기화 완료 (중앙 Detector + 파라미터 주입)")
             return True
         except Exception as e:
             logger.error(f"{self.get_name()} 초기화 실패: {e}")

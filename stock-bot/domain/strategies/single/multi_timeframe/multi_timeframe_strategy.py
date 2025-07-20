@@ -1,15 +1,15 @@
 # MultiTimeframeStrategy (다중 시간대 전략)
 # ======================================
 # - 장기(일봉)와 단기(시간봉) 신호를 동시에 확인하여 신뢰도 높은 진입/청산 신호를 포착하는 전략
+# - 중앙 Detector(MACD, Stoch, RSI) + 파라미터 주입 방식
 # - 모든 전략 파라미터(config)는 configs/multi_timeframe_config.py에서 관리하며, Detector 가중치·임계값·포지션 관리 등 확장/튜닝이 용이함
-# - 복합 Detector(MultiTimeframeCompositeDetector) 단일 조합 구조로, 일봉/시간봉 데이터 동시 분석 및 컨센서스 기반 신호 산출
-# - 각 Detector(MACD, Stoch, RSI)는 별도 래퍼 클래스로 분리되어 향후 오버라이드/확장에 용이함
+# - 각 Detector는 중앙 detector를 사용하여 일관성 있게 관리
 # - 확장 포인트: detectors/ 하위에 커스텀 Detector 추가, config에서 동적 조합, 신호 컨펌/복합 판단 로직(CompositeDetector 등) 확장 가능
 #
 # [주요 파라미터(config)]
 #   - signal_threshold: 신호 발생 임계값(9.0)
 #   - risk_per_trade: 거래당 리스크 비율(0.02)
-#   - detector_weights: 복합 Detector 가중치(7.0)
+#   - detector_weights: Detector 가중치
 #   - market_filters: 다중 시간대 컨펌 여부
 #   - position_management: 최대 3개 포지션, 21일(504시간) 보유
 #
@@ -29,7 +29,9 @@ from typing import Dict, Optional
 import pandas as pd
 
 from domain.signals.config.signals.service.signal_processor import SignalProcessor
-from domain.signals.detectors.composite.multi_timeframe_composite_detector import MultiTimeframeCompositeDetector
+from domain.signals.detectors.trend_following.macd_detector import MACDSignalDetector
+from domain.signals.detectors.momentum.stoch_detector import StochSignalDetector
+from domain.signals.detectors.momentum.rsi_detector import RSISignalDetector
 from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
 from domain.strategies.base import BaseStrategy
@@ -43,7 +45,7 @@ class MultiTimeframeStrategy(BaseStrategy):
     """
     [다중 시간대 전략]
     - 장기(일봉)와 단기(시간봉) 신호를 동시에 확인하여 신뢰도 높은 진입/청산 신호를 포착
-    - 복합 Detector(MultiTimeframeCompositeDetector) 단일 조합 구조로, 일봉/시간봉 데이터 동시 분석 및 컨센서스 기반 신호 산출
+    - 중앙 Detector(MACD, Stoch, RSI) + 파라미터 주입 방식
     - 모든 파라미터/가중치는 configs/multi_timeframe_config.py에서 관리
     - 확장: detectors/ 하위에 커스텀 Detector 추가, config에서 동적 조합, 신호 컨펌/복합 판단 로직 확장 가능
     """
@@ -61,8 +63,9 @@ class MultiTimeframeStrategy(BaseStrategy):
 
     def initialize(self) -> bool:
         """
-        Detector 조합 및 orchestrator 초기화
-        - 복합 Detector(MultiTimeframeCompositeDetector) 단일 조합 구조
+        중앙 Detector 조합 및 orchestrator 초기화
+        - 중앙 Detector(MACDSignalDetector, StochSignalDetector, RSISignalDetector) 조합
+        - 파라미터 주입: 전략별 특화 설정 적용
         - 각 Detector의 가중치는 config["detector_weights"]에서 관리
         Returns:
             bool: 초기화 성공 여부
@@ -70,11 +73,46 @@ class MultiTimeframeStrategy(BaseStrategy):
             Exception: Detector/Orchestrator 생성 실패 시 False 반환 및 로그 기록
         """
         try:
+            # MultiTimeframe 전략용 파라미터 설정
+            multi_timeframe_macd_params = {
+                'signal_sensitivity': 1.0,  # 기본 1.0 유지
+                'multi_timeframe_confirmation_required': True  # 다중 시간대 확인 필요
+            }
+            
+            multi_timeframe_stoch_params = {
+                'oversold_threshold': 25,  # 기본 25 유지
+                'overbought_threshold': 75,  # 기본 75 유지
+                'multi_timeframe_confirmation_required': True  # 다중 시간대 확인 필요
+            }
+            
+            multi_timeframe_rsi_params = {
+                'oversold_threshold': 35,  # 기본 35 유지
+                'overbought_threshold': 65,  # 기본 65 유지
+                'multi_timeframe_confirmation_required': True  # 다중 시간대 확인 필요
+            }
+            
+            detectors = [
+                MACDSignalDetector(
+                    weight=self.config["detector_weights"].get("macd", 3.0),
+                    name="MultiTimeframe_MACD_Detector",
+                    parameters=multi_timeframe_macd_params
+                ),
+                StochSignalDetector(
+                    weight=self.config["detector_weights"].get("stoch", 3.0),
+                    name="MultiTimeframe_Stoch_Detector",
+                    parameters=multi_timeframe_stoch_params
+                ),
+                RSISignalDetector(
+                    weight=self.config["detector_weights"].get("rsi", 3.0),
+                    name="MultiTimeframe_RSI_Detector",
+                    parameters=multi_timeframe_rsi_params
+                )
+            ]
             self.orchestrator = SignalProcessor()
-            detector = MultiTimeframeCompositeDetector(weight=self.config["detector_weights"].get("composite", 7.0))
-            self.orchestrator.add_detector(detector)
+            for detector in detectors:
+                self.orchestrator.add_detector(detector)
             self.is_initialized = True
-            logger.info(f"{self.get_name()} 초기화 완료")
+            logger.info(f"{self.get_name()} 초기화 완료 (중앙 Detector + 파라미터 주입)")
             return True
         except Exception as e:
             logger.error(f"{self.get_name()} 초기화 실패: {e}")

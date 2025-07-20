@@ -9,8 +9,7 @@ MOMENTUM_DETECTOR_WEIGHTS = {
     'rsi': 6.0,
     'stoch': 5.0,
     'macd': 4.0,
-    'volume': 3.0,
-    'composite': 8.0
+    'volume': 3.0
 }
 
 @dataclass
@@ -25,7 +24,7 @@ class MomentumStrategyConfig(StrategyConfig):
         - description: 전략 설명(문서/로그용)
         - signal_threshold: 신호 발생 기준점(기본 6.0)
         - risk_per_trade: 트레이드당 리스크 비율(0.025=2.5%)
-        - detector_weights: 각 Detector별 가중치(RSI > Stoch > MACD > Volume > Composite)
+        - detector_weights: 각 Detector별 가중치(RSI > Stoch > MACD > Volume)
         - score_multiplier: 점수 조정(기본 1.0)
         - max_positions/position_hold_hours: 포지션 관리(4개/24시간)
         - long_term_bullish_multiplier: 장기 상승장 가중치(1.15)
