@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 import pandas as pd
 
@@ -11,13 +11,28 @@ logger = get_logger(__name__)
 
 
 class MACDSignalDetector(SignalDetector):
-    """MACD 골든/데드 크로스 신호 감지기"""
+    """MACD 골든/데드 크로스 신호 감지기 - 파라미터 주입 방식 지원"""
     
-    def __init__(self, weight: float):
-        super().__init__(weight, "MACD_Detector")
+    def __init__(self, weight: float, name: str = None, parameters: Optional[Dict] = None):
+        super().__init__(weight, name or "MACD_Detector")
         self.required_columns = ['MACD_12_26_9', 'MACDs_12_26_9', 'ADX_14']
         # 근거 수집용 리스트 초기화
         self.technical_evidences = []
+        
+        # 기본 파라미터 설정
+        default_params = {
+            'adx_strong_threshold': 25,       # ADX 강한 추세 임계값
+            'adx_weak_threshold': 20,         # ADX 약한 추세 임계값
+            'strong_trend_multiplier': 1.2,   # 강한 추세 시 가중치
+            'weak_trend_multiplier': 0.8,     # 약한 추세 시 가중치
+            'continuation_multiplier': 0.4,   # 추세 지속 신호 가중치
+            'reversal_multiplier': 0.5,       # 반전 신호 가중치
+            'zero_line_bonus': 1.2,          # 0선 위/아래 보너스 가중치
+            'require_adx_confirmation': True  # ADX 확인 필요 여부
+        }
+        
+        # 외부 파라미터와 기본값 병합
+        self.params = {**default_params, **(parameters or {})}
     
     def detect_signals(self,
                       df: pd.DataFrame,
@@ -54,62 +69,68 @@ class MACDSignalDetector(SignalDetector):
         if is_golden_cross:
             macd_cross_buy_score = self.weight * trend_follow_buy_adj
             # ADX 강도에 따른 가중치 조정
-            if latest_data['ADX_14'] >= 25:
-                macd_cross_buy_score *= 1.2
-                buy_details.append(f"MACD 골든 크로스 (ADX 강세: {latest_data['ADX_14']:.2f})")
-            elif latest_data['ADX_14'] < 20:
-                macd_cross_buy_score *= 0.8
-                buy_details.append(f"MACD 골든 크로스 (ADX 약세: {latest_data['ADX_14']:.2f})")
+            if self.params['require_adx_confirmation']:
+                if latest_data['ADX_14'] >= self.params['adx_strong_threshold']:
+                    macd_cross_buy_score *= self.params['strong_trend_multiplier']
+                    buy_details.append(f"MACD 골든 크로스 (ADX 강세: {latest_data['ADX_14']:.2f})")
+                elif latest_data['ADX_14'] < self.params['adx_weak_threshold']:
+                    macd_cross_buy_score *= self.params['weak_trend_multiplier']
+                    buy_details.append(f"MACD 골든 크로스 (ADX 약세: {latest_data['ADX_14']:.2f})")
+                else:
+                    buy_details.append(f"MACD 골든 크로스 (ADX 보통: {latest_data['ADX_14']:.2f})")
             else:
-                buy_details.append(f"MACD 골든 크로스 (ADX 보통: {latest_data['ADX_14']:.2f})")
+                buy_details.append(f"MACD 골든 크로스 (ADX 무시)")
             
             buy_score += macd_cross_buy_score
             buy_details.append(f"MACD 골든 크로스 (MACD:{latest_data['MACD_12_26_9']:.2f} > Signal:{latest_data['MACDs_12_26_9']:.2f})")
         else:
             # 강세 추세 지속
             if latest_data['MACD_12_26_9'] > latest_data['MACDs_12_26_9']:
-                continuation_score = self.weight * trend_follow_buy_adj * 0.4  # 40% 가중치
+                continuation_score = self.weight * trend_follow_buy_adj * self.params['continuation_multiplier']
                 detail_msg = "MACD 상승 추세 지속"
                 if latest_data['MACD_12_26_9'] > 0:
-                    continuation_score *= 1.2 # 0선 위에서 가중치 부여
+                    continuation_score *= self.params['zero_line_bonus'] # 0선 위에서 가중치 부여
                     detail_msg += " (0선 위)"
                 buy_score += continuation_score
                 buy_details.append(detail_msg)
 
             # 상승 반전 (음수 영역에서 상승)
             if prev_data['MACD_12_26_9'] < latest_data['MACD_12_26_9'] < 0:
-                buy_score += self.weight * trend_follow_buy_adj * 0.5  # 50% 가중치
+                buy_score += self.weight * trend_follow_buy_adj * self.params['reversal_multiplier']
                 buy_details.append(f"MACD 상승 반전 (MACD: {prev_data['MACD_12_26_9']:.2f} -> {latest_data['MACD_12_26_9']:.2f})")
 
         # --- 매도 신호 로직 ---
         if is_dead_cross:
             macd_cross_sell_score = self.weight * trend_follow_sell_adj
             # ADX 강도에 따른 가중치 조정
-            if latest_data['ADX_14'] >= 25:
-                macd_cross_sell_score *= 1.2
-                sell_details.append(f"MACD 데드 크로스 (ADX 강세: {latest_data['ADX_14']:.2f})")
-            elif latest_data['ADX_14'] < 20:
-                macd_cross_sell_score *= 0.8
-                sell_details.append(f"MACD 데드 크로스 (ADX 약세: {latest_data['ADX_14']:.2f})")
+            if self.params['require_adx_confirmation']:
+                if latest_data['ADX_14'] >= self.params['adx_strong_threshold']:
+                    macd_cross_sell_score *= self.params['strong_trend_multiplier']
+                    sell_details.append(f"MACD 데드 크로스 (ADX 강세: {latest_data['ADX_14']:.2f})")
+                elif latest_data['ADX_14'] < self.params['adx_weak_threshold']:
+                    macd_cross_sell_score *= self.params['weak_trend_multiplier']
+                    sell_details.append(f"MACD 데드 크로스 (ADX 약세: {latest_data['ADX_14']:.2f})")
+                else:
+                    sell_details.append(f"MACD 데드 크로스 (ADX 보통: {latest_data['ADX_14']:.2f})")
             else:
-                sell_details.append(f"MACD 데드 크로스 (ADX 보통: {latest_data['ADX_14']:.2f})")
+                sell_details.append(f"MACD 데드 크로스 (ADX 무시)")
 
             sell_score += macd_cross_sell_score
             sell_details.append(f"MACD 데드 크로스 (MACD:{latest_data['MACD_12_26_9']:.2f} < Signal:{latest_data['MACDs_12_26_9']:.2f})")
         else:
             # 약세 추세 지속
             if latest_data['MACD_12_26_9'] < latest_data['MACDs_12_26_9']:
-                continuation_score = self.weight * trend_follow_sell_adj * 0.4  # 40% 가중치
+                continuation_score = self.weight * trend_follow_sell_adj * self.params['continuation_multiplier']
                 detail_msg = "MACD 하락 추세 지속"
                 if latest_data['MACD_12_26_9'] < 0:
-                    continuation_score *= 1.2 # 0선 아래에서 가중치 부여
+                    continuation_score *= self.params['zero_line_bonus'] # 0선 아래에서 가중치 부여
                     detail_msg += " (0선 아래)"
                 sell_score += continuation_score
                 sell_details.append(detail_msg)
 
             # 하락 반전 (양수 영역에서 하락)
             if 0 < latest_data['MACD_12_26_9'] < prev_data['MACD_12_26_9']:
-                sell_score += self.weight * trend_follow_sell_adj * 0.5  # 50% 가중치
+                sell_score += self.weight * trend_follow_sell_adj * self.params['reversal_multiplier']
                 sell_details.append(f"MACD 하락 반전 (MACD: {prev_data['MACD_12_26_9']:.2f} -> {latest_data['MACD_12_26_9']:.2f})")
 
         return buy_score, sell_score, buy_details, sell_details

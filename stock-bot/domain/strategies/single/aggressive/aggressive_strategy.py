@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Aggressive 전략 구현체
-- 커스텀 Detector와 기본 Detector 조합
+- 중앙 Detector를 파라미터 주입 방식으로 사용
 - 민감한 신호 감지 및 점수 조정
 """
 
@@ -11,20 +11,19 @@ from typing import Dict, Optional
 import pandas as pd
 
 from domain.signals.config.signals.service.signal_processor import SignalProcessor
-# 기본 Detector import
+# 중앙 Detector import
 from domain.signals.detectors.momentum.rsi_detector import RSISignalDetector
 from domain.signals.detectors.momentum.stoch_detector import StochSignalDetector
 from domain.signals.detectors.trend_following.adx_detector import ADXSignalDetector
 from domain.signals.detectors.trend_following.macd_detector import MACDSignalDetector
+from domain.signals.detectors.trend_following.sma_detector import SMASignalDetector
+from domain.signals.detectors.volume.volume_detector import VolumeSignalDetector
 from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
 from domain.strategies.base import BaseStrategy
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from .configs.aggressive_config import AggressiveStrategyConfig
-from .detectors.aggressive_sma_detector import AggressiveSMADetector
-# 커스텀 Detector import
-from .detectors.aggressive_volume_detector import AggressiveVolumeDetector
 
 logger = get_logger(__name__)
 
@@ -32,7 +31,7 @@ logger = get_logger(__name__)
 class AggressiveStrategy(BaseStrategy):
     """
     공격적인 신호를 적극적으로 포착하는 전략.
-    커스텀 Detector를 사용하여 민감한 신호 감지.
+    중앙 Detector를 파라미터 주입 방식으로 사용하여 민감한 신호 감지.
     """
 
     def __init__(self, strategy_type: StrategyType, config: AggressiveStrategyConfig):
@@ -42,20 +41,61 @@ class AggressiveStrategy(BaseStrategy):
 
     def initialize(self) -> bool:
         try:
-            # 커스텀 Detector와 기본 Detector 조합
+            # 공격적 전략용 파라미터들
+            aggressive_sma_params = {
+                'adx_threshold': 15,  # 더 낮은 임계값 (기본 20 → 15)
+                'continuation_weight': 0.6,  # 더 높은 지속 가중치 (기본 0.4 → 0.6)
+                'trend_confirmation_required': False  # 추세 확인 불필요
+            }
+            
+            aggressive_volume_params = {
+                'volume_surge_factor': 1.3,  # 더 낮은 임계값 (기본 1.5 → 1.3)
+                'trend_continuation_weight': 0.7,  # 더 높은 지속 가중치 (기본 0.5 → 0.7)
+                'min_trend_days': 2  # 더 짧은 확인 기간 (기본 3 → 2)
+            }
+            
+            aggressive_rsi_params = {
+                'oversold_threshold': 40,  # 더 높은 임계값 (기본 35 → 40)
+                'overbought_threshold': 65,  # 더 낮은 임계값 (기본 70 → 65)
+                'exit_bonus_multiplier': 1.5  # 더 높은 보너스 (기본 1.2 → 1.5)
+            }
+            
+            aggressive_adx_params = {
+                'adx_strong_threshold': 20,  # 더 낮은 임계값 (기본 25 → 20)
+                'adx_weak_threshold': 15,   # 더 낮은 임계값 (기본 20 → 15)
+                'weak_trend_multiplier': 0.8  # 더 높은 가중치 (기본 0.5 → 0.8)
+            }
+            
+            # 중앙 Detector들을 파라미터와 함께 생성
             detectors = [
-                AggressiveSMADetector(weight=self.config.detector_weights['sma']),
+                SMASignalDetector(
+                    weight=self.config.detector_weights['sma'],
+                    name="Aggressive_SMA_Detector",
+                    parameters=aggressive_sma_params
+                ),
                 MACDSignalDetector(weight=self.config.detector_weights['macd']),
-                RSISignalDetector(weight=self.config.detector_weights['rsi']),
+                RSISignalDetector(
+                    weight=self.config.detector_weights['rsi'],
+                    name="Aggressive_RSI_Detector", 
+                    parameters=aggressive_rsi_params
+                ),
                 StochSignalDetector(weight=self.config.detector_weights['stoch']),
-                AggressiveVolumeDetector(weight=self.config.detector_weights['volume']),
-                ADXSignalDetector(weight=self.config.detector_weights['adx'])
+                VolumeSignalDetector(
+                    weight=self.config.detector_weights['volume'],
+                    name="Aggressive_Volume_Detector",
+                    parameters=aggressive_volume_params
+                ),
+                ADXSignalDetector(
+                    weight=self.config.detector_weights['adx'],
+                    name="Aggressive_ADX_Detector",
+                    parameters=aggressive_adx_params
+                )
             ]
             self.orchestrator = SignalProcessor()
             for detector in detectors:
                 self.orchestrator.add_detector(detector)
             self.is_initialized = True
-            logger.info(f"{self.get_name()} 초기화 완료 (커스텀 Detector 사용)")
+            logger.info(f"{self.get_name()} 초기화 완료 (중앙 Detector 파라미터 주입 방식 사용)")
             return True
         except Exception as e:
             logger.error(f"{self.get_name()} 초기화 실패: {e}")

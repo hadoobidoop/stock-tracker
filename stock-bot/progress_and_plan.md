@@ -1,293 +1,200 @@
-# StrategyManager 역할 분리 및 strategy 폴더 폐기 리팩토링 진행상황 (2024-07-09)
+# Stock-Bot 프로젝트 리팩토링 진행 상황
 
-## 🎯 목표
-- StrategyManager의 과도한 역할을 Static/Mix/Dynamic 매니저로 분리
-- 오케스트레이터(StrategyOrchestrator) 도입으로 각 매니저 위임 구조 확립
-- domain/analysis/strategy/ 폴더 완전 폐기 및 코드 일관성 확보
+## 전체 계획 (Phase 1-4)
 
-## 🛠️ 단계별 플랜
-1. StaticStrategyManager, StrategyMixManager 클래스 설계/생성
-2. 기존 strategy_manager.py에서 정적/믹스 관련 메서드 분리 및 이관
-3. StrategyOrchestrator(혹은 StrategySystem) 구현 및 통합
-4. 기존 strategy_manager.py, strategy_factory.py, base_strategy.py 등 역할별로 이동/정리
-5. domain/analysis/strategy/ 폴더 완전 삭제
-6. 전체 import 경로 일괄 정비 및 테스트
+### Phase 1: 기반 구조 설정 (Foundation) ✅ **완료**
+- [x] 디렉토리 신설: `application/`, `domain/indicators/`
+- [x] 파일 이동: `main.py` → `application/main.py`
+- [x] 파일 삭제: 최상위 `run_backtest.py`
+- [x] Indicators 계층 구성: `domain/indicators/calculator.py`, `models.py`
+- [x] Utils 디렉토리 삭제: `domain/signals/utils/`
 
-## 📈 현재 상태
-- 분리/이관 설계 논의 중 (2024-07-09)
-- Static/Mix 매니저 설계 및 구현 예정
+### Phase 2: signals 계층 단순화 (Simplification) 🔄 **진행 중**
 
-## ✅ 완료 기준
-- Static/Mix/Dynamic 매니저가 각 역할을 독립적으로 수행
-- 오케스트레이터가 외부 인터페이스를 단일화
-- strategy 폴더 완전 삭제 및 레거시 코드 제거
-- 전체 테스트 통과 및 문서화
+> **목표**: 여러 전략에 흩어져 있던 신호 감지 및 근거 도출 로직을 중앙화하고 재사용 가능한 부품으로 만드는 것
+
+#### 2.1 detectors 리팩토링 및 일반화 ✅ **부분 완료**
+- [x] **strategies 내부 detectors 삭제**: 11개 전략의 `strategies/single/*/detectors/` 디렉토리 삭제
+  - [x] aggressive/detectors/ 삭제
+  - [x] balanced/detectors/ 삭제  
+  - [x] conservative/detectors/ 삭제
+  - [x] momentum/detectors/ 삭제
+  - [x] mean_reversion/detectors/ 삭제
+  - [x] scalping/detectors/ 삭제
+  - [x] swing/detectors/ 삭제
+  - [x] trend_following/detectors/ 삭제
+  - [x] trend_pullback/detectors/ 삭제
+  - [x] volatility_breakout/detectors/ 삭제
+  - [x] multi_timeframe/detectors/ 삭제
+- [x] **중앙 detectors 일반화**: 주요 Detector들에 파라미터 주입 방식 적용
+  - [x] `SMASignalDetector` - 파라미터 주입 방식 적용
+  - [x] `VolumeSignalDetector` - 파라미터 주입 방식 적용
+  - [x] `RSISignalDetector` - 파라미터 주입 방식 적용
+  - [x] `ADXSignalDetector` - 파라미터 주입 방식 적용
+  - [ ] `StochSignalDetector` - 파라미터 주입 방식 적용 예정
+  - [ ] `MACDSignalDetector` - 파라미터 주입 방식 적용 예정
+  - [ ] `BBSignalDetector` - 파라미터 주입 방식 적용 예정
+- [x] **전략 업데이트**: 커스텀 Detector 대신 중앙 Detector 사용
+  - [x] `AggressiveStrategy` - 중앙 Detector + 파라미터 사용
+  - [x] `BalancedStrategy` - 중앙 Detector + 파라미터 사용
+  - [ ] 나머지 9개 전략 업데이트 예정
+
+#### 2.2 analysis 패키지 신설 (확장 가능한 분석 로직) 🔄 **진행 중**
+> **목표**: 기존 CompositeDetector 등에 흩어져 있던 복합 분석 로직을 성격에 맞는 파일로 분리하여 함수로 관리
+
+- [x] **analysis 패키지 생성**: `domain/signals/analysis/` 디렉토리 생성
+- [x] **분석 로직 분리**: 
+  - [x] `momentum.py` - RSI, Stoch, MACD 조합 분석 (✅ 완료)
+    - ✅ `MomentumConsensus` Enum 정의
+    - ✅ `get_momentum_consensus()` - RSI, Stochastic, MACD 종합 분석
+    - ✅ `analyze_rsi_stoch_condition()` - RSI+Stoch 조합 상태 분석
+  - [x] `volume.py` - MACD와 거래량 조합 분석 (✅ 완료)
+    - ✅ `MacdVolumeEvidence` Enum 정의
+    - ✅ `analyze_macd_with_volume()` - MACD+거래량 조합 분석
+    - ✅ `get_volume_pattern()` - 거래량 패턴 분석
+  - [ ] `trend.py` - SMA, MACD, ADX 추세 분석 (🔄 **예정**)
+    ```python
+    # 예시 구조 (사용자 제공)
+    class MacdEvidence(Enum):
+        GOLDEN_CROSS = "MACD 골든크로스"
+        DEAD_CROSS = "MACD 데드크로스"
+    
+    def analyze_macd_cross(data: pd.DataFrame) -> MacdEvidence | None:
+        """MACD 지표를 분석하여 크로스오버 근거를 반환합니다."""
+    ```
+  - [ ] `volatility.py` - BB, ADX 변동성 분석 (🔄 **예정**)
+- [ ] **CompositeDetector 로직 이전**: 기존 복합 분석 로직을 해당 파일의 함수로 이전
+
+#### 2.3 rules 패키지 신설 (확장 가능한 결정 로직) 🔜 **대기**
+> **목표**: 재사용 가능한 규칙들을 파일별로 그룹화하고 하나의 RULES 딕셔너리로 통합
+
+- [ ] **rules 패키지 생성**: `domain/signals/rules/` 디렉토리 생성
+- [ ] **규칙 로직 분리**:
+  - [ ] `momentum.py` - 모멘텀 관련 규칙
+    ```python
+    # 예시 구조
+    MOMENTUM_RULES = {
+        'rsi_stoch_oversold_consensus': 
+            lambda data: get_oversold_consensus(data) == MomentumConsensus.STRONG_BULLISH,
+    }
+    ```
+  - [ ] `trend.py` - 추세 관련 규칙 (🔄 **사용자 예시 제공**)
+    ```python
+    # 예시 구조 (사용자 제공)
+    TREND_RULES = {
+        'macd_confirms_golden_cross':
+            lambda data: analyze_macd_cross(data) == MacdEvidence.GOLDEN_CROSS,
+        'macd_confirms_dead_cross':
+            lambda data: analyze_macd_cross(data) == MacdEvidence.DEAD_CROSS,
+    }
+    ```
+  - [ ] `volume.py` - 거래량 관련 규칙
+  - [ ] `volatility.py` - 변동성 관련 규칙
+- [ ] **RULES 딕셔너리 통합**: `rules/__init__.py`에서 모든 규칙 통합 (🔄 **사용자 예시 제공**)
+  ```python
+  # 예시 구조 (사용자 제공)
+  from .momentum import MOMENTUM_RULES
+  from .trend import TREND_RULES
+  
+  RULES = {
+      **MOMENTUM_RULES,
+      **TREND_RULES,
+  }
+  ```
+
+#### 2.4 불필요한 코드 제거 🔜 **대기**
+- [ ] **service 디렉토리 삭제**: `domain/signals/service/` 삭제
+- [ ] **config 디렉토리 삭제**: `domain/signals/config/` 삭제
+
+#### 2.5 모델 통합 🔜 **대기**
+- [ ] **models 통합**: `domain/signals/models/` 내 파일들을 단일 `models.py`로 통합
+  - [ ] `enums/` 디렉토리 내용 통합
+  - [ ] `strategy_result.py` 통합
+  - [ ] `technical_indicator.py` 통합
+  - [ ] 기타 모델 파일들 통합
+
+### Phase 3: strategies 계층 YAML 기반 재구성 (Strategy Redesign) 🔜 **Phase 2 완료 후 진행 여부 확인**
+- [ ] YAML 전략 정의 스키마 설계
+- [ ] 전략 해석기 구현
+- [ ] 기존 전략들을 YAML로 마이그레이션
+
+### Phase 4: services 계층 및 최종 정리 (Service Layer & Finalization) 🔜 **대기**
+- [ ] domain/services 계층 신설
+- [ ] 유스케이스 정의 및 구현
+- [ ] 최종 테스트 및 문서화
 
 ---
 
-# 진행상황 및 계획 (2024-07-09 최신)
+## Phase 2 진행 상황 상세
 
-## ✅ 동적 전략(Dynamic Strategy/Manager) 시스템 마이그레이션 및 문서화 완료
+### 🎯 주요 성과
+1. **✅ Detector 중앙화 완료**: 모든 전략의 개별 detectors 디렉토리 제거
+2. **✅ 파라미터 주입 시스템 구축**: 4개 주요 Detector에 설정 외부화 적용
+3. **✅ Analysis 패키지 기반 구축**: momentum, volume 분석 모듈 완성
+4. **✅ 전략 현대화**: aggressive, balanced 전략의 중앙 Detector 전환 완료
 
-- **폴더 구조 마이그레이션**: domain/strategies/dynamic/ 하위로 dynamic_strategy.py, dynamic_strategy_manager.py, configs/, modifiers/ 등 완전 이전
-- **import 경로 일괄 정비**: strategy_factory, strategy_manager, modifier_engine, decision_context 등 전체 코드에서 새로운 경로로 수정
-- **__init__.py 및 와일드카드 import 정리**: 불필요한 심볼 노출 제거, AttributeError/ModuleNotFoundError 방지
-- **주석/문서화**: dynamic_strategy_manager.py에 상세 주석/도큐 추가, strategy_docs/dynamic_strategy_system.md 신규 작성
-- **에러 수정**: 마이그레이션 후 발생한 모든 import/symbol 에러 해결
-- **최종 상태**: 동적 전략 시스템이 완전히 독립적이고, 정적 전략과 동일한 구조로 유지보수/확장/테스트 가능
+### 🔧 적용된 파라미터 주입 예시
+```python
+# 공격적 전략용 SMA 파라미터
+aggressive_sma_params = {
+    'adx_threshold': 15,  # 기본 20에서 더 민감하게
+    'continuation_weight': 0.6,  # 기본 0.4에서 더 적극적으로
+    'trend_confirmation_required': False  # 추세 확인 불필요
+}
 
----
-
-# 이하 기존 진행상황 및 계획
-
----
-
-## 1. 프로젝트 목표 및 설계 철학
-
-- **Detector 계층화**: Base > 기본 > 커스텀 구조로 재사용성과 확장성 극대화
-- **전략별 패키지화 및 독립성**: 앞으로 모든 전략(정적/동적/조합 포함)은 해당 전략별 폴더(domain/strategies/...)에 구현체/Detector/config를 완전히 독립적으로 관리하는 구조로 일원화할 계획입니다. 이로써 각 전략은 폴더 단위로 완전히 분리되어, 유지보수/확장/테스트가 독자적으로 가능해집니다.
-- **신호 근거 일관성**: 모든 Detector가 상세 근거(TechnicalIndicatorEvidence)를 일관되게 반환
-- **유지보수/확장성**: 새로운 전략/Detector 추가 시 기존 구조를 해치지 않고 확장 가능
-
----
-
-## 2. 최종 폴더/클래스 구조 설계
-
+# 중앙 Detector 사용
+SMASignalDetector(
+    weight=self.config.detector_weights['sma'],
+    name="Aggressive_SMA_Detector",
+    parameters=aggressive_sma_params
+)
 ```
-domain/
-  analysis/
-    detectors/                    # 공통 기본 Detector들
-      base_signal_detector.py
-      volume/volume_detector.py
-      momentum/rsi_detector.py
-      ...
-  strategies/                    # 전략별 패키지 (각 전략별로 완전히 독립적 관리)
-    aggressive/
-      aggressive_strategy.py      # aggressive 전략 구현체 (폴더 내 독립 관리)
-      configs/aggressive_config.py
-      detectors/aggressive_volume_detector.py
-      detectors/aggressive_sma_detector.py
-    balanced/
-      balanced_strategy.py        # balanced 전략 구현체 (폴더 내 독립 관리)
-      configs/balanced_config.py
-      detectors/balanced_volume_detector.py
-      detectors/balanced_sma_detector.py
-    conservative/
-      conservative_strategy.py    # conservative 전략 구현체 (폴더 내 독립 관리)
-      configs/conservative_config.py
-      detectors/conservative_volume_detector.py
-      detectors/conservative_sma_detector.py
-    ...
+
+### 📦 현재 Analysis 모듈 구조
+```
+domain/signals/analysis/
+├── __init__.py
+├── momentum.py     # ✅ 완성: 모멘텀 컨센서스, RSI-Stoch 조합 분석
+├── volume.py       # ✅ 완성: MACD-거래량 조합, 거래량 패턴 분석
+├── trend.py        # 🔄 예정: MACD 크로스, SMA 추세 분석
+└── volatility.py   # 🔄 예정: BB 변동성, ADX 조합 분석
 ```
 
-> 현재 aggressive, balanced, conservative 전략은 이미 독립 구조로 완전히 이전 완료(구현체, Detector, config 모두 폴더 내에 위치).
-> 기타 전략(예: momentum, mean_reversion, swing 등)은 추후 동일한 방식으로 이전 예정.
-### 전체 전략 리스트 및 독립화/리팩토링 현황
+### 📋 계획된 Rules 모듈 구조 (사용자 예시 기반)
+```
+domain/signals/rules/
+├── __init__.py     # 모든 규칙 RULES 딕셔너리로 통합
+├── momentum.py     # 모멘텀 관련 규칙 함수들
+├── trend.py        # 추세 관련 규칙 함수들 (MACD 크로스 등)
+├── volume.py       # 거래량 관련 규칙 함수들
+└── volatility.py   # 변동성 관련 규칙 함수들
+```
 
-| 전략명                | 폴더 독립화/리팩토링 현황 |
-|----------------------|--------------------------|
-| Aggressive           | 완료                     |
-| Balanced             | 완료                     |
-| Conservative         | 완료 (조합 포함)         |
-| Momentum             | 완료                     |
-| Scalping             | 완료                     |
-| aggressive_mix       | 완료 (조합)              |
-| Mean Reversion       | 완료                     |
-| Swing                | 완료                     |
-| Trend Following      | 완료                     |
-| Trend Pullback       | 완료                     |
-| Volatility Breakout  | 완료                     |
-| Macro Driven         | 폐기                     |
-| Multi Timeframe      | 완료                     |
-| Quality Trend        | 폐기                     |
-| Stable Value Hybrid  | 폐기                     |
-| Contrarian           | 폐기                     |
-| Market Regime Hybrid | 완료                     |
-| Adaptive Momentum Hybrid | 완료                 |
-| Conservative Reversion Hybrid | 완료           |
-| balanced_mix         | 완료 (조합)              |
-| conservative_mix     | 완료 (조합)              |
-| Dynamic Strategy/Manager | 예정 (동적)         |
+### 🚀 다음 단계 우선순위
+1. **analysis/trend.py 구현**: 사용자 제공 예시에 따른 MACD 크로스 분석
+2. **analysis/volatility.py 구현**: BB, ADX 변동성 분석
+3. **rules 패키지 전체 구현**: 사용자 예시에 따른 규칙 딕셔너리 구조
+4. **나머지 Detector 파라미터화**: StochSignalDetector, MACDSignalDetector, BBSignalDetector
+5. **나머지 전략 업데이트**: 9개 전략의 중앙 Detector 전환
+6. **불필요한 코드 제거**: service, config 디렉토리 정리
+7. **모델 통합**: models/ 파일들 단일화
 
-> Aggressive, Balanced, Conservative, Momentum 전략 모두 독립 구조로 완전히 이전 완료. 나머지 전략/조합/동적 전략은 동일 방식으로 이전 예정.
+### 💡 Phase 2의 핵심 가치
+
+1. **📍 관심사 분리**: 분석 로직(analysis) ↔ 결정 로직(rules) ↔ 감지 로직(detectors)
+2. **🔄 재사용성**: 함수 기반 모듈로 전략 간 로직 공유
+3. **🎛️ 설정 외부화**: 파라미터 주입으로 전략별 특화 가능
+4. **📈 확장성**: 새로운 분석/규칙 추가 시 기존 구조 활용
 
 ---
 
-## 3. 단계별 실행계획
+## 작업 시작일
+- **Phase 2 시작**: 2025-01-XX
+- **현재 진행률**: Phase 2의 약 40% 완료
 
-### ✅ 1단계: 전략별 패키지 구조 설계 및 생성 (완료)
-- domain/strategies/ 하위에 aggressive, balanced, conservative 등 폴더 생성
-- 각 폴더 내 configs/, detectors/, 전략 구현체 파일 분리
-
-### ✅ 2단계: Detector 계층 리팩토링 (완료)
-- 공통 Detector는 기본 구현 제공 (domain/signals/detectors/)
-- 전략별 커스텀 Detector는 각 전략 패키지의 detectors/에 위치
-- 모든 Detector가 TechnicalIndicatorEvidence 등 상세 근거를 일관되게 반환하도록 개선
-
-### ✅ 3단계: Aggressive 전략 커스텀 Detector 및 전략 구현 (완료)
-- AggressiveVolumeDetector, AggressiveSMADetector 등 커스텀 Detector 구현
-- aggressive_strategy.py에서 커스텀/기본 Detector 조합, 점수 조정, 상세 근거 수집 등 완성
-- 마크다운/설명 블록 제거 및 코드 정리 완료
-
-### ⏳ 4단계: Balanced/Conservative 전략 커스텀 Detector 및 전략 구현 (진행 중)
-- Balanced: 커스텀 Detector, config, 전략 구현체 구조 설계 및 일부 구현
-- Conservative: 커스텀 Detector, config, 전략 구현체 구조 설계 및 일부 구현
-
-### ⏳ 5단계: 테스트 및 통합 검증 (예정)
-- 각 전략별 단위/통합 테스트
-- 신호 근거, 점수, 전략별 동작 검증
-
-### ⏳ 6단계: 문서화/자동화/최적화 (예정)
-- 구조/사용법/확장법 문서화
-- 자동화 스크립트, 코드 최적화 등
-
----
-
-## 4. 각 전략별 진행상황 상세
-
-### Aggressive/ Balanced/ Conservative/ Momentum/Scalping/aggressive_mix/conservative_mix/mean_reversion/balanced_mix/conservative_reversion_hybrid, swing, multi_timeframe 전략
-- 각 전략별 구현체(.py), Detector, config, (조합 전략은 실행체/config)는 해당 전략 폴더 내에서 완전히 독자적으로 관리됨 (폴더 단위 독립성)
-- aggressive, balanced, conservative, momentum, scalping, aggressive_mix, conservative_mix, mean_reversion, balanced_mix, conservative_reversion_hybrid, swing, multi_timeframe 전략은 독립 구조로 완전히 이전 완료 및 문서화/주석 리팩토링까지 완료
-- swing 등 기타 전략/조합/동적 전략은 추후 동일한 방식으로 이전 예정
-
-### Aggressive 전략
-- [x] AggressiveVolumeDetector, AggressiveSMADetector 등 커스텀 Detector 구현
-- [x] aggressive_strategy.py 완성 (점수 조정, 근거 수집, 쿨다운, 예외처리 등)
-- [x] 마크다운/설명 블록 제거, Python 코드만 남도록 정리
-- [x] 커밋 완료
-
-### Balanced 전략
-- [x] 패키지/구조 설계 및 생성
-- [x] 커스텀 Detector 일부 구현 (BalancedVolumeDetector, BalancedSMADetector)
-- [x] config, 전략 구현체 일부 구현
-- [x] 전략 본체 및 나머지 Detector 구현 완료
-- [x] 주석/문서화/튜닝 가이드 보강 및 커밋 완료
-
-### Conservative 전략
-- [x] 패키지/구조 설계 및 생성
-- [x] 커스텀 Detector 구현 (ConservativeVolumeDetector, ConservativeSMADetector)
-- [x] config, 전략 본체 구현 및 이전
-- [x] 팩토리/매니저 import 경로 및 implementation_class 경로 일괄 수정
-- [x] 전략/디텍터/설정 주석 리팩토링 및 가독성 개선
-- [x] 커밋 완료
-
-### Momentum 전략
-- [x] Momentum 전략 폴더/구조 설계 및 생성
-- [x] 커스텀 Detector, config, 전략 구현체 구현 및 완성
-- [x] 전략 본체 및 Detector 구현 완료
-- [x] 주석/문서화/튜닝 가이드 보강 및 커밋 완료
-
-### Scalping 전략
-- [x] 패키지/구조 설계 및 생성
-- [x] Detector, config, 전략 구현체 완전 분리 및 경로/구조 일관화
-- [x] 전략 본체 및 Detector 구현 완료
-- [x] 주석/문서화/튜닝 가이드 보강 및 커밋 완료
-
-### aggressive_mix 전략 조합
-- [x] 패키지/구조 설계 및 생성
-- [x] config, 실행체(조합 전략) 완전 분리 및 경로/구조 일관화
-- [x] 기존 strategy_mixes.py에서 정의 제거 및 안내
-- [x] 주석/문서화/튜닝 가이드 보강 및 커밋 완료
-
-### Conservative_mix 전략
-- [x] conservative_mix 폴더/구조 설계 및 생성
-- [x] config, 실행체(조합 전략) 완전 분리 및 경로/구조 일관화
-- [x] 기존 strategy_mixes.py에서 정의 제거 및 안내
-- [x] StrategyManager에서 import 경로 분기 처리 및 일관화
-- [x] 주석/문서화/튜닝 가이드 보강 및 커밋 완료
-
-### Mean Reversion 전략
-- [x] mean_reversion 폴더/구조 설계 및 생성
-- [x] config, detector 래퍼, 실행체 완전 분리 및 경로/구조 일관화
-- [x] 팩토리/매니저 import 경로 및 implementation_class 경로 일괄 수정
-- [x] Detector 가중치/파라미터 config화 및 동적 생성 구조 반영
-- [x] 주석/문서화/튜닝 가이드/strategy_docs 최신화 및 커밋 완료
-
-### balanced_mix 전략 조합
-- [x] balanced_mix 폴더/구조 설계 및 생성
-- [x] config, 실행체(조합 전략) 완전 분리 및 경로/구조 일관화
-- [x] 기존 strategy_mixes.py에서 정의 제거 및 안내
-- [x] StrategyManager에서 import 경로 분기 처리 및 일관화
-- [x] 주석/문서화/튜닝 가이드 보강 및 커밋 완료
-- [x] strategy_docs/balanced_mix_strategy.md 문서화 완료
-
-### Conservative Reversion Hybrid 전략
-- [x] conservative_reversion_hybrid 폴더/구조 설계 및 생성
-- [x] 전략 구현체 완전 분리 및 경로/구조 일관화
-- [x] StrategyFactory, static_strategies.py 등 import/implementation_class 경로 일괄 수정
-- [x] 기존 레거시 파일 삭제
-- [x] 주석/문서화/튜닝 가이드 보강 및 커밋 완료
-- [x] strategy_docs/conservative_reversion_hybrid_strategy.md 문서화 완료
-
-### Volatility Breakout 전략
-- [x] 패키지/구조 설계 및 생성
-- [x] 커스텀 Detector, config, 전략 구현체 구조 설계 및 일부 구현
-- [x] 커스텀 Detector 구현 (VolatilityBreakoutVolumeDetector, VolatilityBreakoutSMADetector)
-- [x] config, 전략 본체 구현 및 이전
-- [x] 팩토리/매니저 import 경로 및 implementation_class 경로 일괄 수정
-- [x] 전략/디텍터/설정 주석 리팩토링 및 가독성 개선
-- [x] 커밋 완료
-- [x] 문서화/주석 리팩토링 완료
-
-### Adaptive Momentum Hybrid 전략
-- [x] 폴더/구조 설계 및 생성
-- [x] 커스텀 Detector, config, 전략 구현체 구현 및 완성
-- [x] 전략 본체 및 Detector 구현 완료
-- [x] 주석/문서화/튜닝 가이드 보강 및 커밋 완료
-- [x] 하위 strategies 폴더 연동 구조 반영
-- [x] 문서화/주석 리팩토링 완료
-
-### Trend Pullback 전략
-- [x] trend_pullback 폴더/구조 설계 및 생성
-- [x] 커스텀 Detector(TrendPullbackSMADetector, TrendPullbackADXDetector, TrendPullbackRSIDetector) 구현 및 분리
-- [x] config(trend_pullback_config.py) 분리 및 가중치/파라미터 관리
-- [x] 전략 본체(trend_pullback_strategy.py) 완전 분리 및 경로/구조 일관화
-- [x] 팩토리/매니저 import 경로 및 implementation_class 경로 일괄 수정
-- [x] 상세 로그(info/debug) 추가 및 백테스트/실시간 분석 활용성 강화
-- [x] strategy_docs/trend_pullback_strategy.md 문서화 완료
-- [x] 커밋 완료
-
-### Trend Following 전략
-- [x] trend_following 폴더/구조 설계 및 생성
-- [x] 커스텀 Detector(TrendFollowingSMADetector, TrendFollowingMACDDetector, TrendFollowingADXDetector, TrendFollowingVolumeDetector) 구현 및 분리
-- [x] config(trend_following_config.py) 분리 및 가중치/파라미터 관리
-- [x] 전략 본체(trend_following_strategy.py) 완전 분리 및 경로/구조 일관화
-- [x] 팩토리/매니저 import 경로 및 implementation_class 경로 일괄 수정
-- [x] 상세 로그(info/debug) 추가 및 백테스트/실시간 분석 활용성 강화
-- [x] strategy_docs/trend_following_strategy.md 문서화 완료(필요시)
-- [x] 커밋 완료
-
-### Market Regime Hybrid 전략
-- [x] market_regime_hybrid 폴더/구조 설계 및 생성
-- [x] 하위 전략(TrendFollowing, MeanReversion, VolatilityBreakout) 직접 참조 및 인스턴스화
-- [x] config(market_regime_hybrid_config.py) 분리 및 파라미터/가중치 관리
-- [x] 전략 본체(market_regime_hybrid_strategy.py) 완전 분리 및 경로/구조 일관화
-- [x] 팩토리/매니저 import 경로 및 implementation_class 경로 일괄 수정
-- [x] 상세 로그(info/debug) 추가 및 백테스트/실시간 분석 활용성 강화
-- [x] strategy_docs/market_regime_hybrid_strategy.md 문서화 완료
-- [x] 주석 리팩토링 및 커밋 완료
-
----
-
-## 5. 향후 TODO 및 관리 팁
-
-- [ ] 모든 전략에 대해 단위/통합 테스트 작성 및 검증
-- [ ] 신호 근거, 점수, 전략별 동작에 대한 리포트/로그 체계화
-- [ ] 문서화(README, 구조/확장법, 예시 등) 및 자동화 스크립트 추가
-- [ ] 신규 전략/Detector 추가 시, 기존 구조/패턴을 준수하여 일관성 유지
-- [ ] 레거시 코드(signals/strategy/implementations 등) 일괄 삭제 및 정리 (전략별 폴더 독립화 100% 완료 후)
-
----
-
-**컨텍스트가 길어질 경우, 이 문서만 최신화하여 관리하면 전체 진행상황과 계획을 한눈에 파악할 수 있습니다.** 
-
-### 전략별 폴더 독립화 이후 기존 코드 정리/수정 계획
-
-1. domain/signals/strategy/implementations/, domain/signals/detectors/ 등 상위 디렉터리의 레거시 전략/Detector/config 파일 삭제 또는 deprecated 처리
-2. StrategyFactory, StrategyManager 등 전략 생성/등록/선택 로직의 import 경로를 새로운 구조(domain/strategies/전략명/...)로 일괄 수정
-3. 테스트 코드의 import 경로 및 테스트 대상 파일/클래스 위치를 모두 새로운 구조로 변경
-4. README, 개발 가이드, 예시 코드 등 문서에서 전략 구조/사용법을 새로운 구조로 일원화
-5. 중복/불필요/레거시 코드 일괄 삭제 및 deprecated 안내
-6. 자동화/배포/테스트 스크립트 등에서 전략 관련 경로를 모두 새로운 구조로 반영
-
-> 이 작업은 모든 전략의 폴더 독립화가 완료된 후 일괄적으로 진행됩니다. 
+## 중요 참고사항
+- ✅ 파라미터 주입 방식으로 전략별 특화 설정 가능
+- ✅ Analysis 모듈로 복합 분석 로직 중앙화
+- 🔄 **Phase 3 시작 전 진행 여부 확인 필요** ⚠️
+- 🔄 Import 경로 정리 및 의존성 확인 지속 진행
+- 🔄 기존 기능 유지하면서 점진적 리팩토링 진행 

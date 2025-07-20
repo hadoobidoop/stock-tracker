@@ -1,1 +1,0 @@
-# Momentum 전략 detectors 패키지 

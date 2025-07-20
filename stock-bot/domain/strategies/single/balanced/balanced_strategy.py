@@ -5,10 +5,12 @@ import pandas as pd
 
 from domain.signals.config.signals.service.signal_processor import SignalProcessor
 from domain.signals.detectors.composite.composite_detector import CompositeSignalDetector
-# 기본 Detector import
+# 중앙 Detector import
 from domain.signals.detectors.momentum.rsi_detector import RSISignalDetector
 from domain.signals.detectors.trend_following.adx_detector import ADXSignalDetector
 from domain.signals.detectors.trend_following.macd_detector import MACDSignalDetector
+from domain.signals.detectors.trend_following.sma_detector import SMASignalDetector
+from domain.signals.detectors.volume.volume_detector import VolumeSignalDetector
 from domain.signals.models.enums import StrategyType
 from domain.signals.models.strategy_result import StrategyResult
 from domain.signals.models.trading_signal import TradingSignal
@@ -16,34 +18,14 @@ from domain.strategies.base import BaseStrategy
 from infrastructure.db.models.enums import TrendType
 from infrastructure.logging import get_logger
 from .configs.balanced_config import BalancedStrategyConfig
-from .detectors.balanced_sma_detector import BalancedSMADetector
-# 커스텀 Detector import
-from .detectors.balanced_volume_detector import BalancedVolumeDetector
 
 logger = get_logger(__name__)
 
 
 class BalancedStrategy(BaseStrategy):
     """
-    다양한 신호를 균형있게 사용하는 기본 전략.
-    - 커스텀 Detector(균형 SMA/Volume) + 기본 Detector(MACD, RSI, ADX) + Composite(MACD+Volume) 조합
-    - 신호/점수/근거/로깅/쿨다운/예외처리 등 robust하게 구현
-    - 장기추세(BULLISH/BEARISH) 가중치 적용
-    - score_multiplier=1.0(점수 조정 없음, 표준)
-    - 설계 의도: 신호 신뢰도와 빈도의 균형, 표준적/안정적 운용
-
-    사용법:
-        config = BalancedStrategyConfig()
-        strategy = BalancedStrategy(StrategyType.BALANCED, config)
-        strategy.initialize()
-        result = strategy.analyze(df, ticker, market_trend, long_term_trend)
-
-    주요 튜닝 포인트:
-        - signal_threshold: 신호 발생 기준점(기본 8.0)
-        - detector_weights: 각 Detector별 가중치(Composite > SMA/MACD > Volume/ADX > RSI)
-        - long_term_bullish_multiplier/long_term_bearish_multiplier: 장기추세 가중치(기본 1.2)
-        - score_multiplier: 점수 조정(기본 1.0)
-        - max_positions/position_hold_hours: 포지션 관리
+    균형잡힌 거래 전략.
+    중앙 Detector를 파라미터 주입 방식으로 사용하여 안정적이고 균형있는 신호 감지.
     """
 
     def __init__(self, strategy_type: StrategyType, config: BalancedStrategyConfig):
@@ -54,23 +36,53 @@ class BalancedStrategy(BaseStrategy):
     def initialize(self) -> bool:
         """
         Detector 조합 및 orchestrator 초기화
-        - 커스텀 Detector: BalancedSMADetector, BalancedVolumeDetector
-        - 기본 Detector: MACDSignalDetector, RSISignalDetector, ADXSignalDetector
+        - 중앙 Detector들을 파라미터 주입 방식으로 사용
         - Composite Detector: MACD+Volume 컨펌(신호 신뢰도 강화)
         - Detector별 가중치는 config.detector_weights에서 관리
         """
         try:
-            # 커스텀 Detector와 기본 Detector 조합
+            # 균형잡힌 전략용 파라미터들 (기본값 유지하되 안정성 중심)
+            balanced_sma_params = {
+                'adx_threshold': 20,  # 기본값 유지
+                'continuation_weight': 0.4,  # 기본값 유지 (안정성)
+                'trend_confirmation_required': True  # 확인 필요
+            }
+            
+            balanced_volume_params = {
+                'volume_surge_factor': 1.5,  # 기본값 유지
+                'trend_continuation_weight': 0.5,  # 기본값 유지
+                'min_trend_days': 3  # 기본값 유지 (안정성)
+            }
+            
+            balanced_rsi_params = {
+                'oversold_threshold': 35,  # 기본값 유지
+                'overbought_threshold': 70,  # 기본값 유지
+                'exit_bonus_multiplier': 1.2  # 기본값 유지
+            }
+            
+            # 중앙 Detector들을 파라미터와 함께 생성
             detectors = [
-                BalancedSMADetector(weight=self.config.detector_weights['sma']),
+                SMASignalDetector(
+                    weight=self.config.detector_weights['sma'],
+                    name="Balanced_SMA_Detector",
+                    parameters=balanced_sma_params
+                ),
                 MACDSignalDetector(weight=self.config.detector_weights['macd']),
-                RSISignalDetector(weight=self.config.detector_weights['rsi']),
-                BalancedVolumeDetector(weight=self.config.detector_weights['volume']),
+                RSISignalDetector(
+                    weight=self.config.detector_weights['rsi'],
+                    name="Balanced_RSI_Detector",
+                    parameters=balanced_rsi_params
+                ),
+                VolumeSignalDetector(
+                    weight=self.config.detector_weights['volume'],
+                    name="Balanced_Volume_Detector",
+                    parameters=balanced_volume_params
+                ),
                 ADXSignalDetector(weight=self.config.detector_weights['adx']),
                 CompositeSignalDetector(
                     detectors=[
                         MACDSignalDetector(weight=0),
-                        BalancedVolumeDetector(weight=0)
+                        VolumeSignalDetector(weight=0, parameters=balanced_volume_params)
                     ],
                     weight=self.config.detector_weights['composite'],
                     require_all=True,
@@ -81,7 +93,7 @@ class BalancedStrategy(BaseStrategy):
             for detector in detectors:
                 self.orchestrator.add_detector(detector)
             self.is_initialized = True
-            logger.info(f"{self.get_name()} 초기화 완료 (커스텀 Detector 사용)")
+            logger.info(f"{self.get_name()} 초기화 완료 (중앙 Detector 파라미터 주입 방식 사용)")
             return True
         except Exception as e:
             logger.error(f"{self.get_name()} 초기화 실패: {e}")

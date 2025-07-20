@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 import pandas as pd
 
@@ -10,11 +10,24 @@ logger = get_logger(__name__)
 
 
 class SMASignalDetector(SignalDetector):
-    """SMA 골든/데드 크로스 신호 감지기"""
+    """SMA 골든/데드 크로스 신호 감지기 - 파라미터 주입 방식 지원"""
     
-    def __init__(self, weight: float):
-        super().__init__(weight, "SMA_Detector")
+    def __init__(self, weight: float, name: str = None, parameters: Optional[Dict] = None):
+        super().__init__(weight, name or "SMA_Detector")
         self.required_columns = ['SMA_5', 'SMA_20', 'ADX_14']
+        
+        # 기본 파라미터 설정
+        default_params = {
+            'adx_threshold': 20,
+            'adx_strong_threshold': 25,
+            'continuation_weight': 0.4,
+            'trend_confirmation_required': True,
+            'strong_trend_multiplier': 1.2,
+            'weak_trend_multiplier': 0.8
+        }
+        
+        # 외부 파라미터와 기본값 병합
+        self.params = {**default_params, **(parameters or {})}
     
     def detect_signals(self,
                       df: pd.DataFrame,
@@ -47,11 +60,11 @@ class SMASignalDetector(SignalDetector):
             sma_cross_buy_score = self.weight * trend_follow_buy_adj
             detail_msg = "SMA 골든 크로스"
             # ADX 강도에 따른 가중치 조정
-            if adx_strength >= 25:
-                sma_cross_buy_score *= 1.2
+            if adx_strength >= self.params['adx_strong_threshold']:
+                sma_cross_buy_score *= self.params['strong_trend_multiplier']
                 detail_msg += f" (ADX 강세: {adx_strength:.2f})"
-            elif adx_strength < 20:
-                sma_cross_buy_score *= 0.8
+            elif adx_strength < self.params['adx_threshold']:
+                sma_cross_buy_score *= self.params['weak_trend_multiplier']
                 detail_msg += f" (ADX 약세: {adx_strength:.2f})"
             
             buy_score += sma_cross_buy_score
@@ -59,12 +72,13 @@ class SMASignalDetector(SignalDetector):
         
         # 상승 추세 지속 (크로스 없음)
         elif latest_data['SMA_5'] > latest_data['SMA_20']:
-            # ADX가 20 이상일 때만 추세 지속으로 인정
-            if adx_strength >= 20:
-                continuation_score = self.weight * trend_follow_buy_adj * 0.4  # 40% 가중치
+            # 파라미터에 따른 추세 확인 필요 여부 체크
+            trend_check = not self.params['trend_confirmation_required'] or adx_strength >= self.params['adx_threshold']
+            if trend_check:
+                continuation_score = self.weight * trend_follow_buy_adj * self.params['continuation_weight']
                 detail_msg = "SMA 상승 추세 지속"
-                if adx_strength >= 25:
-                    continuation_score *= 1.2 # 강한 추세에서 가중치 부여
+                if adx_strength >= self.params['adx_strong_threshold']:
+                    continuation_score *= self.params['strong_trend_multiplier']
                     detail_msg += f" (ADX 강세: {adx_strength:.2f})"
                 buy_score += continuation_score
                 buy_details.append(detail_msg)
@@ -74,11 +88,11 @@ class SMASignalDetector(SignalDetector):
             sma_cross_sell_score = self.weight * trend_follow_sell_adj
             detail_msg = "SMA 데드 크로스"
             # ADX 강도에 따른 가중치 조정
-            if adx_strength >= 25:
-                sma_cross_sell_score *= 1.2
+            if adx_strength >= self.params['adx_strong_threshold']:
+                sma_cross_sell_score *= self.params['strong_trend_multiplier']
                 detail_msg += f" (ADX 강세: {adx_strength:.2f})"
-            elif adx_strength < 20:
-                sma_cross_sell_score *= 0.8
+            elif adx_strength < self.params['adx_threshold']:
+                sma_cross_sell_score *= self.params['weak_trend_multiplier']
                 detail_msg += f" (ADX 약세: {adx_strength:.2f})"
 
             sell_score += sma_cross_sell_score
@@ -86,12 +100,13 @@ class SMASignalDetector(SignalDetector):
 
         # 하락 추세 지속 (크로스 없음)
         elif latest_data['SMA_5'] < latest_data['SMA_20']:
-            # ADX가 20 이상일 때만 추세 지속으로 인정
-            if adx_strength >= 20:
-                continuation_score = self.weight * trend_follow_sell_adj * 0.4  # 40% 가중치
+            # 파라미터에 따른 추세 확인 필요 여부 체크
+            trend_check = not self.params['trend_confirmation_required'] or adx_strength >= self.params['adx_threshold']
+            if trend_check:
+                continuation_score = self.weight * trend_follow_sell_adj * self.params['continuation_weight']
                 detail_msg = "SMA 하락 추세 지속"
-                if adx_strength >= 25:
-                    continuation_score *= 1.2 # 강한 추세에서 가중치 부여
+                if adx_strength >= self.params['adx_strong_threshold']:
+                    continuation_score *= self.params['strong_trend_multiplier']
                     detail_msg += f" (ADX 강세: {adx_strength:.2f})"
                 sell_score += continuation_score
                 sell_details.append(detail_msg)
