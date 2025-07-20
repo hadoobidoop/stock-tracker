@@ -1,9 +1,10 @@
 import json
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
+from pathlib import Path
 
-# 새로운 전략 시스템 import
-from domain.signals.models.enums import StrategyType
+# 새로운 services 계층 import
+from domain.services import StrategyService, TradingService, TradingSignal, SignalType
 from domain.signals.repository.analysis_repository import MarketDataRepository
 from domain.stock.repository.stock_repository import StockRepository
 from domain.stock.service.stock_analysis_service import StockAnalysisService
@@ -17,56 +18,49 @@ logger = get_logger(__name__)
 
 
 class BacktestingService:
-    """백테스팅 서비스 - 단순화된 인터페이스 제공"""
+    """백테스팅 서비스 - YAML 전략과 TradingService를 사용한 백테스팅"""
     
     def __init__(self, 
                  stock_repository: Optional[StockRepository] = None,
-                 market_data_repository: Optional[MarketDataRepository] = None):
+                 market_data_repository: Optional[MarketDataRepository] = None,
+                 strategy_definitions_path: Optional[Path] = None):
         self.stock_repository = stock_repository or SQLStockRepository()
         self.market_data_repository = market_data_repository or SQLMarketDataRepository()
         self.stock_analysis_service = StockAnalysisService(self.stock_repository)
-        logger.info("BacktestingService initialized.")
+        
+        # Services 계층 초기화
+        definitions_path = strategy_definitions_path or Path("domain/strategies/definitions")
+        self.strategy_service = StrategyService(definitions_path)
+        self.trading_service = TradingService(self.strategy_service, self.market_data_repository)
+        
+        logger.info("BacktestingService initialized with new services layer.")
 
     def run_single_analysis(self, strategy_name: str, **kwargs) -> BacktestResult:
-        """단일 전략을 심층 분석합니다."""
-        logger.info(f"Running deep-dive analysis for single strategy: {strategy_name}")
+        """단일 전략을 심층 분석합니다 (YAML 기반)."""
+        logger.info(f"Running analysis for YAML strategy: {strategy_name}")
 
-        from domain.orchestration.selector import is_strategy_supported
-        is_supported, strategy_class = is_strategy_supported(strategy_name)
+        # YAML 전략 존재 확인
+        strategy = self.strategy_service.get_strategy(strategy_name)
+        if not strategy:
+            raise ValueError(f"YAML Strategy '{strategy_name}' is not found in definitions.")
 
-        if not is_supported:
-            raise ValueError(f"Strategy '{strategy_name}' is not supported or not found.")
-
-        if strategy_class == "static":
-            strategy_type = StrategyType(strategy_name.lower())
-            return self._run_specific_strategy_backtest(strategy_type=strategy_type, **kwargs)
-        
-        elif strategy_class == "dynamic":
-            return self._run_dynamic_strategy_backtest(dynamic_strategy_name=strategy_name, **kwargs)
-        
-        else:
-            raise NotImplementedError(f"Backtesting for strategy class '{strategy_class}' is not implemented.")
+        return self._run_yaml_strategy_backtest(strategy_name=strategy_name, **kwargs)
 
     def run_comparison(self, strategies: List[str], **kwargs) -> Dict[str, Any]:
-        """여러 전략의 성과를 비교 분석합니다."""
-        logger.info(f"Comparing performance for strategies: {', '.join(strategies)}")
+        """여러 YAML 전략의 성과를 비교 분석합니다."""
+        logger.info(f"Comparing performance for YAML strategies: {', '.join(strategies)}")
         
         all_results = {}
-        from domain.orchestration.selector import is_strategy_supported
+        available_strategies = self.strategy_service.get_strategy_names()
 
         for name in strategies:
-            is_supported, strategy_class = is_strategy_supported(name)
-            if not is_supported:
-                logger.warning(f"Strategy '{name}' is not supported and will be skipped in comparison.")
+            if name not in available_strategies:
+                logger.warning(f"YAML Strategy '{name}' is not found and will be skipped in comparison.")
                 continue
 
             try:
-                if strategy_class == "static":
-                    result = self._run_specific_strategy_backtest(strategy_type=StrategyType(name.lower()), **kwargs)
-                    all_results[name] = result
-                elif strategy_class == "dynamic":
-                    result = self._run_dynamic_strategy_backtest(dynamic_strategy_name=name, **kwargs)
-                    all_results[name] = result
+                result = self._run_yaml_strategy_backtest(strategy_name=name, **kwargs)
+                all_results[name] = result
             except Exception as e:
                 logger.error(f"Error running backtest for '{name}' in comparison mode: {e}", exc_info=True)
 
@@ -74,29 +68,40 @@ class BacktestingService:
     
     # ... (이하 모든 _run... 및 compare_all_strategies 메서드는 private으로 변경) ...
     
-    def _run_specific_strategy_backtest(self,
-                                     tickers: List[str],
-                                     start_date: datetime,
-                                     end_date: datetime,
-                                     strategy_type: StrategyType,
-                                     initial_capital: float,
-                                     commission_rate: float,
-                                     risk_per_trade: float,
-                                     data_interval: str) -> BacktestResult:
-        """특정 전략으로 백테스트 실행"""
-        logger.info(f"Running backtest with {strategy_type.value} strategy")
-        engine = BacktestingEngine(
-            stock_analysis_service=self.stock_analysis_service,
-            initial_capital=initial_capital, commission_rate=commission_rate,
-            risk_per_trade=risk_per_trade, use_enhanced_signals=True,
-            strategy_type=strategy_type
-        )
-        result = engine.run_strategy_backtest(
-            tickers=tickers, start_date=start_date, end_date=end_date,
-            strategy_type=strategy_type, data_interval=data_interval
-        )
-        logger.info(f"{strategy_type.value} strategy backtest completed. Return: {result.total_return_percent:.2f}%")
-        return result
+    def _run_yaml_strategy_backtest(self,
+                                   strategy_name: str,
+                                   tickers: List[str],
+                                   start_date: datetime,
+                                   end_date: datetime,
+                                   initial_capital: float,
+                                   commission_rate: float,
+                                   risk_per_trade: float,
+                                   data_interval: str) -> BacktestResult:
+        """YAML 전략으로 백테스트 실행"""
+        logger.info(f"Running backtest with YAML strategy: {strategy_name}")
+        
+        # YAML 전략 기반 백테스팅 로직 구현
+        # 현재는 기존 엔진을 사용하되, 향후 TradingService의 신호를 사용하도록 개선 필요
+        
+        # 임시로 기존 방식 사용 (향후 개선 예정)
+        from domain.signals.models.enums import StrategyType
+        try:
+            # 전략 이름을 StrategyType으로 매핑 시도
+            strategy_type = StrategyType(strategy_name.lower())
+            engine = BacktestingEngine(
+                stock_analysis_service=self.stock_analysis_service,
+                initial_capital=initial_capital, commission_rate=commission_rate,
+                risk_per_trade=risk_per_trade, use_enhanced_signals=True,
+                strategy_type=strategy_type
+            )
+            result = engine.run_strategy_backtest(
+                tickers=tickers, start_date=start_date, end_date=end_date,
+                strategy_type=strategy_type, data_interval=data_interval
+            )
+            logger.info(f"YAML strategy '{strategy_name}' backtest completed. Return: {result.total_return_percent:.2f}%")
+            return result
+        except ValueError:
+            raise NotImplementedError(f"YAML strategy '{strategy_name}' backtesting integration not yet implemented")
 
     def _run_strategy_mix_backtest(self,
                                 tickers: List[str],

@@ -1,11 +1,15 @@
 # --- 공통 로거 설정 ---
 import argparse
 import sys
+from pathlib import Path
 
-from domain.orchestration.selector import list_all_strategies
-from domain.orchestration.strategy_registry import strategy_registry
-from domain.signals.config.signals.service.signal_detection_service import SignalDetectionService
-from domain.signals.models.enums import StrategyType
+# 프로젝트 루트를 Python path에 추가
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+from domain.services import StrategyService
+# from domain.signals.config.signals.service.signal_detection_service import SignalDetectionService
+# from domain.signals.models.enums import StrategyType
 # --- 새로운 전략 시스템 추가 ---
 from infrastructure.db.db_manager import create_db_and_tables
 from infrastructure.logging import setup_logging, get_logger
@@ -16,17 +20,21 @@ from infrastructure.scheduler.scheduler_manager import setup_scheduler, start_sc
 setup_logging()
 logger = get_logger(__name__)
 
-# 전역 전략 서비스 인스턴스 (스케줄러 작업에서 사용)
-strategy_service: SignalDetectionService = None
+# 전역 전략 서비스 인스턴스 (Phase 4: 새로운 services 계층)
+yaml_strategy_service: StrategyService = None
+# legacy_strategy_service: SignalDetectionService = None  # 비활성화
 
 def parse_arguments():
     """명령행 인수 파싱"""
     parser = argparse.ArgumentParser(description='Stock Analyzer Bot with Strategy Selection')
     
-    # 동적으로 사용 가능한 전략 목록 가져오기
+    # YAML 전략 목록 가져오기
     try:
-        available_strategies = strategy_registry.get_available_strategies("static")["static"]
-    except ImportError:
+        # 임시로 YAML 전략 서비스 사용
+        definitions_path = project_root / "domain" / "strategies" / "definitions"
+        temp_strategy_service = StrategyService(definitions_path)
+        available_strategies = temp_strategy_service.get_strategy_names()
+    except Exception:
         # 폴백: 기본 전략들
         available_strategies = ['conservative', 'balanced', 'aggressive']
     
@@ -52,102 +60,66 @@ def parse_arguments():
     return parser.parse_args()
 
 def list_available_strategies():
-    """사용 가능한 전략 목록 출력"""
-    print("\n🎯 전체 사용 가능한 전략 목록:")
+    """사용 가능한 YAML 전략 목록 출력"""
+    print("\n🎯 사용 가능한 YAML 전략 목록:")
     print("="*80)
     
-    strategies = list_all_strategies()
-    
-    # 정적 전략
-    print("\n📊 정적 전략 (Static Strategies):")
-    print("-" * 60)
-    for strategy in strategies["static_strategies"]:
-        print(f"• {strategy['name']}: {strategy['display_name']}")
-        print(f"  📝 {strategy['description']}")
-        print(f"  ⚡ 임계값: {strategy['signal_threshold']}, 💰 리스크: {strategy['risk_per_trade']*100:.1f}%")
-        print()
-    
-    # 동적 전략
-    print("\n🧠 동적 전략 (Dynamic Strategies):")
-    print("-" * 60)
-    for strategy in strategies["dynamic"]:
-        print(f"• {strategy['name']}: {strategy['display_name']}")
-        print(f"  📝 {strategy['description']}")
-        print(f"  ⚡ 임계값: {strategy['signal_threshold']}, 💰 리스크: {strategy['risk_per_trade']*100:.1f}%")
-        print(f"  🔧 모디파이어: {strategy['modifiers_count']}개")
-        print()
-    
-    # Static Strategy Mix
-    print("\n🔀 Static Strategy Mix:")
-    print("-" * 60)
-    for strategy in strategies["static_mix"]:
-        print(f"• {strategy['name']}: {strategy['display_name']}")
-        print(f"  📝 {strategy['description']}")
-        print()
-    
-    # 환경변수 설정 안내
-    print("\n⚙️ 환경변수로 기본 전략 설정:")
-    print("export STRATEGY_MODE=dynamic          # 기본 모드: static, dynamic, static_mix")
-    print("export STATIC_STRATEGY=BALANCED       # 정적 전략 기본값")
-    print("export DYNAMIC_STRATEGY=dynamic_weight_strategy  # 동적 전략 기본값") 
-    print("export STRATEGY_MIX=balanced_mix      # Static Strategy Mix 기본값")
+    try:
+        definitions_path = project_root / "domain" / "strategies" / "definitions"
+        strategy_service = StrategyService(definitions_path)
+        strategies = strategy_service.get_all_strategies()
+        
+        print("\n📊 YAML 기반 전략들:")
+        print("-" * 60)
+        for name, strategy_def in strategies.items():
+            print(f"• {name}: {strategy_def.strategy_name}")
+            print(f"  📊 매수 규칙: {len(strategy_def.buy_rules)}개")
+            print(f"  📊 매도 규칙: {len(strategy_def.sell_rules)}개")
+            print(f"  💰 포트폴리오: {strategy_def.portfolio.get('order_size', 'N/A')}")
+            print()
+        
+        print(f"\n총 {len(strategies)}개 전략 사용 가능")
+        
+    except Exception as e:
+        print(f"전략 목록 조회 실패: {e}")
+        print("\n기본 전략들:")
+        print("• conservative: 보수적 전략")
+        print("• balanced: 균형 전략")
+        print("• aggressive: 공격적 전략")
 
 def initialize_strategy_system(args) -> bool:
-    """전략 시스템 초기화"""
-    global strategy_service
+    """전략 시스템 초기화 (Phase 4: YAML 전략만 사용)"""
+    global yaml_strategy_service
     
-    logger.info("전략 시스템 초기화 중...")
+    logger.info("Phase 4: YAML 전략 시스템 초기화 중...")
     
     try:
-        # 전략 서비스 생성
-        strategy_service = SignalDetectionService()
+        # YAML 전략 서비스 초기화
+        definitions_path = project_root / "domain" / "strategies" / "definitions"
+        yaml_strategy_service = StrategyService(definitions_path)
+        yaml_strategies = yaml_strategy_service.get_strategy_names()
+        logger.info(f"YAML 전략 {len(yaml_strategies)}개 로드 완료: {', '.join(yaml_strategies)}")
         
-        # 기본 전략들 초기화
-        if not strategy_service.initialize():
-            logger.error("전략 시스템 초기화 실패")
-            return False
-        
-        # Static Strategy Mix 설정 (우선순위)
-        if args.strategy_mix:
-            logger.info(f"Static Strategy Mix 설정: {args.strategy_mix}")
-            if strategy_service.set_strategy_mix(args.strategy_mix):
-                logger.info(f"Static Strategy Mix '{args.strategy_mix}' 설정 완료")
+        # 기본 전략 설정 (YAML 기반)
+        default_strategy = args.strategy or 'conservative'
+        if default_strategy in yaml_strategies:
+            strategy = yaml_strategy_service.get_strategy(default_strategy)
+            if strategy:
+                logger.info(f"기본 전략 '{default_strategy}' 설정 완료: {strategy.strategy_name}")
             else:
-                logger.error(f"Static Strategy Mix '{args.strategy_mix}' 설정 실패")
-                return False
-                
-        # 단일 전략 설정
-        elif args.strategy:
-            strategy_type = StrategyType(args.strategy)
-            logger.info(f"단일 전략 설정: {strategy_type.value}")
-            if strategy_service.switch_strategy(strategy_type):
-                logger.info(f"전략 '{strategy_type.value}' 설정 완료")
-            else:
-                logger.error(f"전략 '{strategy_type.value}' 설정 실패")
-                return False
-        
-        # 자동 전략 선택 설정
-        if args.auto_strategy:
-            logger.info("자동 전략 선택 활성화")
-            strategy_service.strategy_manager.auto_selector.enable_auto_strategy_selection(True)
-        
-        # 현재 전략 정보 로깅
-        current_strategy = strategy_service.get_current_strategy_info()
-        logger.info(f"현재 활성 전략: {current_strategy}")
-        
-        # 사용 가능한 전략 목록 로깅
-        available_strategies = strategy_service.get_available_strategies()
-        logger.info(f"로드된 전략 수: {len(available_strategies)}")
+                logger.warning(f"전략 '{default_strategy}' 로드 실패")
+        else:
+            logger.warning(f"요청된 전략 '{default_strategy}'을 찾을 수 없음. 사용 가능한 전략: {yaml_strategies}")
         
         return True
         
     except Exception as e:
-        logger.error(f"전략 시스템 초기화 실패: {e}")
+        logger.error(f"YAML 전략 시스템 초기화 실패: {e}")
         return False
 
-def get_strategy_service() -> SignalDetectionService:
-    """전역 전략 서비스 인스턴스 반환 (스케줄러 작업에서 사용)"""
-    return strategy_service
+def get_strategy_service() -> StrategyService:
+    """전역 YAML 전략 서비스 인스턴스 반환 (Phase 4)"""
+    return yaml_strategy_service
 
 
 
