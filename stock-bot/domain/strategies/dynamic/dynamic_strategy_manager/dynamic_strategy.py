@@ -12,7 +12,7 @@ import pandas as pd
 
 from domain.signals.models.enums import StrategyType
 from domain.strategies.base import BaseStrategy
-from domain.strategies.decision_context import DecisionContext
+from domain.strategies.dynamic.context.decision_context import DecisionContext
 from domain.strategies.modifier_engine import ModifierEngine
 from domain.strategies.strategy_config import StrategyConfig
 from domain.signals.config.signals.service.signal_processor import SignalProcessor

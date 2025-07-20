@@ -4,7 +4,7 @@ from typing import Dict, Any
 
 import pandas as pd
 
-from domain.strategies.decision_context import DecisionContext
+from domain.strategies.dynamic.context.decision_context import DecisionContext
 from domain.strategies.dynamic.dynamic_strategy_manager.configs.dynamic_strategies import ModifierDefinition
 from infrastructure.logging import get_logger
 
