@@ -2,7 +2,7 @@
 from .daily_ohlcv_update_job import daily_ohlcv_update_job
 from .hourly_ohlcv_update_job import hourly_ohlcv_update_job
 from .market_data_update_job import market_data_update_job
-from .realtime_signal_detection_job import realtime_signal_detection_job
+from .realtime_signal_detection_job import scheduled_realtime_signal_detection as realtime_signal_detection_job
 from .update_stock_metadata_job import update_stock_metadata_job
 
 __all__ = [

@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from infrastructure.logging import setup_logging, get_logger
 from infrastructure.db.db_manager import create_db_and_tables
-from infrastructure.scheduler.jobs.realtime_signal_detection_job import realtime_signal_detection_job
+from domain.signals.service.realtime import realtime_signal_detection_job
 
 def main():
     """메인 테스트 함수"""
