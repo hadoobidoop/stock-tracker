@@ -5,8 +5,8 @@ import pandas as pd
 
 from domain.strategies.dynamic.dynamic_strategy_manager.modifiers.base import BaseModifier
 from infrastructure.logging import get_logger
-from .dynamic.context.decision_context import DecisionContext
-from .dynamic.dynamic_strategy_manager.configs.dynamic_strategies import ModifierActionType
+from domain.strategies.dynamic.context.decision_context import DecisionContext
+from domain.strategies.dynamic.dynamic_strategy_manager.configs.dynamic_strategies import ModifierActionType
 
 logger = get_logger(__name__)
 

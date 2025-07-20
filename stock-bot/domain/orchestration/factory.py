@@ -2,7 +2,7 @@ from typing import Dict, Optional
 
 from domain.strategies.dynamic.dynamic_strategy_manager.configs.dynamic_strategies import get_strategy_definition, \
     get_all_modifiers, get_all_strategies
-from domain.strategies.modifier_engine import ModifierEngine
+from domain.strategies.dynamic.engine.modifier_engine import ModifierEngine
 from domain.strategies.strategy_config import StrategyConfig
 from domain.signals.models.enums import StrategyType
 
